@@ -26,8 +26,22 @@
 uint8_t pktx[MAX_PKTX];
 uint8_t pktx1[MAX_PKTX];//second buffer for sport
 uint8_t idxt;
-uint8_t pass = 0;
 uint8_t frame[18];
+
+
+#ifdef BASH_SERIAL
+// For bit-bashed serial output
+
+struct t_serial_bash
+{
+	uint8_t head ;
+	uint8_t tail ;
+	uint8_t data[64] ;
+	uint8_t busy ;
+	uint8_t speed ;
+} SerialControl ;
+#endif
+
 
 #if defined DSM_TELEMETRY
 void DSM2_frame()
@@ -358,29 +372,8 @@ void proces_sport_data(uint8_t data)
 
 #endif
 
-void frskyUpdate()
-{		
-	#if defined DSM_TELEMETRY
-	if(telemetry_link && (cur_protocol[0]&0x1F) == MODE_DSM2 )
-	{	// DSM2
-		DSM2_frame();
-		telemetry_link=0;
-		return;
-	}
-	#endif
-	if(telemetry_link && (cur_protocol[0]&0x1F) != MODE_FRSKYX )
-	{	// FrSky + Hubsan
-		frsky_link_frame();
-		telemetry_link=0;
-		return;
-	}
-	#if defined HUB_TELEMETRY
-	if(!telemetry_link && (cur_protocol[0]&0x1F) == MODE_FRSKY)
-	{	// FrSky
-		frsky_user_frame();
-		return;
-	}
-	#endif
+void TelemetryUpdate()
+{
 	#if defined SPORT_TELEMETRY
 	if ((cur_protocol[0]&0x1F)==MODE_FRSKYX)
 	{	// FrSkyX
@@ -407,7 +400,7 @@ void frskyUpdate()
 	}
 	#endif
 	
-#ifdef BASH_SERIAL
+	#ifdef BASH_SERIAL
 	uint8_t h ;
 	uint8_t t ;
 	h = SerialControl.head ;
@@ -425,7 +418,7 @@ void frskyUpdate()
 		return ;
 	}
 
-#else
+        #else
 	uint8_t h ;
 	uint8_t t ;
 	h = tx_head ;
@@ -442,11 +435,89 @@ void frskyUpdate()
 	{
 		return ;
 	}
-#endif
+        #endif
+        
+	#if defined DSM_TELEMETRY
+	if(telemetry_link && (cur_protocol[0]&0x1F) == MODE_DSM2 )
+	{	// DSM2
+		DSM2_frame();
+		telemetry_link=0;
+		return;
+	}
+	#endif
+	if(telemetry_link && (cur_protocol[0]&0x1F) != MODE_FRSKYX )
+	{	// FrSky + Hubsan
+		frsky_link_frame();
+		telemetry_link=0;
+		return;
+	}
+	#if defined HUB_TELEMETRY
+	if(!telemetry_link && (cur_protocol[0]&0x1F) == MODE_FRSKY)
+	{	// FrSky
+		frsky_user_frame();
+		return;
+	}
+	#endif
+
+	
+
 	
 }
 
+
+/**************************/
+/**************************/
+/**  Serial TX routines  **/
+/**************************/
+/**************************/
+
+
 #ifndef BASH_SERIAL
+// Routines for normal serial output
+void Serial_write(uint8_t data)
+{
+	uint8_t nextHead ;
+	nextHead = tx_head + 1 ;
+	if ( nextHead >= TXBUFFER_SIZE )
+		nextHead = 0 ;
+	tx_buff[nextHead]=data;
+	tx_head = nextHead ;
+	tx_resume();
+}
+
+// Speed is 0 for 100K and 1 for 9600
+void initTXSerial( uint8_t speed)
+{
+	if(speed==SPEED_9600)
+	{ // 9600
+	#ifdef XMEGA
+		USARTC0.BAUDCTRLA = 207 ;
+		USARTC0.BAUDCTRLB = 0 ;
+		
+		USARTC0.CTRLB = 0x18 ;
+		USARTC0.CTRLA = (USARTC0.CTRLA & 0xCF) | 0x10 ;
+		USARTC0.CTRLC = 0x03 ;
+	}
+	#else
+	#ifdef STM32_board
+                Serial2.begin(9600);//USART3 
+		USART3_BASE->CR1 &= ~ USART_CR1_RE;//disable RX leave TX enabled
+        }
+	#else
+		//9600 bauds
+		UBRR0H = 0x00;
+		UBRR0L = 0x67;
+		UCSR0A = 0 ;	// Clear X2 bit
+		//Set frame format to 8 data bits, none, 1 stop bit
+		UCSR0C = (1<<UCSZ01)|(1<<UCSZ00);
+	}
+	UCSR0B |= (1<<TXEN0);//tx enable
+	#endif
+	#endif
+
+}
+
+
 //Serial TX	
 	#ifdef XMEGA
 		ISR(USARTC0_DRE_vect)
@@ -497,99 +568,6 @@ void frskyUpdate()
 		}
 	#endif	
 #endif
-
-
-	void Serial_write(uint8_t data)
-	{
-		cli();	// disable global int
-		if(++tx_head>=TXBUFFER_SIZE)
-		tx_head=0;
-		tx_buff[tx_head]=data;
-		#ifdef XMEGA
-			USARTC0.CTRLA = (USARTC0.CTRLA & 0xFC) | 0x01 ;
-			#else
-			#if defined STM32_board
-			USART3_BASE->CR1 |= USART_CR1_TXEIE;
-				#else
-				UCSR0B |= (1<<UDRIE0);//enable UDRE interrupt
-			#endif
-		#endif
-		sei();	// enable global int
-	}
-	
-
-
-static void Mprotocol_serial_init()
-{
-	
-	#ifdef XMEGA
-		
-		PORTC.OUTSET = 0x08 ;
-		PORTC.DIRSET = 0x08 ;
-		
-		USARTC0.BAUDCTRLA = 19 ;
-		USARTC0.BAUDCTRLB = 0 ;
-		
-		USARTC0.CTRLB = 0x18 ;
-		USARTC0.CTRLA = (USARTC0.CTRLA & 0xCF) | 0x10 ;
-		USARTC0.CTRLC = 0x2B ;
-		USARTC0.DATA ;
-		#else
-		
-		#if defined STM32_board
-			Serial1.begin(100000,SERIAL_8E2);//USART2
-			Serial2.begin(100000,SERIAL_8E2);//USART3 
-			USART2_BASE->CR1 |= USART_CR1_PCE_BIT;
-			USART3_BASE->CR1 &= ~ USART_CR1_RE;//disable 
-			USART2_BASE->CR1 &= ~ USART_CR1_TE;//disable transmit
-			#else	
-			#include <util/setbaud.h>	
-			UBRR0H = UBRRH_VALUE;
-			UBRR0L = UBRRL_VALUE;
-			UCSR0A = 0 ;	// Clear X2 bit
-			//Set frame format to 8 data bits, even parity, 2 stop bits
-			UCSR0C = (1<<UPM01)|(1<<USBS0)|(1<<UCSZ01)|(1<<UCSZ00);
-			while ( UCSR0A & (1 << RXC0) )//flush receive buffer
-			UDR0;
-			//enable reception and RC complete interrupt
-			UCSR0B = (1<<RXEN0)|(1<<RXCIE0);//rx enable and interrupt
-			#ifdef DEBUG_TX
-				TX_SET_OUTPUT;
-				#else
-				#ifndef STM32_board
-					UCSR0B |= (1<<TXEN0);//tx enable
-				#endif	
-			#endif
-		#endif
-	#endif
-}
-
-
-	static void PPM_Telemetry_serial_init()
-	{
-		#ifdef XMEGA
-			USARTC0.BAUDCTRLA = 207 ;
-			USARTC0.BAUDCTRLB = 0 ;
-			
-			USARTC0.CTRLB = 0x18 ;
-			USARTC0.CTRLA = (USARTC0.CTRLA & 0xCF) | 0x10 ;
-			USARTC0.CTRLC = 0x03 ;
-			#else
-			#if defined STM32_board
-				Serial1.begin(9600);				
-				#else
-				//9600 bauds
-				UBRR0H = 0x00;
-				UBRR0L = 0x67;
-				UCSR0A = 0 ;	// Clear X2 bit
-				//Set frame format to 8 data bits, none, 1 stop bit
-				UCSR0C = (1<<UCSZ01)|(1<<UCSZ00);
-				UCSR0B = (1<<TXEN0);//tx enable
-			#endif	
-		#endif
-	}
-
-
 
 #endif
 
