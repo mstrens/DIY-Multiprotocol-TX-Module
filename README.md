@@ -267,7 +267,7 @@ You can 3D print your box (details [here](http://www.rcgroups.com/forums/showpos
 ##Compilation and programmation
 
 ###Toolchain
-Multiprotocol source can be compiled using the Arduino IDE.
+Multiprotocol source can be compiled using the Arduino IDE.This code is using maple library(libmaple) not CMSIS and STM32 Standard Peripheral Library.
 
 The currently supported Arduino version is [1.6.5](https://www.arduino.cc/download_handler.php?f=/arduino-1.6.5-windows.exe).
 You need to download and install aditionally [STM32 core](https://github.com/rogerclarkmelbourne/Arduino_STM32/archive/master.zip) ,Arduino_STM32 folder in ...../Arduino/hardware/ folder (note. if the hardware folder doesn't exist you will need to create it).
