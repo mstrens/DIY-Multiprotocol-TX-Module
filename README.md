@@ -256,7 +256,8 @@ The Part list is [here](https://github.com/midelic/DIY-Multiprotocol-TX-Module/b
 
 Notes:
 - Attention: All modules are 3.3V only, never power them with 5V.
-- For serial, the dial switch is not needed and the bind button optionnal
+- For serial, the dial switch is not needed and the bind button optionnal.
+- SJ1 jumper should be used only if you don't have the inverter chip installed.If you install the inverter, SJ1 is not bridged.
 
 ###Radio integration
 You can 3D print your box (details [here](http://www.rcgroups.com/forums/showpost.php?p=33294140&postcount=2034)):
