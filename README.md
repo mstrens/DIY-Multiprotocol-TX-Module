@@ -240,6 +240,12 @@ The main program is running on an STM32F103CBT6 chip running @8MHz X-tal and 3.3
 
 [OSH Park link](https://oshpark.com/shared_projects/toBXcpNK)  if you want to order.
 
+###New board
+
+[OSH Park link](https://oshpark.com/shared_projects/w5cMKmM3)
+
+Boom list is attached at the top.
+
 ####Buy a 4 in 1 tuner to be used with new STM32 multimodule board
 
 This module(4 in 1 tuner) can be purchased [here](http://www.banggood.com/DIY-2_4G-CC2500-NRF24L01-A7105-CYRF6936-Multi-RF-4-IN-1-Wireless-Module-p-1046308.html?AID=12202217&PID=3836173&SID=ir5dm8sw730004o402ecu&source=affiliate&utm_source=Banggood_CJ&utm_medium=commission_junction&utm_campaign=OpenPilot&utm_content=sandy). All the 4 RF modules are already implemented A7105, NRF24L01, CC2500 and CYRF6936. The board is also equiped with an antenna switcher which means only one antenna for all.
