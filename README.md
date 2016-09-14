@@ -242,7 +242,7 @@ The main program is running on an STM32F103CBT6 chip running @8MHz X-tal and 3.3
 
 ###New board
 
-[OSH Park link](https://oshpark.com/shared_projects/w5cMKmM3)
+[OSH Park link](https://oshpark.com/shared_projects/fwFxg9Rk)
 
 Boom list is attached at the top.
 
