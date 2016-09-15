@@ -242,7 +242,9 @@ The main program is running on an STM32F103CBT6 chip running @8MHz X-tal and 3.3
 
 ###New board
 
-[OSH Park link](https://oshpark.com/shared_projects/fwFxg9Rk)
+[OSH Park link](https://oshpark.com/shared_projects/dWpVBjWW)
+
+Parts list [here](https://github.com/midelic/DIY-Multiprotocol-TX-Module/blob/multi-STM32/Multi_STM32_V0.7_t.txt)
 
 Boom list is attached at the top.
 
