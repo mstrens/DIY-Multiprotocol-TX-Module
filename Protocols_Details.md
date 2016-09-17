@@ -45,13 +45,23 @@ A|E|T|R|FLIP|LIGHT|PICTURE|VIDEO|HEADLESS
 
 ***
 #CC2500 RF Module
+##FRSKYV = FrSky 1 way
 
-##FRSKY
+Models: FrSky receivers V8R4, V8R7 and V8FR.
+
+Extended limits supported
+
+Option=fine frequency tuning. This value is different for each board. To determine the option value, find the two limits where the RX loses connection then set the option value to half way between them. If you have a 4in1 V2 board the value is around 40.
+
+
+##FRSKYD
+Models: FrSky receivers D4R and D8R. DIY RX-F801 and RX-F802 receivers.
+
 Extended limits supported
 
 Telemetry enabled for A0, A1, RSSI, TSSI and Hub
 
-Option=fine frequency tuning, usually 0 or -41 based on the manufacturer boards
+Option=fine frequency tuning. This value is different for each board. To determine the option value, find the two limits where the RX loses connection then set the option value to half way between them. If you have a 4in1 V2 board the value is around 40.
 
 CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
 ---|---|---|---|---|---|---|---
@@ -62,9 +72,9 @@ Models: FrSky receivers X4R, X6R and X8R.
 
 Extended limits supported
 
-Telemetry enabled for A1 (RxBatt), A2, RSSI, TSSI and Hub
+Telemetry enabled for A1 (RxBatt), A2, RSSI, and SPORT
 
-Option=fine frequency tuning, usually 0 or -41 based on the manufacturer boards
+Option=fine frequency tuning. This value is different for each board. To determine the option value, find the two limits where the RX loses connection then set the option value to half way between them. If you have a 4in1 V2 board the value is around 40.
 
 ###Sub_protocol CH_16
 CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8|CH9|CH10|CH11|CH12|CH13|CH14|CH15|CH16
@@ -79,7 +89,7 @@ CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
 ##SFHSS
 Models: Futaba RXs and XK models.
 
-Option=fine frequency tuning, usually 0 or -41 based on the manufacturer boards
+Option=fine frequency tuning. This value is different for each board. To determine the option value, find the two limits where the RX loses connection then set the option value to half way between them. If you have a 4in1 V2 board the value is around 40.
 
 CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
 ---|---|---|---|---|---|---|---
@@ -94,6 +104,31 @@ Extended limits supported
 CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
 ---|---|---|---|---|---|---|---
 CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
+
+Note that the RX ouput will be EATR.
+
+Bind procedure using serial:
+
+- With the TX off, put the binding plug in and power on the RX (RX LED slow blink), then power it down and remove the binding plug. Receiver should now be in autobind mode.
+- Turn on the TX, set protocol = Devo with option=0, turn off the TX (TX is now in autobind mode).
+- Turn on RX (RX LED fast blink).
+- Turn on TX (RX LED solid, TX LED fast blink).
+- Wait for bind on the TX to complete (TX LED solid).
+- Make sure to set the RX_Num value for model match.
+- Change option to 1 to use the global ID.
+- Do not touch option/RX_Num anymore.
+- Bind procedure using PPM:
+
+- With the TX off, put the binding plug in and power on the RX (RX LED slow blink), then power it down and remove the binding plug. Receiver should now be in autobind mode.
+- Turn on RX (RX LED fast blink).
+- Turn the dial to the model number running protocol DEVO on the module.
+- Press the bind button and turn on the TX. TX is now in autobind mode.
+- Release bind button after 1 second: RX LED solid, TX LED fast blink.
+- Wait for bind on the TX to complete (TX LED solid).
+- Press the bind button for 1 second. TX/RX is now in fixed ID mode.
+- To verify that the TX is in fixed mode: power cycle the TX, the module LED should be solid ON (no blink).
+- Note: Autobind/fixed ID mode is linked to the dial number. Which means that you can have multiple dial numbers set to the same protocol DEVO with different RX_Num and have different bind modes at the same time. It enables PPM users to get model match under DEVO.
+
 
 ##DSM2
 Extended limits supported
@@ -126,8 +161,19 @@ A|E|T|R|CH5|CH6|CH7|CH8|CH9|CH10|CH11|CH12
 ###Sub_protocol DSMX
 Same as above
 
+##J6Pro
+
+CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8|CH9|CH10|CH11|CH12
+---|---|---|---|---|---|---|---|---|----|----|----
+A|E|T|R|CH5|CH6|CH7|CH8|CH9|CH10|CH11|CH12
+
 ***
 #NRF24L01 RF Module
+
+##ASSAN
+CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8|CH9|CH10
+---|---|---|---|---|---|---|---|---|----
+A|E|T|R|CH5|CH6|CH7|CH8|CH9|CH10
 
 ##BAYANG
 Models: EAchine H8(C) mini, BayangToys X6/X7/X9, JJRC JJ850, Floureon H101 ...
@@ -232,6 +278,12 @@ CH1|CH2|CH3|CH4|CH5|CH6
 ---|---|---|---|---|---
 A|E|T|R|GYRO|PITCH
 
+##FQ777
+
+CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
+---|---|---|---|---|---|---|---
+A|E|T|R|FLIP|RTH|HEADLESS|EXPERT
+
 ##FY326
 
 CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8|CH9
@@ -263,6 +315,18 @@ Dual Rate: +100%=full range, Throttle Hold: +100%=hold, Idle Up: +100%=3D, GYRO:
 ###Sub_protocol FEILUN
 Same channels assignement as above.
 
+##HONTAI
+CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8|CH9|CH10|CH11
+---|---|---|---|---|---|---|---|---|----|----
+A|E|T|R|FLIP|LED|PICTURE|VIDEO|HEADLESS|RTH|CAL
+
+###Sub_protocol HONTAI
+
+###Sub_protocol JJRCX1
+CH6|
+---|
+ARM|
+
 ##MJXQ
 Autobind protocol
 
@@ -272,8 +336,11 @@ A|E|T|R|FLIP|LED|PICTURE|VIDEO|HEADLESS|RTH|AUTOFLIP|PAN|TILT
 
 ###Sub_protocol WLH08
 ###Sub_protocol X600
+Only 3 TX IDs available, change RX_Num value 0..2 to cycle through them
 ###Sub_protocol X800
+Only 3 TX IDs available, change RX_Num value 0..2 to cycle through them
 ###Sub_protocol H26D
+###Sub_protocol E010
 
 ##MT99XX
 Autobind protocol
@@ -289,6 +356,13 @@ Models: Eachine H7, Cheerson CX023
 ###Sub_protocol YZ
 Model: Yi Zhan i6S
 Only one model can be flown at the same time since the ID is hardcoded.
+
+###Sub_protocol LS
+Models: LS114, 124, 215
+
+CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8|CH9
+---|---|---|---|---|---|---|---|---
+A|E|T|R|FLIP|LED|PICTURE|VIDEO|HEADLESS
 
 ##Shenqi
 Autobind protocol
