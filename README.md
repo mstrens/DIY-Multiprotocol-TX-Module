@@ -242,7 +242,10 @@ The main program is running on an STM32F103CBT6 chip running @8MHz X-tal and 3.3
 
 ###New board
 
-[OSH Park link](https://oshpark.com/shared_projects/dWpVBjWW)
+![Screenshot](https://644db4de3505c40a0444-327723bce298e3ff5813fb42baeefbaa.ssl.cf1.rackcdn.com/6c5aa446135c6636a0080db7ca28f1be.png)
+![Screenshot](https://644db4de3505c40a0444-327723bce298e3ff5813fb42baeefbaa.ssl.cf1.rackcdn.com/f8b73b21d9c7e15729c8b7b89aee539b.png)
+
+[OSH Park link](https://oshpark.com/shared_projects/3IU1JXoN)
 
 Parts list [here](https://github.com/midelic/DIY-Multiprotocol-TX-Module/blob/multi-STM32/Multi_STM32_V0.7_t.txt)
 
