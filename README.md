@@ -158,7 +158,8 @@ Hubsan|
 #####CC2500 RF module
 Protocol|Sub_protocol
 --------|------------
-FrSky|
+FrskyV|
+FrSkyD|
 FrSkyX|
  |CH_16
  |CH_8
@@ -171,6 +172,7 @@ DSM2|
  |DSM2
  |DSMX
 Devo|
+J6Pro|
 
 #####NRF24L01 RF module
 Protocol|Sub_protocol
@@ -206,19 +208,26 @@ CG023|
  |YD829
  |H8_3D
 Bayang|
-FrskyX||CC2500
 ESky|
 MT99XX|
  |MT
  |H7
  |YZ
+ |LS
 MJXQ|
  |WLH08
  |X600
  |X800
  |H26D
+ |EO10
 Shenqi|
 FY326|
+FQ777|
+ASSAN|
+HONTAI
+ |HONTAI
+ |JJRXCX1
+ |X5C1
 
 Note:
 - The dial should be set to 0 for serial. Which means all protocol selection pins should be left unconnected.
