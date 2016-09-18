@@ -323,19 +323,13 @@ Notes:
 Use an external FTDI adapter like [this one](http://www.banggood.com/FT232RL-FTDI-USB-To-TTL-Serial-Converter-Adapter-Module-For-Arduino-p-917226.html).
 or other USB serial-TTL dongle.The device can work with both  5V and 3.3V. When in 3.3V selection there are some precautions to be taken ,you can read below.
 
-###Important:
-Flashing:
-For uploading binaries(.bin files) there is a specialized software you need to install on your computer.Using the same USB-serial device set the BOOT0 jumper and run the program.Ther are many totorials on the net on how ro use this program.
-STM32 Flash loader demonstrator
-http://www.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-programmers/flasher-stm32.html
-
 ###Method 1:
 
 Don't flash new firmware with the TX switched on !!!!!
 
 If using 3.3V USB-TTL device it is required to use a jumper on "3.3V jumper" on top of the board.After flashing it is imperative to be removed.
 
-Before uploading new firmware use a jumper on BOOT0.After flashing new firmware remove also the BOOT0 jumper,or move it to oposite pin.
+Before uploading any new firmware use a jumper on BOOT0.After flashing new firmware remove also the BOOT0 jumper,or move it to oposite pin.
 
 ###Warning!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -344,11 +338,22 @@ After flashing new firmware it is mandatory to remove the 3.3V jumper if install
 ###Method 2.
 
 Uploading new firmware with TX switched on.
+
 For this method DON'T TOUCH THE 3.3V JUMPER(NO JUMPER)!!!
 This method is less prone to mistakes.The module is inside the TX bay.Move/set the jumper on BOOT0.
-Connect the USB-serial device TX ,RX,and GND lines to coresponding RX,TX GND on the multimodule.
-Start TX ,plug the USB -serial device on computer USB port,open arduino IDE upload the sketch normally.
+Connect the USB-serial device only TX ,RX,and GND lines to coresponding RX,TX GND pins on the multimodule.
+Plug the USB -serial device on computer USB port.Start TX(switched on) ,open arduino IDE, select the COM port,find multiprotocol.ino file,open the file in arduino IDE ,press "UPLOAD" the sketch will be uploded to the multimodule normally like any other arduino sketch.
 At the end of uploading remove the BOOT0 jumper.Start normally.
+
+###Important:
+Flashing:
+For uploading already precompiled  binaries(.bin Release files ) there is a specialized software you need to install on your computer.Using the same USB-serial device set the BOOT0 jumper, follow the same  precautions regading voltage used and run the program.
+STM32 Flash loader demonstrator
+http://www.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-programmers/flasher-stm32.html
+
+There are many tutorials on the net on how to use this program.Like this one.
+
+[here](http://www.scienceprog.com/flashing-programs-to-stm32-embedded-bootloader)
 
 
 ##Troubleshooting
