@@ -64,7 +64,7 @@ Notes:
 
 ###Telemetry
 
-There are 4 protocols supporting telemetry: Hubsan, DSM, FrSky and FrSkyX.
+There are 4 protocols supporting telemetry: Hubsan, DSM, FrSkyD and FrSkyX.
 
 Hubsan displays the battery voltage and TX RSSI.
 
@@ -72,11 +72,11 @@ DSM displays TX RSSI and full telemetry.
 
 FrSky displays full telemetry (A0, A1, RX RSSI, TX RSSI and Hub).
 
-FrSkyX displays full telemetry (A1, A2, RX RSSI, TX RSSI and Hub).
+FrSkyX displays full telemetry (A1, A2, RX RSSI, TX RSSI and SPORT).
 
 ### If used in PPM mode
 
-Telemetry is available as a serial 9600 8 n 1 output on the TX pin of the Atmega328p using the FRSky hub format for Hubsan, FrSky, FrSkyX and DSM format for DSM2/X.
+Telemetry is available as a serial 9600 8 n 1 output on the TX pin of the STM32 chip using the FRSky hub format for Hubsan, FrSkyD, FrSkyX and DSM format for DSM2/X.
 
 You can connect it to your TX if it is telemetry enabled or use a bluetooth adapter (HC05/HC06) along with an app on your phone/tablet ([app example](https://play.google.com/store/apps/details?id=biz.onomato.frskydash&hl=fr)) to display telemetry information and setup alerts.
 
@@ -242,19 +242,20 @@ You also need some [antennas](http://www.banggood.com/2_4GHz-3dBi-RP-SMA-Connect
 ###Board
 The main program is running on an STM32F103CBT6 chip running @8MHz X-tal and 3.3V power supply.
 
-####Build your own board using [SMD components]
+####My board (original design)
 
 ![Screenshot](https://644db4de3505c40a0444-327723bce298e3ff5813fb42baeefbaa.ssl.cf1.rackcdn.com/f2d598eacd8e9eebc3818adf47777199.png)
 ![Screenshot](https://644db4de3505c40a0444-327723bce298e3ff5813fb42baeefbaa.ssl.cf1.rackcdn.com/2026cfd1d0187a770570052590168df1.png)
 
 [OSH Park link](https://oshpark.com/shared_projects/toBXcpNK)  if you want to order.
 
-###New board
+###New board design
+The new board was designed by M.Bloos and is  pinout compatible with previous board.It has aditionally more spi pins for new RF module,better arrangement for inverter secondary input and a neater design.
 
 ![Screenshot](https://644db4de3505c40a0444-327723bce298e3ff5813fb42baeefbaa.ssl.cf1.rackcdn.com/6c5aa446135c6636a0080db7ca28f1be.png)
 ![Screenshot](https://644db4de3505c40a0444-327723bce298e3ff5813fb42baeefbaa.ssl.cf1.rackcdn.com/f8b73b21d9c7e15729c8b7b89aee539b.png)
 
-[OSH Park link](https://oshpark.com/shared_projects/3IU1JXoN)
+[OSH Park link](https://oshpark.com/shared_projects/3IU1JXoN) if you want to order.
 
 Parts list [here](https://github.com/midelic/DIY-Multiprotocol-TX-Module/blob/multi-STM32/Multi_STM32_V0.7_t.txt)
 
@@ -269,6 +270,8 @@ To update the firmware of this module you have to solder a 5 pin header(bottom )
 Serial mode  is already enabled by default so no need any resistor soldering.
 
 ###Schematic and Parts list
+
+The original design
 
 The Part list is [here](https://github.com/midelic/DIY-Multiprotocol-TX-Module/blob/multi-STM32/Multiprotocol_STM32.txt).
 
