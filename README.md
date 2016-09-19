@@ -313,8 +313,6 @@ Then run the IDE, and on the Tools menu, select the Boards manager, and install 
 
 Download the [zip file](https://github.com/midelic/DIY-Multiprotocol-TX-Module/archive/multi-STM32.zip) of this repository, unzip it in a folder, navigate to the Multiprotocol directory and then click on Multiprotocol.ino. The Arduino environment will appear and the Multiprotocol project will be loaded.Then you can use "Upload" button which will compile and upload to the module: Skecth->Upload (Ctrl+U).
 
-Warning:
-The dial must be set to 0 before flashing!
 
 Notes:
 - Make sure to select in arduino IDE the "Generic STM32F103C series" before compiling.
@@ -334,7 +332,7 @@ If using 3.3V USB-TTL device it is required to use a jumper on "3.3V jumper" on 
 
 Before uploading any new firmware use a jumper on BOOT0.After flashing new firmware remove also the BOOT0 jumper,or move it to oposite pin.
 
-###Warning!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+###Warning!!!
 
 After flashing new firmware it is mandatory to remove the 3.3V jumper if installed.If not when starting the module and micro you may fry them as 5V is supplied directly on the RF module and micro.Extreme care ,do not flash with 5V setting on USB-SERIAL and 3.3V jumper attached.If in doubt measure the serial  device output with a multimeter.
 
@@ -351,6 +349,7 @@ At the end of uploading remove the BOOT0 jumper.Start normally.
 ###Important:
 Flashing:
 For uploading already precompiled  binaries(.bin Release files ) there is a specialized software you need to install on your computer.Using the same USB-serial device set the BOOT0 jumper, follow the same  precautions regading voltage used and run the program.
+
 STM32 Flash loader demonstrator
 http://www.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-programmers/flasher-stm32.html
 
@@ -372,16 +371,13 @@ There are many tutorials on the net on how to use this program.Like this one.
 ####Input Mode - PPM
 
 - The protocol/mode selection must be done before the power is applied.
-- Connect 1 to 4 of the selection protocol pins to GND.
 
 ####Input Mode - Serial
 Put dial switch on "zero" activates serial mode on multi.If you want to use permanetly serial  mode there is no need of the dial switch installation.
 
 ###Bind
-Make sure to follow this procedure: press the bind button, apply power and then release it after 1sec. The LED should be blinking fast indicating a bind status and then fixed on when the bind period is over. It's normal that the LED turns off when you press the bind button, this behavior is not controlled by the Atmega328.
+Make sure to follow this procedure: press the bind button, apply power and then release it after 1sec. The LED should be blinking fast indicating a bind status and then fixed on when the bind period is over.
 For serial, the preffered method is to bind via the GUI protocol page.
-
-It migth happen that your module is always binding at power up. If this is the case, there is a big chance that you are using an Arduino Pro Mini with an external status LED. To work around this issue connect a 10K resistor between D13 and 3.3V.
 
 ###Report issues
 You can report your problem using the [GitHub issue](https://github.com/midelic/DIY-Multiprotocol-TX-Module/issues) system or go to the [Main thread on RCGROUPS](http://www.rcgroups.com/forums/showthread.php?t=2165676) to ask your question.
