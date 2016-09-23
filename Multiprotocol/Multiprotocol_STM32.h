@@ -22,74 +22,80 @@ enum PROTOCOLS
 	MODE_SERIAL = 0,		// Serial commands
 	MODE_FLYSKY = 1,		// =>A7105
 	MODE_HUBSAN = 2,		// =>A7105
-	MODE_FRSKY = 3,			// =>CC2500
-	MODE_HISKY = 4,			// =>NRF24L01
-	MODE_V2X2 = 5,			// =>NRF24L01
-	MODE_DSM2 = 6,			// =>CYRF6936
-	MODE_DEVO =7,			// =>CYRF6936
-	MODE_YD717 = 8,			// =>NRF24L01
-	MODE_KN  = 9,			// =>NRF24L01
-	MODE_SYMAX = 10,		// =>NRF24L01
-	MODE_SLT = 11,			// =>NRF24L01
-	MODE_CX10 = 12,			// =>NRF24L01
-	MODE_CG023 = 13,		// =>NRF24L01
+	MODE_FRSKYD = 3,		// =>CC2500
+	MODE_HISKY  = 4,	    // =>NRF24L01
+	MODE_V2X2   = 5,		// =>NRF24L01
+	MODE_DSM   = 6,		// =>CYRF6936
+	MODE_DEVO   = 7,		// =>CYRF6936
+	MODE_YD717  = 8,		// =>NRF24L01
+	MODE_KN     = 9,		// =>NRF24L01
+	MODE_SYMAX  = 10,		// =>NRF24L01
+	MODE_SLT    = 11,		// =>NRF24L01
+	MODE_CX10   = 12,		// =>NRF24L01
+	MODE_CG023  = 13,		// =>NRF24L01
 	MODE_BAYANG = 14,		// =>NRF24L01
 	MODE_FRSKYX = 15,		// =>CC2500
-	MODE_ESKY = 16,			// =>NRF24L01
-	MODE_MT99XX=17,			// =>NRF24L01
-	MODE_MJXQ=18,			// =>NRF24L01
-	MODE_SHENQI=19,			// =>NRF24L01
-	MODE_FY326=20,			// =>NRF24L01
-	MODE_SFHSS=21,			// =>CC2500
-	MODE_J6PRO=22,			// =>CYRF6936
-	MODE_FQ777=23,			// =>NRF24L01
-	MODE_ASSAN=24			// =>NRF24L01
+	MODE_ESKY   = 16,		// =>NRF24L01
+	MODE_MT99XX = 17,		// =>NRF24L01
+	MODE_MJXQ   = 18,		// =>NRF24L01
+	MODE_SHENQI = 19,		// =>NRF24L01
+	MODE_FY326  = 20,		// =>NRF24L01
+	MODE_SFHSS  = 21,		// =>CC2500
+	MODE_J6PRO  = 22,		// =>CYRF6936
+	MODE_FQ777  = 23,		// =>NRF24L01
+	MODE_ASSAN  = 24,		// =>NRF24L01
+	MODE_FRSKYV = 25,	        // =>CC2500
+	MODE_HONTAI = 26,	        // =>NRF24L01
+	MODE_OPENLRS= 27	        // =>OpenLRS hardware
 };
 
 enum Flysky
 {
-	Flysky=0,
-	V9X9=1,
-	V6X6=2,
-	V912=3
+	Flysky= 0,
+	V9X9  = 1,
+	V6X6  = 2,
+	V912  = 3
 };
 enum Hisky
 {
-	Hisky=0,
-	HK310=1
+	Hisky = 0,
+	HK310 = 1
 };
-enum DSM2{
-	DSM2=0,
-	DSMX=1
+enum DSM{
+	DSM2_22	= 0,
+	DSM2_11	= 1,
+	DSMX_22	= 2,
+	DSMX_11	= 3,
+	DSM_AUTO = 4
 };
 enum YD717
 {       			
-	YD717=0,
-	SKYWLKR=1,
-	SYMAX4=2,
-	XINXUN=3,
-	NIHUI=4
+	YD717   = 0,
+	SKYWLKR = 1,
+	SYMAX4  = 2,
+	XINXUN  = 3,
+	NIHUI   = 4
 };
 enum KN
 {
-	WLTOYS=0,
-	FEILUN=1
+	WLTOYS= 0,
+	FEILUN= 1
 };
 enum SYMAX
 {
-	SYMAX=0,
-	SYMAX5C=1
+	SYMAX   = 0,
+	SYMAX5C = 1
 };
 enum CX10
 {
     CX10_GREEN = 0,
-    CX10_BLUE=1,		// also compatible with CX10-A, CX12
-    DM007=2,
-	Q282=3,
-	JC3015_1=4,
-	JC3015_2=5,
-	MK33041=6,
-	Q242=7
+    CX10_BLUE  = 1,		// also compatible with CX10-A, CX12
+    DM007      = 2,
+	Q282       = 3,
+	JC3015_1   = 4,
+	JC3015_2   = 5,
+	MK33041    = 6,
+	Q242       = 7
 };
 enum CG023
 {
@@ -119,19 +125,44 @@ enum FRSKYX
 	CH_8	= 1,
 };
 
+enum HONTAI
+{
+	FORMAT_HONTAI	= 0,
+	FORMAT_JJRCX1	= 1,
+	FORMAT_X5C1	= 2
+};
+
 #define NONE 		0
 #define P_HIGH		1
 #define P_LOW		0
 #define AUTOBIND	1
 #define NO_AUTOBIND	0
 
-
+struct PPM_Parameters
+{
+	uint8_t protocol : 5;
+	uint8_t sub_proto : 3;
+	uint8_t rx_num : 4;
+	uint8_t power : 1;
+	uint8_t autobind : 1;
+	uint8_t option;
+};
 
 //*******************
 //***   Pinouts   ***
 //*******************
 
 #if defined STM32_board
+
+#define OCR1A TIMER2_BASE->CCR1
+#define TCNT1 TIMER2_BASE->CNT
+#define UDR0 USART2_BASE->DR
+#define TIFR1 TIMER2_BASE->SR
+#define OCF1A_bm TIMER_SR_CC1IF
+#define UCSR0B USART2_BASE->CR1
+#define RXCIE0 USART_CR1_RXNEIE_BIT
+#define TXCIE0 USART_CR1_TXEIE_BIT
+//#define TIFR1 TIMER2_BASE->SR
 //********************
 #define BIND_pin PA0
 #define LED_pin  PA1						
@@ -149,7 +180,7 @@ enum FRSKYX
 #define CC25_CSN_pin PB6//CC2500
 #define NRF_CSN_pin  PB7//NRF24L01
 #define CYRF_RST_pin PB8//CYRF RESET
-#define CS_pin       PB9//A7105
+#define A7105_CSN_pin PB9//A7105
 #define CYRF_CSN_pin PB12//CYRF CSN
 //SPI pins	
 #define SCK_pin PB13//SCK
@@ -159,18 +190,21 @@ enum FRSKYX
 #define TX_INV_pin PB3
 #define RX_INV_pin PB1
 //
-#define CTRL1_on  digitalWrite(CTRL1,HIGH)
-#define CTRL1_off digitalWrite(CTRL1,LOW)
+#define PE1_on  digitalWrite(CTRL1,HIGH)
+#define PE1_off digitalWrite(CTRL1,LOW)
 //
-#define CTRL2_on  digitalWrite(CTRL2,HIGH)
-#define CTRL2_off digitalWrite(CTRL2,LOW)
+#define PE2_on  digitalWrite(CTRL2,HIGH)
+#define PE2_off digitalWrite(CTRL2,LOW)
 
 #define RS_HI digitalWrite(CYRF_RST_pin,HIGH)				//reset pin cyrf 
 #define RS_LO digitalWrite(CYRF_RST_pin,LOW)
 
 
-#define  CS_on digitalWrite(CS_pin,HIGH)			
-#define  CS_off digitalWrite(CS_pin,LOW)		
+#define  A7105_CSN_on digitalWrite(A7105_CSN_pin,HIGH)			
+#define  A7105_CSN_off digitalWrite(A7105_CSN_pin,LOW)		
+
+#define NRF_CE_on
+#define NRF_CE_off
 
 #define  SCK_on digitalWrite(SCK_pin,HIGH)			
 #define  SCK_off digitalWrite(SCK_pin,LOW)		
@@ -202,9 +236,9 @@ enum FRSKYX
 #define RX_INV_on digitalWrite(RX_INV_pin,HIGH)		
 #define RX_INV_off digitalWrite(RX_INV_pin,LOW)
 
-#define LED_ON  digitalWrite(LED_pin,HIGH)
-#define LED_OFF  digitalWrite(LED_pin,LOW)
-#define LED_TOGGLE  digitalWrite(LED_pin ,!digitalRead(LED_pin))
+#define LED_on  digitalWrite(LED_pin,HIGH)
+#define LED_off  digitalWrite(LED_pin,LOW)
+#define LED_toggle  digitalWrite(LED_pin ,!digitalRead(LED_pin))
 #define LED_SET_OUTPUT pinMode(LED_pin,OUTPUT)
 #define IS_LED_on  ( digitalRead(LED_pin)==HIGH)
 
@@ -279,7 +313,7 @@ enum FRSKYX
 #define IS_TX_PAUSE_on		( ( protocol_flags2 & (_BV(4)|_BV(3)) ) !=0 )
 
 
-#define IS_BIND_BUTTON_on	(digitalRead(BIND_pin)==0x00)
+#define IS_BIND_BUTTON_on	(digitalRead(BIND_pin)==LOW)
 
 #define BIND_SET_INPUT		pinMode(BIND_pin,INPUT)
 #define BIND_SET_PULLUP	        digitalWrite(BIND_pin,HIGH)	
@@ -409,6 +443,8 @@ enum {
 // baudrate defines for serial
 #define SPEED_100K	0
 #define SPEED_9600	1
+#define SPEED_57600	2
+#define SPEED_125K	3
 
 
 //****************************************
@@ -420,17 +456,18 @@ enum {
 **************************
 Serial: 100000 Baud 8e2      _ xxxx xxxx p --
   Total of 26 bytes
-  Stream[0]   = 0x55
+  Stream[0]   = 0x55	sub_protocol values are 0..31
+  Stream[0]   = 0x54	sub_protocol values are 32..63
    header
   Stream[1]   = sub_protocol|BindBit|RangeCheckBit|AutoBindBit;
-   sub_protocol is 0..31 (bits 0..4)
+   sub_protocol is 0..31 (bits 0..4), value should be added with 32 if Stream[0] = 0x54
    =>	Reserved	0
 					Flysky		1
 					Hubsan		2
-					Frsky		3
+					FrskyD		3
 					Hisky		4
 					V2x2		5
-					DSM2		6
+					DSM			6
 					Devo		7
 					YD717		8
 					KN			9
@@ -446,6 +483,12 @@ Serial: 100000 Baud 8e2      _ xxxx xxxx p --
 					SHENQI		19
 					FY326		20
 					SFHSS		21
+					J6PRO		22
+					FQ777		23
+					ASSAN		24
+					FrskyV		25
+					HONTAI		26
+					OpenLRS		27
    BindBit=>		0x80	1=Bind/0=No
    AutoBindBit=>	0x40	1=Yes /0=No
    RangeCheck=>		0x20	1=Yes /0=No
@@ -453,28 +496,30 @@ Serial: 100000 Baud 8e2      _ xxxx xxxx p --
    RxNum value is 0..15 (bits 0..3)
    Type is 0..7 <<4     (bit 4..6)
 		sub_protocol==Flysky
-			Flysky	0
-			V9x9	1
-			V6x6	2
-			V912	3
+			Flysky		0
+			V9x9		1
+			V6x6		2
+			V912		3
 		sub_protocol==Hisky
-			Hisky	0
-			HK310	1
-		sub_protocol==DSM2
-			DSM2	0
-			DSMX	1
+			Hisky		0
+			HK310		1
+		sub_protocol==DSM
+			DSM2_22 	0
+			DSM2_11 	1
+			DSMX_22 	2
+			DSMX_11 	3
 		sub_protocol==YD717
-			YD717	0
-			SKYWLKR	1
-			SYMAX4	2
-			XINXUN	3
-			NIHUI	4
+			YD717		0
+			SKYWLKR		1
+			SYMAX4		2
+			XINXUN		3
+			NIHUI		4
 		sub_protocol==KN
-			WLTOYS	0
-			FEILUN	1
+			WLTOYS		0
+			FEILUN		1
 		sub_protocol==SYMAX
-			SYMAX	0
-			SYMAX5C	1
+			SYMAX		0
+			SYMAX5C		1
 		sub_protocol==CX10
 			CX10_GREEN	0
 			CX10_BLUE	1	// also compatible with CX10-A, CX12
@@ -492,14 +537,20 @@ Serial: 100000 Baud 8e2      _ xxxx xxxx p --
 			MT99		0
 			H7			1
 			YZ			2
+			LS			3
 		sub_protocol==MJXQ
 			WLH08		0
 			X600		1
 			X800		2
 			H26D		3
+			E010		4
 		sub_protocol==FRSKYX
 			CH_16		0
 			CH_8		1
+		sub_protocol==HONTAI
+			FORMAT_HONTAI	0
+			FORMAT_JJRCX1	1
+			FORMAT_X5C1		2
    Power value => 0x80	0=High/1=Low
   Stream[3]   = option_protocol;
    option_protocol value is -127..127

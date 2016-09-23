@@ -5,7 +5,7 @@ based on arduino maple library
 */
 
 
-
+#ifdef STM32_board
 
 SPIClass SPI_2(2); //Create an instance of the SPI Class called SPI_2 that uses the 2nd SPI Port
 
@@ -17,16 +17,11 @@ void initSPI2() {
 
  SPI_2.setBitOrder(MSBFIRST); // Set the SPI_2 bit order
  SPI_2.setDataMode(SPI_MODE0); //Set the  SPI_2 data mode 0
- SPI_2.setClockDivider(SPI_CLOCK_DIV8);  //// Slow speed (36 / 8 = 4.5 MHz SPI_2 speed)
+ SPI_2.setClockDivider(SPI_CLOCK_DIV8);  //// speed (36 / 8 = 4.5 MHz SPI_2 speed)
 }
 
-
-
-#ifdef XMEGA
-#define XNOP() NOP()
-#else
-#define XNOP()
 #endif
+
 
 #if defined STM32_board
 	
@@ -83,14 +78,20 @@ void SPI_SET_UNIDIRECTIONAL()
 
 #else
 
+#ifdef XMEGA
+#define XNOP() NOP()
+#else
+#define XNOP()
+#endif
 void spi_write(uint8_t command)
 {
 	uint8_t n=8; 
 	SCK_off;//SCK start low
-	XNOP() ;
+	XNOP();
 	SDI_off;
-	XNOP() ;
-	while(n--) {
+	XNOP();
+	do
+	{
 		if(command&0x80)
 			SDI_on;
 		else 
@@ -100,10 +101,11 @@ void spi_write(uint8_t command)
 		NOP();
 		XNOP() ;
 		XNOP() ;
+		command = command << 1;		
 		SCK_off;
-		command = command << 1;
-		XNOP() ;
+                XNOP() ;
 	}
+	while(n--);
 	SDI_on;
 } 
    
@@ -128,22 +130,19 @@ uint8_t spi_Read(void) {
 
 uint8_t spi_read()
 {
-	uint8_t result;
-	uint8_t i;
-	result=0;
+	uint8_t result=0,i;
 	for(i=0;i<8;i++)
 	{                    
 		result<<=1;
 		if(SDO_1)  ///
 			result|=0x01;
 		SCK_on;
-		XNOP() ;
-		XNOP() ;
+		XNOP();
+		XNOP();
 		NOP();
 		SCK_off;
-		XNOP() ;
-		XNOP() ;
-		NOP();
+		XNOP();
+		XNOP();
 	}
 	return result;
 }
