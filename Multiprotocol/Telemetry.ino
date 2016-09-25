@@ -405,7 +405,7 @@ void TelemetryUpdate()
 			rssi=pktt[4] & 0x7F ;
 			else 
 			RxBt = (pktt[4]<<1) + 1 ;
-			if (pktt[6]<7)//fix dropping signal issue?
+			if (pktt[6]<=6)//fix dropping signal issue?
 			for (uint8_t i=0; i < pktt[6]; i++)
 			proces_sport_data(pktt[7+i]);
 			telemetry_link=0;
