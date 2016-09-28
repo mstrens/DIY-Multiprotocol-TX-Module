@@ -348,6 +348,8 @@ At the end of uploading remove the BOOT0 jumper.Start normally.
 
 ###Important:
 Flashing:
+Method1:
+
 For uploading already precompiled  binaries(.bin Release files ) there is a specialized software you need to install on your computer.Using the same USB-serial device set the BOOT0 jumper, follow the same  precautions regading voltage used and run the program.
 
 STM32 Flash loader demonstrator
@@ -356,6 +358,19 @@ http://www.st.com/content/st_com/en/products/development-tools/software-developm
 There are many tutorials on the net on how to use this program.Like this one.
 
 [here](http://www.scienceprog.com/flashing-programs-to-stm32-embedded-bootloader)
+
+Method2:
+
+There an utility on arduino folder......\hardware\Arduino_STM32\tools.The file is stm32flash.exe.From command prompt navigate to the folder and execute command:
+
+stm32flash -w Multiprotocol_STM32_1.X,X.bin YOUR-COM-PORT
+
+Use the multi current version(complete path to multi file) and your com port.
+
+You will find in the same folder stm32flash file for MACOSX and LINUX.
+
+.....\hardware\Arduino_STM32\tools\macosx\stm32flash
+......\hardware\Arduino_STM32\tools\linux\stm32flash
 
 
 ##Troubleshooting
