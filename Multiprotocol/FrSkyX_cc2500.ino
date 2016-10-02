@@ -306,7 +306,7 @@ uint16_t ReadFrSkyX()
 			return 3000;
 		case FRSKY_DATA4:
 			len = CC2500_ReadReg(CC2500_3B_RXBYTES | CC2500_READ_BURST) & 0x7F;
-			if(len>17)//
+			if(len>(0x0E+3))//
 			len=0;//no processing the frame.
 			if (len && (len<MAX_PKT))
 			{
