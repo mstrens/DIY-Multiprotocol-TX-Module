@@ -306,9 +306,7 @@ uint16_t ReadFrSkyX()
 			return 3000;
 		case FRSKY_DATA4:
 			len = CC2500_ReadReg(CC2500_3B_RXBYTES | CC2500_READ_BURST) & 0x7F;
-			if(len>(0x0E+3))//
-			len=0;//no processing the frame.
-			if (len && (len<MAX_PKT))
+			if (len && (len<0x0E+4))
 			{
 				counter=0;
 				CC2500_ReadData(pkt, len);
@@ -328,7 +326,7 @@ uint16_t ReadFrSkyX()
 					seq_last_rcvd = 8;
 				}
 				CC2500_Strobe(CC2500_SFRX);//flush the RXFIFO
-			}
+			}			
 			state = FRSKY_DATA1;
 			return 300;
 	}		
