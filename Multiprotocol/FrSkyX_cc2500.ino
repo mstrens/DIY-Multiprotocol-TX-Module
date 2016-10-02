@@ -310,6 +310,7 @@ uint16_t ReadFrSkyX()
 			len=0;//no processing the frame.
 			if (len && (len<MAX_PKT))
 			{
+				counter=0;
 				CC2500_ReadData(pkt, len);
 				#if defined TELEMETRY
 				frsky_check_telemetry(pkt,len);	//check if valid telemetry packets
@@ -325,7 +326,6 @@ uint16_t ReadFrSkyX()
 				{//~1sec
 					seq_last_sent = 0;
 					seq_last_rcvd = 8;
-					counter=0;
 				}
 				CC2500_Strobe(CC2500_SFRX);//flush the RXFIFO
 			}
