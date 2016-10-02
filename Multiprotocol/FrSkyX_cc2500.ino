@@ -325,6 +325,7 @@ uint16_t ReadFrSkyX()
 					seq_last_rcvd = 8;
 					counter=0;
 				}
+				CC2500_Strobe(CC2500_SFRX);//flush the RXFIFO
 			}
 			state = FRSKY_DATA1;
 			return 300;
