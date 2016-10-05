@@ -306,7 +306,7 @@ uint16_t ReadFrSkyX()
 			return 3000;
 		case FRSKY_DATA4:
 			len = CC2500_ReadReg(CC2500_3B_RXBYTES | CC2500_READ_BURST) & 0x7F;
-			if (len && len<=(0x0E+3))//Telemetry frame is 17
+			if (len && len<=17)//Telemetry frame is 17 bytes long
 			{
 				counter=0;
 				CC2500_ReadData(pkt, len);
