@@ -37,7 +37,8 @@ return SPI2_BASE->DR;
 }
 
 uint8_t spi_Read(){	
-uint8_t rx=0;
+uint8_t rx;
+cli();	//Fix Hubsan droputs??
 while(!(SPI2_BASE->SR & SPI_SR_TXE));
 while((SPI2_BASE->SR & SPI_SR_BSY));	
 //	
@@ -52,6 +53,7 @@ while(!(SPI2_BASE->SR& SPI_SR_RXNE));
 rx=SPI2_BASE->DR;
 SPI_SET_UNIDIRECTIONAL();
 SPI_ENABLE();
+sei();//fix Hubsan dropouts??
 return rx;
 }
 
