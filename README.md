@@ -375,11 +375,11 @@ You will find in the same folder stm32flash file for MACOSX and LINUX.
 
 ###Method 3.
 
-This method use USB connector(on the future board)on the maple clone board.
+This method use USB connector(on the future board or)on the maple clone board.
 Install first maple USB driver found in Arduino STM32 package
-in "..........\hardware\Arduino_STM32\drivers\win\ins tall_drivers.bat".
+folder "..........\hardware\Arduino_STM32\drivers\win\install_drivers.bat".
 run the batch file will install maple USB drivers.
-After with STM32 flash loader demonstrator and USB-TTL device install the STM32duino bootloader. from
+After with STM32 flash loader demonstrator and USB-TTL device flsh the STM32duino bootloader. from
 
 https://github.com/rogerclarkmelbour...M32F1/binaries
 
