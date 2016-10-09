@@ -185,6 +185,7 @@ uint8_t v_lipo;
 int16_t RSSI_dBm;
 uint8_t telemetry_link=0; 
 uint8_t telemetry_counter=0;
+uint8_t telemetry_lost=0;
 #endif 
 
 // Callback
