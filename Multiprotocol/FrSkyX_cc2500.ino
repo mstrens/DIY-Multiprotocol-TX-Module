@@ -324,6 +324,7 @@ uint16_t ReadFrSkyX()
 				{//~1sec
 					seq_last_sent = 0;
 					seq_last_rcvd = 8;
+					counter=0;
 				}
 				CC2500_Strobe(CC2500_SFRX);//flush the RXFIFO
 			}			
