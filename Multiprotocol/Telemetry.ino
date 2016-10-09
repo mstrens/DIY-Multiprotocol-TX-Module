@@ -93,6 +93,7 @@ void frsky_check_telemetry(uint8_t *pkt,uint8_t len)
 		for (uint8_t i=3;i<len;i++)
 		pktt[i]=pkt[i];				 
 		telemetry_link=1;
+		telemetry_lost=0;
 		if(pktt[6])
 		telemetry_counter=(telemetry_counter+1)%32;
 		//
@@ -299,7 +300,10 @@ void sportSendFrame()
 {
 	uint8_t i;
 	sport_counter = (sport_counter + 1) %36;
-	
+	if(telemetry_lost){
+	sportIdle();
+	return;
+	}
 	if(sport_counter<6)
 	{
 		frame[0] = 0x98;
