@@ -325,6 +325,7 @@ uint16_t ReadFrSkyX()
 					seq_last_sent = 0;
 					seq_last_rcvd = 8;
 					counter=0;
+					telemetry_lost=1;
 				}
 				CC2500_Strobe(CC2500_SFRX);//flush the RXFIFO
 			}			
