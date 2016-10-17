@@ -27,7 +27,10 @@
 #include <avr/pgmspace.h>
 
 #ifdef STM32_board
-//#undef __cplusplus
+extern "C" {
+void __irq_usart2(void);
+void __irq_usart3(void);
+}
 #include "Multiprotocol_STM32.h"
 #include <libmaple/usart.h>
 #include <libmaple/timer.h>
