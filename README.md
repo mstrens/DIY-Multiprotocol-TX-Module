@@ -294,10 +294,15 @@ You can 3D print your box (details [here](http://www.rcgroups.com/forums/showpos
 Multiprotocol source can be compiled using the Arduino IDE.This code is using maple library(libmaple) not CMSIS and STM32 Standard Peripheral Library.
 
 The currently supported Arduino version is [1.6.5](https://www.arduino.cc/download_handler.php?f=/arduino-1.6.5-windows.exe).
-You need to download and install aditionally [STM32 core](https://github.com/rogerclarkmelbourne/Arduino_STM32/archive/master.zip) ,Arduino_STM32 folder in ...../Arduino/hardware/ folder (note. if the hardware folder doesn't exist you will need to create it).
+
+- New update: 
+Now it compiles ok on arduino IDE version >1.6.5.Tested succesfully with version [1.6.12](https://www.arduino.cc/download_handler.php?f=/arduino-1.6.12-windows.exe).
+
+- You need to download and install aditionally [STM32 core](https://github.com/rogerclarkmelbourne/Arduino_STM32/archive/master.zip) ,in Arduino_STM32 folder in ...../Arduino/hardware/ folder (note. if the hardware folder doesn't exist you will need to create it).
 
 In order to compile suscesfully you need also to modify a maple library file.
-In ....\hardware\Arduino_STM32\STM32F1\cores\maple\libmaple\usart_f1.c
+
+- In ....\hardware\Arduino_STM32\STM32F1\cores\maple\libmaple\usart_f1.c
 Comment the 2 function as shown below.This is required to have acces to low level of USART intrerupt.
 
 //void __irq_usart2(void) {
