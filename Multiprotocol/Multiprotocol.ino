@@ -980,6 +980,8 @@ void Mprotocol_serial_init()
 	#if defined STM32_board
 	Serial1.begin(100000,SERIAL_8E2);//USART2
 	Serial2.begin(100000,SERIAL_8E2);//USART3 
+	//usart2_begin(100000,SERIAL_8E2);
+	//usart3_begin(100000,SERIAL_8E2);
 	USART2_BASE->CR1 |= USART_CR1_PCE_BIT;
 	USART3_BASE->CR1 &= ~ USART_CR1_RE;//disable 
 	USART2_BASE->CR1 &= ~ USART_CR1_TE;//disable transmit
@@ -1002,6 +1004,22 @@ void Mprotocol_serial_init()
 	#endif
 	#endif
 }
+/*
+void usart2_begin(uint32_t baud,uint32_t config ){
+	usart_init(USART2);//    
+    usart_config_gpios_async(USART2,GPIOA,PIN_MAP[PA3].gpio_bit,GPIOA,PIN_MAP[PA2].gpio_bit,config);
+	usart_set_baud_rate(USART2, STM32_PCLK1, baud);//
+	usart_enable(USART2);
+}
+
+void usart3_begin(uint32_t baud,uint32_t config ){
+	usart_init(USART3);//OK   
+    usart_config_gpios_async(USART3,GPIOB,PIN_MAP[PB11].gpio_bit,GPIOB,PIN_MAP[PB10].gpio_bit,config);
+	usart_set_baud_rate(USART3, STM32_PCLK1, baud);
+	usart_enable(USART3);
+}
+
+*/
 
 #if defined(TELEMETRY)
 void PPM_Telemetry_serial_init()
