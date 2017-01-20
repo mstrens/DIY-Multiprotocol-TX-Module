@@ -259,7 +259,14 @@ The new board was designed by M.Bloos and is  pinout compatible with previous bo
 
 Parts list [here](https://github.com/midelic/DIY-Multiprotocol-TX-Module/blob/multi-STM32/Multi_STM32_V0.7_t.txt)
 
-Boom list is attached at the top.
+![Screenshot](https://644db4de3505c40a0444-327723bce298e3ff5813fb42baeefbaa.ssl.cf1.rackcdn.com/f616d52dcdf8dedb7e24588bc3f7545a.png)
+![Screenshot](https://644db4de3505c40a0444-327723bce298e3ff5813fb42baeefbaa.ssl.cf1.rackcdn.com/0380209e772ab04b5c9d47f99689a752.png)
+
+Parts list [here](https://github.com/midelic/DIY-Multiprotocol-TX-Module/blob/multi-STM32/Multiprotocol_STM32_MB_1.0_t.txt)
+
+[OSH Park link](https://oshpark.com/shared_projects/GX51nEoH)
+
+All boom list are also attached at the top.
 
 ####Buy a 4 in 1 tuner to be used with new STM32 multimodule board
 
