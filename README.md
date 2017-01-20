@@ -293,10 +293,8 @@ You can 3D print your box (details [here](http://www.rcgroups.com/forums/showpos
 ###Toolchain
 Multiprotocol source can be compiled using the Arduino IDE.This code is using maple library(libmaple) not CMSIS and STM32 Standard Peripheral Library.
 
-The currently supported Arduino version is [1.6.5](https://www.arduino.cc/download_handler.php?f=/arduino-1.6.5-windows.exe).
-
 - New update: 
-Now it compiles ok on arduino IDE version >1.6.5.Tested succesfully with version [1.6.12](https://www.arduino.cc/download_handler.php?f=/arduino-1.6.12-windows.exe).
+Tested succesfully with version [1.6.12](https://www.arduino.cc/download_handler.php?f=/arduino-1.6.12-windows.exe).
 
 - You need to download and install aditionally [STM32 core](https://github.com/rogerclarkmelbourne/Arduino_STM32/archive/master.zip) ,in Arduino_STM32 folder in ...../Arduino/hardware/ folder (note. if the hardware folder doesn't exist you will need to create it).
 
@@ -389,6 +387,7 @@ After with STM32 flash loader demonstrator and USB-TTL device flsh the STM32duin
 https://github.com/rogerclarkmelbour...M32F1/binaries
 
 When in Arduino IDE under "Upload method" select STM32duino-bootloader.
+The com port will be set after uploading one simple sketch(blink).
 After that you can connect(com port) and and upload sketches normally in Arduino using USB port
 
 
