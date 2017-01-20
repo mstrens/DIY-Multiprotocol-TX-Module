@@ -259,6 +259,8 @@ The new board was designed by M.Bloos and is  pinout compatible with previous bo
 
 Parts list [here](https://github.com/midelic/DIY-Multiprotocol-TX-Module/blob/multi-STM32/Multi_STM32_V0.7_t.txt)
 
+###USB version
+
 ![Screenshot](https://644db4de3505c40a0444-327723bce298e3ff5813fb42baeefbaa.ssl.cf1.rackcdn.com/f616d52dcdf8dedb7e24588bc3f7545a.png)
 ![Screenshot](https://644db4de3505c40a0444-327723bce298e3ff5813fb42baeefbaa.ssl.cf1.rackcdn.com/0380209e772ab04b5c9d47f99689a752.png)
 
