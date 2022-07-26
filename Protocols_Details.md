@@ -76,11 +76,11 @@ CFlie|38|CFlie||||||||NRF24L01|
 [DM002](Protocols_Details.md#DM002---33)|33|||||||||NRF24L01|XN297
 [DSM](Protocols_Details.md#DSM---6)|6|DSM2_1F|DSM2_2F|DSMX_1F|DSMX_2F|AUTO|DSMR_1F|||CYRF6936|
 [DSM_RX](Protocols_Details.md#DSM_RX---70)|70|Multi|CPPM|||||||CYRF6936|
-[E010R5](Protocols_Details.md#E010R5---81)|81|||||||||CYRF6936/NRF24L01|RF2500
+[E010R5](Protocols_Details.md#E010R5---81)|81|||||||||CYRF6936|RF2500
 [E016H](Protocols_Details.md#E016H---85)|85|||||||||NRF24L01|XN297
 [E016HV2](Protocols_Details.md#E016HV2---80)|80|||||||||CC2500/NRF24L01|unknown
 [E01X](Protocols_Details.md#E01X---45)|45|E012|E015|||||||CYRF6936|HS6200
-[E129](Protocols_Details.md#E129---83)|83|||||||||CYRF6936/NRF24L01|RF2500
+[E129](Protocols_Details.md#E129---83)|83|E129|C186|||||||CYRF6936|RF2500
 [ESky](Protocols_Details.md#ESKY---16)|16|ESky|ET4|||||||NRF24L01|
 [ESky150](Protocols_Details.md#ESKY150---35)|35|||||||||NRF24L01|
 [ESky150V2](Protocols_Details.md#ESKY150V2---69)|69|||||||||CC2500|NRF51822
@@ -96,7 +96,7 @@ CFlie|38|CFlie||||||||NRF24L01|
 [FrskyX2](Protocols_Details.md#FRSKYX2---64)|64|CH_16|CH_8|EU_16|EU_8|Cloned|Cloned_8|||CC2500|
 [Frsky_RX](Protocols_Details.md#FRSKY_RX---55)|55|Multi|CloneTX|EraseTX|CPPM|||||CC2500|
 [Futaba/SFHSS](Protocols_Details.md#Futaba---21)|21|SFHSS||||||||CC2500|
-[FX816](Protocols_Details.md#FX816---58)|28|FX816|P38|||||||NRF24L01|
+[FX](Protocols_Details.md#FX---58)|28|816|620|||||||NRF24L01|
 [FY326](Protocols_Details.md#FY326---20)|20|FY326|FY319|||||||NRF24L01|
 [GD00X](Protocols_Details.md#GD00X---47)|47|GD_V1*|GD_V2*|||||||NRF24L01|XN297L
 [GW008](Protocols_Details.md#GW008---32)|32|||||||||NRF24L01|XN297
@@ -113,6 +113,7 @@ CFlie|38|CFlie||||||||NRF24L01|
 [KF606](Protocols_Details.md#KF606---49)|49|KF606|MIG320|||||||NRF24L01|XN297
 [KN](Protocols_Details.md#KN---9)|9|WLTOYS|FEILUN|||||||NRF24L01|
 [Kyosho](Protocols_Details.md#Kyosho---73)|73|FHSS|Hype|||||||A7105|
+[Kyosho2](Protocols_Details.md#Kyosho2---93)|93|KT-17||||||||NRF24L01|
 [LOLI](Protocols_Details.md#LOLI---82)|82|||||||||NRF24L01|
 [Losi](Protocols_Details.md#Losi---89)|89|||||||||CYRF6936|
 [MJXq](Protocols_Details.md#MJXQ---18)|18|WLH08|X600|X800|H26D|E010*|H26WH|PHOENIX*||NRF24L01|XN297
@@ -597,9 +598,8 @@ CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8|CH9
 A|E|T|R|ARM|FLIP|LED|HEADLESS|RTH
 
 ## E129 - *83*
-Models: Eachine E129/E130 and Twister Ninja 250
 
-Not supported by Atmega328p modules.
+**Not supported by Atmega328p modules.**
 
 CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8|CH9
 ---|---|---|---|---|---|---|---|---
@@ -610,6 +610,14 @@ Trims can be done to some extent on the AETR channels directly but if you push t
 Take off with a none spring throttle is easier by putting both sticks down outwards (like on the original radio) in Mode 1/2, not sure about other modes.
 
 Calib is the same as the original radio with both sticks down and to the left in Mode 1/2, not sure about other modes.
+
+### Sub_protocol E129 - *0*
+Models: Eachine E129/E130 and Twister Ninja 250
+
+### Sub_protocol C186 - *1*
+Models: C186/E120, C127/E110, K127
+
+The FC of the heli seems to store the trims Trim A/E/R=CH7..9. If you use these trims, make sure to center them after powering off the heli or they will be added to the previous trims and over correct.
 
 ## J6Pro - *22*
 
@@ -977,14 +985,16 @@ Compatible RXs: X6/X6F/X6FG
 Also called SFHSS depending on radio version.
 
 ### Sub_protocol SFHSS - *0*
-Models: Futaba SFHSS RXs and XK models.
+Models: Futaba SFHSS RXs and some XK models.
 
-Extended limits and failsafe supported
+Extended limits and failsafe supported.
 
 RX output will match the Futaba standard servo throw, mid point and the channel order AETR independently of the input configuration AETR, RETA... unless if on OpenTX 2.3.3+ you use the "Disable channel mapping" feature on the GUI.
 
 Option for this protocol corresponds to fine frequency tuning. This value is different for each Module and **must** be accurate otherwise the link will not be stable.
 Check the [Frequency Tuning page](/docs/Frequency_Tuning.md) to determine it.
+
+This protocol does not use bind on the TX side. The RX attaches to the first S-FHHSS TX around it when the bind button is pressed.
 
 CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
 ---|---|---|---|---|---|---|---
@@ -1120,7 +1130,7 @@ CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8|CH9
 A|E|T|R|FLIP||||HEADLESS
 
 ### Sub_protocol A180 - *5*
-Model: XK A180, F949S
+Model: XK A180, F949S, F959
 
 A180:
 CH1|CH2|CH3|CH4|CH5|CH6
@@ -1328,7 +1338,7 @@ Rate: -100% High, +100% Low
 Models: WLtoys V911S, XK A110
 
 ### Sub_protocol E119 - *1*
-Models: Eachine E119, JJRC W01-J3, XK A220 P-40, newer XK A800
+Models: Eachine E119, JJRC W01-J3, XK A220 P-40, XK A800 R2, F959S R2, A160 R2, A280
 
 CH1|CH2|CH3|CH4|CH5|CH6|CH7
 ---|---|---|---|---|---|---
@@ -1591,14 +1601,20 @@ A|E|T|R|FMODE|AUX6|AUX7
 
 FMODE and AUX7 have 4 positions: -100%..-50%=>0, -50%..5%=>1, 5%..50%=>2, 50%..100%=>3
 
-## FX816 - *58*
-Model: FEI XIONG FX816 P38
-
-Only 8 TX IDs available
+## FX - *58*
+FEI XIONG
 
 CH1|CH2|CH3|CH4
 ---|---|---|---
 A|-|T|-
+
+### Sub_protocol 816 - *0*
+Model: FX816 P38, B17
+
+Only 8 TX IDs available
+
+### Sub_protocol 620 - *1*
+Model: FX620 SU35
 
 ## FY326 - *20*
 
@@ -1715,6 +1731,13 @@ Model: JJRC345
 Model: DF-Models SkyTumbler
 
 RTH not supported
+
+## KYOSHO2 - *93*
+Model: TX KT-17, Minium Edge 540, Minium Citabria
+
+CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8|CH9|CH10
+---|---|---|---|---|---|---|---|---|----
+CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8|CH9|CH10
 
 ## LOLI - *82*
 LOLI3 receivers: https://github.com/wooddoor/Loli3
@@ -2042,6 +2065,21 @@ FCC, 8 channels
 CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
 ---|---|---|---|---|---|---|---
 CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
+
+# SX1280 RF Module
+
+## MILO Protocol   *128*
+-use FrSky sport telemetry 
+FCC 16 channels
+### Sub_protocol M16 - *0*
+16 channels in alternate frames
+### Sub_protocol M16-8CH - *1*
+8 channels 
+### Sub_protocol WIFI-TX - *2*
+put TX in wifi mode for flshing TX module firmware OTA
+### Sub_protocol WIFI-TX - *3*
+put RX in wifi mode for flashing RX firmware OTA
+
 
 # OpenLRS module
 

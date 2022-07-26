@@ -55,7 +55,7 @@
 55,Frsky_RX,Multi,CloneTX,EraseTX,CPPM
 56,AFHDS2A_RX,Multi,CPPM
 57,HoTT,Sync,No_Sync
-58,FX816,P38
+58,FX,816,620
 59,Bayang_RX,Multi,CPPM
 60,Pelikan,Pro,Lite,SCX24
 61,Tiger
@@ -80,7 +80,7 @@
 80,E016H,E016Hv2
 81,E010r5
 82,LOLI
-83,E129
+83,E129,E129,C186
 84,JOYSWAY
 85,E016H
 87,IKEA
@@ -89,3 +89,4 @@
 90,MouldKg,Analog,Digit
 91,Xerall
 92,MT99xx,PA18
+93,Kyosho2,KT-17
