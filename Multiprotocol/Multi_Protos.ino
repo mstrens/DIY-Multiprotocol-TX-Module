@@ -164,7 +164,7 @@ const char STR_SUBTYPE_FUTABA[] =     "\x05""SFHSS";
 const char STR_SUBTYPE_JJRC345[] =    "\x08""JJRC345\0""SkyTmblr";
 const char STR_SUBTYPE_MOULKG[] =     "\x06""Analog""Digit\0";
 const char STR_SUBTYPE_KF606[] =      "\x06""KF606\0""MIG320";
-const char STR_SUBTYPE_MILO[] =      "\x08""M16\0   ""M16_8ch""WiFi-TX""WIFI-RX";
+const char STR_SUBTYPE_MILO[] =      "\x07""M16\0   ""M16_8ch""WiFi-TX""WIFI-RX";
 
 #define NO_SUBTYPE		nullptr
 
