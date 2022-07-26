@@ -2076,9 +2076,13 @@ FCC 16 channels
 ### Sub_protocol M16-8CH - *1*
 8 channels 
 ### Sub_protocol WIFI-TX - *2*
-put TX in wifi mode for flshing TX module firmware OTA
-### Sub_protocol WIFI-TX - *3*
-put RX in wifi mode for flashing RX firmware OTA
+put TX in wifi mode for flashing TX module firmware OTA
+Choose "WiFI-TX" from TX handset protocol menu.
+Tx module  will trigger an WiFi AP for connection to a config and web portal for uploading TX firmware OTA
+### Sub_protocol WIFI-RX - *3*
+put TX in wifi mode for flashing RX firmware OTA
+Choose "WiFI-RX" from TX handset protocol menu 
+Rx will trigger an WiFi AP for connection to a config and web portal for uploading RX firmware OTA
 
 
 # OpenLRS module
