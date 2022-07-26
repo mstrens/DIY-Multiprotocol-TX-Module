@@ -2067,15 +2067,16 @@ CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
 CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
 
 # SX1280 RF Module
-## MILO Protocol
+
+## MILO Protocol   *128*
 -use FrSky sport telemetry 
 FCC 16 channels
 ### Sub_protocol M16 - *0*
-16 channels alternate frames
+16 channels in alternate frames
 ### Sub_protocol M16-8CH - *1*
 8 channels 
 ### Sub_protocol WIFI-TX - *2*
-put TX in wifi mode fro flshing TX module firmware OTA
+put TX in wifi mode for flshing TX module firmware OTA
 ### Sub_protocol WIFI-TX - *3*
 put RX in wifi mode for flashing RX firmware OTA
 
