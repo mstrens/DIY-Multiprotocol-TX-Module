@@ -122,7 +122,7 @@ enum PROTOCOLS
 	PROTO_MT99XX2	= 92,	// =>NRF24L01, extension of MT99XX protocol
 	PROTO_NANORF	= 126,	// =>NRF24L01
 	PROTO_TEST		= 127,	// =>CC2500
-	PROTO_MILO    = 128 //SX1280
+	PROTO_MILO       = 128 //SX1280
 };
 
 enum Flysky
@@ -464,8 +464,9 @@ enum KF606
 enum MILO
 {
 	MCH_16		= 0,
-	MCH_8		= 1,
-    WIFI         =2,
+	MCH_8		    = 1,
+    WIFI_TX       = 2,
+	WIFI_RX      = 3,
 };
 
 
