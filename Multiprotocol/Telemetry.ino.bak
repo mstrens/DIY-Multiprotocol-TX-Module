@@ -43,15 +43,13 @@ uint8_t RetrySequence ;
 		boolean valid;
 		uint8_t count;
 		#if defined(MILO_SX1280_INO)
-		uint8_t payload[15];
+		uint8_t payload[11];
 		#else
 		uint8_t payload[6];
 		#endif
 	} ;
 
 	// Store for FrskyX telemetry
-
-
 	struct t_FrSkyX_RX_Frame FrSkyX_RX_Frames[4] ;
 	uint8_t FrSkyX_RX_NextFrame=0;
 #endif // SPORT_TELEMETRY
@@ -102,7 +100,7 @@ static void telemetry_set_input_sync(uint16_t refreshRate)
 	{
 		cli();										// Disable global int due to RW of 16 bits registers
 		#ifdef ESP32_PLATFORM
-		TCNT1 = timerReadMicros(timer);
+		uint16_t TCNT1 = timerReadMicros(timer);
 		#endif
 		inputDelay = TCNT1;
 		sei();										// Enable global int
@@ -350,9 +348,7 @@ void frskySendStuffed()
 
 bool frsky_process_telemetry(uint8_t *buffer,uint8_t len)
 {
-	
-	#if not defined MILO_SX1280_INO
-	if(protocol != PROTO_FRSKY_R9)
+	if(protocol!=PROTO_FRSKY_R9)
 	{
 		if(buffer[1] != rx_tx_addr[3] || buffer[2] != rx_tx_addr[2] || len != buffer[0] + 3 )
 			return false;										// Bad address or length...
@@ -363,9 +359,7 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len)
 		else
 			TX_RSSI += 128;
 	}
-	#endif
 	telemetry_link|=1;								// Telemetry data is available
-
 
 #if defined FRSKYD_CC2500_INO
 	if (protocol==PROTO_FRSKYD)
@@ -396,15 +390,16 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len)
 		else
 			telemetry_in_buffer[6]=0; 				// Discard packet
 	}
-#endif
+	
 #if defined (MILO_SX1280_INO)
 	/*
 
-TX uplink telemetry( frame can be sent separate )- frame rate 7ms
+
+TX uplink telemetry( frame can be sent separate )- frame rate 6.7ms
 0. frame type identification (3bits) |telemetry down link frame counter(sequence) 5 bits(0-31)
 1.txid1
 2.txid2
-3. No. of bytes in sport frame( 4bits)|telemetry uplink counter(4 bits)
+3. no. of bytes in sport frame(on max 4bits)|telemetry uplink counter(4 bits)
 4.Sport data byte1
 5.Sport data byte 2
 6.Sport data byte 3
@@ -415,83 +410,83 @@ TX uplink telemetry( frame can be sent separate )- frame rate 7ms
 11.SPort data byte 8
 12.SPort data byte 9
 13.SPort data byte 10
-14.SPort data byte 11 --| 15bytes payload;11 bytes sport telemetry
-*/
-	
-	if (protocol== PROTO_MILO)
-	{
-/*
-RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7ms,
+14.SPort data byte 11 ;15bytes payload/11 bytes sport telemetry
+
+15.CRC1-HW CRC
+16.CRC2
+
+
+RX downlink telemetry frame sent separate at a fixed rate of 1:3.)-frame rate 6.7ms,
 
 0.txid1
 1.txid2
-2.RSSI/LQI/SNR/(RxV??) alternate every ~80 ms update for each data
-3.telemetry frame counter(5bits)|3 bits pass(for selecting link data)
-4.No. of bytes in sport frame(4 bits)|telemetry uplink counter(4 bits)
+2.RSSI/LQI/SNR/RXV alternate every ~80 ms update for each data
+3.telemetry frame counter(5bits).|free 3 bits
+4.No, of bytes in sport frame(4 bits)|telemetry uplink counter(4 bits)
 5.Sport data byte1
 6.Sport data byte2
 7.Sport data byte3
 8.Sport data byte4
 9.Sport data byte5
 10.Sport data byte6
-11.Sport data byte7
-12.Sport data byte8
+11.Sport data byte7;
+12.Sport data byte8;
 13.Sport data byte9
-14.Sport data byte10 --| 15 bytes payload ;10bytes sport telemetry
+14.Sport data byte10; 15 bytes payload
 
-*/
-                uint8_t nrbytes = 0;
-	            TelemetryId = (buffer[4]>>4)&0XFF ;//telemetry uplink counter			
-			    if ((buffer[3] & 0x1F ) == (telemetry_counter & 0x1F))//Check incoming telemetry sequence
-			    {//Sequence is ok
-				telemetry_lost = 0;
-				//if ( ( telemetry_counter & 0x1F ) != RetrySequence )
-				telemetry_counter =  (telemetry_counter+1)&0x1F ;
-			
-				if((buffer[3]>>5)==0)
-				{
-			    MiLoStats.uplink_RSSI_1 = buffer[2]; ;
-				TX_RSSI = MiLoStats.uplink_RSSI_1;
-				if(LastPacketRSSI < 0)
-				MiLoStats.downlink_RSSI = -LastPacketRSSI;
-				RX_RSSI = MiLoStats.downlink_RSSI;
+15.HW CRC1
+16.HWCRC2
+
+	*/
+	
+	if (protocol== MiLo_SX1280)
+	{
+		
+		//Save current buffer
+		for (uint8_t i = 3;i< len;i++)
+			FrSkyX_RX_Frames[i] = buffer[i];	// Buffer telemetry values to be sent
+	          TelemetryId = (FrSkyX_RX_Frames[4]>>4)&0XFF ;
+			  uint8_t nrbytes = FrSkyX_RX_Frames[4] & 0x0F;
+		//Check incoming telemetry sequence
+		if(nrbytes > 0 && nrbytes <= 10)//nr bytes on telemetry frame
+		{ //Telemetry length ok
+			if (( FrSkyX_RX_Frames[3] & 0x1F ) == (telemetry_counter & 0x1F) )
+			{//Sequence is ok
+					//if ( ( telemetry_counter & 0x1F ) != RetrySequence )
+				//telemetry_counter = ( (telemetry_counter+1)%32 ) | topBit;	// Request next telemetry frame
+				telemetry_counter =  (telemetry_counter+1)%32 ;
+				if((packet[3]>>5)==0){
+			    MiloStats.uplink_RSSI1 = FrSkyX_RX_Frames[2]; ;
+				TX_RSSI = MiloStats.MiloStats.uplink_RSSI1;
+				if(LastPacketRSSI< 0)
+				MiloStats.downlink_RSSI = -LastPacketRSSI;
+				RX_RSSI = MiloStats.downlink_RSSI;
 				}
 				else
-				if((buffer[3]>>5)==1){
-				MiLoStats.uplink_SNR = buffer[2];
-				TX_SNR = buffer[2];
+				if((packet[3]>>5)==1){
+				MiloStats.uplink_SNR = FrSkyX_RX_Frames[2];
+				TX_SNR = FrSkyX_RX_Frames[2];
 				RX_SNR = LastPacketSNR;
 				}
 				else
-				if((buffer[3]>>5)==2){
-				MiLoStats.uplink_Link_quality = buffer[2];
-				TX_LQI = buffer[2];	
-                 }
-				 nrbytes = buffer[4] & 0x0F;
-				
-		        if(nrbytes > 0 && nrbytes <= 10)//nr bytes on telemetry frame
-		       { //Telemetry length ok
-			    for (uint8_t i = 0; i< nrbytes;i++)
-				{
-			   FrSkyX_RX_Frames->payload[i] = buffer[i+5];	// Buffer telemetry values to be sent 
-			  proces_sport_data(FrSkyX_RX_Frames->payload[i]) ;
-				}
-			 }
-			 else
-			 buffer[4] &= 0xF0; 	// Discard packet
+				if((packet[3]>>5)==2){
+				MiloStats.uplink_Link_quality = FrSkyX_RX_Frames[2];
+				TX_LQI = FrSkyX_RX_Frames[2];	
+                 }				
 			}
 			else
 			{//Incorrect sequence
-				RetrySequence = buffer[3] & 0x1F ;//sequence			
-				buffer[4] &= 0xF0  ;			// Discard current packet and wait for retransmit
+				RetrySequence = FrSkyX_RX_Frames[3] & 0x1F ;//sequence			
+				FrSkyX_RX_Frames[4] = 0;			// Discard current packet and wait for retransmit
 			}
-		   sportSendFrame();
-		   telemetry_link = 0;
+		}
+		else
+			FrSkyX_RX_Frames[4] = 0; 	// Discard packet
 	}
 	#endif
 	
 	
-
+#endif
 
 #if defined SPORT_TELEMETRY && (defined FRSKYX_CC2500_INO || defined FRSKYR9_SX1276_INO)
 	if (protocol==PROTO_FRSKYX||protocol==PROTO_FRSKYX2)
@@ -608,17 +603,17 @@ RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7m
 
 void init_frskyd_link_telemetry()
 {
-	telemetry_link = 0;
-	telemetry_counter = 0;
-	telemetry_lost = 1;
-	v_lipo1 = 0;
-	v_lipo2 = 0;
-	RX_RSSI = 0;
-	TX_RSSI = 0;
-	RX_LQI = 0;
-	TX_LQI = 0;
+	telemetry_link=0;
+	telemetry_counter=0;
+	telemetry_lost=1;
+	v_lipo1=0;
+	v_lipo2=0;
+	RX_RSSI=0;
+	TX_RSSI=0;
+	RX_LQI=0;
+	TX_LQI=0;
 	#if defined HUB_TELEMETRY
-	FrSkyD_User_Frame_Start = FrSkyD_User_Frame_End = 0;
+		FrSkyD_User_Frame_Start=FrSkyD_User_Frame_End=0;
 	#endif
 }
 
@@ -659,21 +654,21 @@ void frsky_user_frame()
 		frame[0] = 0xFD;				// user frame
 		if(telemetry_in_buffer[6]>USER_MAX_BYTES)
 		{
-			frame[1] = USER_MAX_BYTES;	// packet size
-			telemetry_in_buffer[6] -= USER_MAX_BYTES;
+			frame[1]=USER_MAX_BYTES;	// packet size
+			telemetry_in_buffer[6]-=USER_MAX_BYTES;
 			telemetry_link |= 2 ;			// 2 packets need to be sent
 		}
 		else
 		{
-			frame[1] = telemetry_in_buffer[6];			// packet size
+			frame[1]=telemetry_in_buffer[6];			// packet size
 			telemetry_link &= ~2;			// only 1 packet or processing second packet
 		}
 		frame[2] = telemetry_in_buffer[7];
 		for(uint8_t i=0;i<USER_MAX_BYTES;i++)
-			frame[i+3] = telemetry_in_buffer[i+8];
+			frame[i+3]=telemetry_in_buffer[i+8];
 		if(telemetry_link & 2)				// prepare the content of second packet
 			for(uint8_t i=8;i<USER_MAX_BYTES+8;i++)
-				telemetry_in_buffer[i] = telemetry_in_buffer[i+USER_MAX_BYTES];
+				telemetry_in_buffer[i]=telemetry_in_buffer[i+USER_MAX_BYTES];
 		#if defined MULTI_TELEMETRY
 			multi_send_frskyhub();
 		#else
@@ -787,10 +782,10 @@ static void __attribute__((unused)) frsky_check_user_frame()
 0x06	0x06	0x06	0x06	0x06
 
 0x7E	0x00	0x03	0x7E	0x00
-0x1A	0x00	0xF1	    0x1A    0x00
+0x1A	0x00	0xF1	0x1A	0x00
 0x10	0x00	0xD7	0x10	0x00
 0x03	0x7E	0x00	0x03	0x7E
-0xF1	    0x1A    0x00	0xF1	    0x1A
+0xF1	0x1A	0x00	0xF1	0x1A
 0xD7	0x10	0x00	0xD7	0x10
 
 0xE1	0x1C	0xD0	0xEE	0x33
@@ -871,34 +866,18 @@ void sportSendFrame()
 	{
 		frame[0] = 0x98;
 		frame[1] = 0x10;
-		for (i = 5;i<8;i++)
+		for (i=5;i<8;i++)
 			frame[i]=0;
 	}
 	switch (sport_counter)
 	{
-		case 0:	
-		    #ifdef MILO_SX1280_INO
-			static bool pass = false;
-			if( pass){
-			frame[2] = 0x07;
-			frame[3] = 0xf1;//sensor TX_SNR custom	
-			frame[4] = TX_SNR; 
-			}
-			else{
-			frame[2] = 0x08;
-			frame[3] = 0xf1;//sensor RX SNR custom			
-			frame[4] = RX_SNR;
-			}
-			pass = !pass;
-			#else
+		case 0:
 			frame[2] = 0x05;
-			frame[3] = 0xf1;			
-			frame[4] = 0x02; //dummy values if swr 02230f00
+			frame[3] = 0xf1;
+			frame[4] = 0x02; //dummy values if swr 20230f00
 			frame[5] = 0x23;
 			frame[6] = 0x0F;
-			#endif
 			break;
-			
 		case 2: // RSSI
 			frame[2] = 0x01;
 			frame[3] = 0xf1;
@@ -915,8 +894,8 @@ void sportSendFrame()
 		default:
 			if(Sport_Data)
 			{	
-				for (i = 0;i<FRSKY_SPORT_PACKET_SIZE;i++)
-					frame[i] = pktx1[i];
+				for (i=0;i<FRSKY_SPORT_PACKET_SIZE;i++)
+					frame[i]=pktx1[i];
 				Sport_Data -- ;
 				if ( Sport_Data )
 				{
@@ -1040,7 +1019,7 @@ void TelemetryUpdate()
 		#endif
 	#endif
 	#if defined SPORT_TELEMETRY
-if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9 ) && telemetry_link 
+		if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9) && telemetry_link 
 		#ifdef TELEMETRY_FRSKYX_TO_FRSKYD
 			&& mode_select==MODE_SERIAL
 		#endif
@@ -1162,7 +1141,7 @@ if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9
 	#ifdef ESP32_PLATFORM
 	void Serial_write(uint8_t data)
 	{
-    Serial_2.write(data);
+    Serial2.write(data);
 	}	
 	#else
 	void Serial_write(uint8_t data)
@@ -1242,23 +1221,20 @@ if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9
 		#else
 			(void)speed;
 		#endif
-		#ifndef ESP32_PLATFORM
 		#ifndef ORANGE_TX
 			#ifndef STM32_BOARD
 				UCSR0B |= (1<<TXEN0);//tx enable
 			#endif
 		#endif
-		#endif
 	}
 
-#ifndef ESP32_PLATFORM
 	//Serial TX
 	#ifdef ORANGE_TX
 		ISR(USARTC0_DRE_vect)
 	#else
 		#ifdef STM32_BOARD
-			void __irq_usart3()
-		#else	
+			void __irq_usart3()			
+		#else
 			ISR(USART_UDRE_vect)
 		#endif
 	#endif
@@ -1272,7 +1248,8 @@ if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9
 					if(++tx_tail>=TXBUFFER_SIZE)//head 
 						tx_tail=0;
 					#ifdef STM32_BOARD	
-						USART3_BASE->DR=tx_buff[tx_tail];//clears TXE bit
+						USART3_BASE->DR=tx_buff[tx_tail];//clears TXE bit				
+					#else
 						UDR0=tx_buff[tx_tail];
 					#endif
 				}
@@ -1284,26 +1261,6 @@ if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9
 			}
 		#endif		
 	}
-#endif
-	
-#ifdef ESP32_PLATFORM
-void ICACHE_RAM_ATTR  callSportSerial()
-{
-if(tx_head != tx_tail)
-{
-for (uint8_t i = 0;i <= TXBUFFER_SIZE;i++)
-{
-if(++tx_tail >= TXBUFFER_SIZE)//head{ 
-tx_tail = 0;
-
-Serial_write(tx_buff[tx_tail]);
-
-if (tx_tail == tx_head)
-break;
-}
-}
-}
-#endif	
 #else	//BASH_SERIAL
 // Routines for bit-bashed serial output
 

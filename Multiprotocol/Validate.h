@@ -2,7 +2,7 @@
 #if defined (STM32_BOARD) && defined (ORANGE_TX)
 	#error You must comment the board type STM32_BOARD in _Config.h to compile ORANGE_TX
 #endif
-#if not defined (ORANGE_TX) && not defined (STM32_BOARD)
+#if not defined (ORANGE_TX) && not defined (STM32_BOARD) && not defined (ESP32_PLATFORM)
 	//Atmega328p
 	#if not defined(ARDUINO_AVR_PRO) && not defined(ARDUINO_MULTI_NO_BOOT) && not defined(ARDUINO_MULTI_FLASH_FROM_TX) && not defined(ARDUINO_AVR_MINI) && not defined(ARDUINO_AVR_NANO) && not defined(ARDUINO_AVR_DUEMILANOVE)
 		#error You must select one of these boards: "Multi 4-in-1", "Arduino Pro or Pro Mini" or "Arduino Mini"
@@ -11,7 +11,7 @@
 		#error You must select the processor type "ATmega328(5V, 16MHz)"
 	#endif
 #endif
-#if defined (STM32_BOARD) && not defined (ORANGE_TX)
+#if defined (STM32_BOARD) && not defined (ORANGE_TX) && not defined (ESP32_PLATFORM)
 	//STM32
 	#if not defined(ARDUINO_GENERIC_STM32F103C) && not defined(ARDUINO_MULTI_STM32_FLASH_FROM_TX) && not defined(ARDUINO_MULTI_STM32_NO_BOOT) && not defined(ARDUINO_MULTI_STM32_WITH_BOOT)
 		#error You must select one of these boards: "Multi 4-in-1 (STM32F103CB)" or "Generic STM32F103C series"
@@ -442,7 +442,7 @@
 		#undef 	HITEC_HUB_TELEMETRY
 		#undef 	HITEC_FW_TELEMETRY
 	#endif
-	#if not defined(FRSKYX_CC2500_INO) && not defined(FRSKYR9_SX1276_INO)
+	#if not defined(FRSKYX_CC2500_INO) && not defined(FRSKYR9_SX1276_INO) && not defined (MILO_SX1280_INO)
 		#undef SPORT_TELEMETRY
 		#undef SPORT_SEND
 	#endif
@@ -488,7 +488,7 @@
 	#define SPORT_SEND
 #endif
 
-#if not defined(STM32_BOARD)
+#if not defined(STM32_BOARD) && not defined (ESP32_PLATFORM)
 	#undef MULTI_SYNC
 #endif
 

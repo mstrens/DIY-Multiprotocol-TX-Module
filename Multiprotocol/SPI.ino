@@ -95,7 +95,7 @@ void SPI_SET_UNIDIRECTIONAL()
 	SPI2_BASE->CR1 &= ~SPI_CR1_BIDIMODE;
 }
 
-#else
+#elif not defined ESP32_PLATFORM
 
 #ifdef ORANGE_TX
 	#define XNOP() NOP()
@@ -168,3 +168,23 @@ uint8_t SPI_SDI_Read(void)
 #endif
 
 #endif//STM32_BOARD
+
+#ifdef ESP32_PLATFORM
+void initSPI()
+{
+    SPI.begin(SX1280_SCK_pin, SX1280_MISO_pin, SX1280_MOSI_pin, SX1280_CSN_pin); // sck, miso, mosi, ss (ss can be any GPIO)
+    gpio_pullup_en((gpio_num_t)SX1280_MISO_pin);
+    SPI.setFrequency(10000000);
+}
+
+void SPI_Write(uint8_t command)
+{	
+SPI.transfer(command);
+}
+
+uint8_t SPI_Read(void)
+{	
+return SPI.transfer(0x00);	
+}
+
+#endif

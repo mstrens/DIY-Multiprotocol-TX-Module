@@ -387,19 +387,25 @@ void Frsky_init_clone(void)
 	}
 #endif
 
-#if defined(FRSKYX_CC2500_INO) || defined(FRSKYR9_SX1276_INO)
-	uint8_t FrSkyX_TX_Seq, FrSkyX_TX_IN_Seq;
-	uint8_t FrSkyX_RX_Seq ;
-
 	#ifdef SPORT_SEND
 		struct t_FrSkyX_TX_Frame
 		{
 			uint8_t count;
+			#ifdef MILO_SX1280_INO
+			uint8_t payload[11];
+			#else
 			uint8_t payload[8];
+			#endif
 		} ;
 		// Store FrskyX telemetry
+		
 		struct t_FrSkyX_TX_Frame FrSkyX_TX_Frames[4] ;
+		
 	#endif
+
+#if defined(FRSKYX_CC2500_INO) || defined(FRSKYR9_SX1276_INO) 
+	uint8_t FrSkyX_TX_Seq, FrSkyX_TX_IN_Seq;
+	uint8_t FrSkyX_RX_Seq ;
 	
 	static void __attribute__((unused)) FrSkyX_seq_sport(uint8_t start, uint8_t end)
 	{

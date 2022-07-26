@@ -13,7 +13,7 @@
 //*******************
 //***   Pinouts   ***
 //*******************
-#ifndef STM32_BOARD
+#if not defined STM32_BOARD && not defined ESP32_PLATFORM
 	// TX
 	#define SERIAL_TX_pin	1								//PD1
 	#define SERIAL_TX_port	PORTD
@@ -211,7 +211,7 @@
 		#define BIND_SET_PULLUP		BIND_port |= _BV(BIND_pin)
 		#define IS_BIND_BUTTON_on	( (BIND_ipr & _BV(BIND_pin)) == 0x00 )
 	#endif
-#else //STM32_BOARD
+#elif defined (STM32_BOARD) //STM32_BOARD
 	#define	BIND_pin		PA0
 	#define	LED_pin			PA1
 	#define	LED2_pin		PA2
@@ -329,9 +329,116 @@
 		#define	IS_DIO0_off		( digitalRead(SX1276_DIO0_pin)==LOW )
 	#endif
 	
-	#define	cli() 			noInterrupts()
-	#define	sei() 			interrupts()
-	#define	delayMilliseconds(x) delay(x)
+#elif defined ESP32_PLATFORM //ESP32/ESP8266
+
+	#define	PE1_pin			32								//PE1
+	#define	PE2_pin			33								//PE2
+	//CS pins
+	#define	CC25_CSN_pin	  22								//CC2500
+	#define	NRF_CSN_pin	  16								//NRF24L01
+	#define	CYRF_RST_pin	  14								//CYRF RESET
+	#define	A7105_CSN_pin	12								//A7105
+	#define	CYRF_CSN_pin	    17							//CYRF CSN
+	#define    SPI_CSN_pin	  2
+	//SPI pins	
+	#define	SCK_pin			18							//SCK
+	#define	SDO_pin			19							//MISO
+	#define	SDI_pin			23							//MOSI
+	//
+
+	//
+	#define	PE1_on  		   digitalWrite(PE1_pin,HIGH)
+	#define	PE1_off		 	digitalWrite(PE1_pin,LOW)
+	//
+	#define	PE2_on  		digitalWrite(PE2_pin,HIGH)
+	#define	PE2_off 		digitalWrite(PE2_pin,LOW)
+    #define	A7105_CSN_on	digitalWrite(A7105_CSN_pin,HIGH)
+	#define	A7105_CSN_off	digitalWrite(A7105_CSN_pin,LOW)
+	
+	#define	CC25_CSN_on		digitalWrite(CC25_CSN_pin,HIGH)
+	#define	CC25_CSN_off	digitalWrite(CC25_CSN_pin,LOW)
+
+	#define	NRF_CSN_on		digitalWrite(NRF_CSN_pin,HIGH)
+	#define	NRF_CSN_off		digitalWrite(NRF_CSN_pin,LOW)
+
+	#define	CYRF_CSN_on		digitalWrite(CYRF_CSN_pin,HIGH)
+	#define	CYRF_CSN_off	digitalWrite(CYRF_CSN_pin,LOW)
+
+	#define	SPI_CSN_on		digitalWrite(SPI_CSN_pin,HIGH)
+	#define	SPI_CSN_off		digitalWrite(SPI_CSN_pin,LOW)
+
+	#define	CYRF_RST_HI		digitalWrite(CYRF_RST_pin,HIGH)	//reset cyrf
+	#define	CYRF_RST_LO		digitalWrite(CYRF_RST_pin,LOW)	//
+	
+	
+
+#define	BIND_pin		            0
+#ifdef BETAFPV_500
+#define	LED_pin		            16
+#else
+#define	LED_pin		            15
+#endif
+#define	SX1280_RST_pin	  14	
+#define	SX1280_BUSY_pin  21
+#define	SX1280_DIO1_pin   4
+
+
+
+#define SX1280_TXEN_pin   26
+#define SX1280_RXEN_pin   27
+
+#define SX1280_CSN_pin     5
+#define SX1280_MOSI_pin   23
+#define SX1280_MISO_pin    19
+#define SX1280_SCK_pin      18
+
+#define SX1280_FAN_EN_pin          17
+
+#define SX1280_RCSIGNAL_RX_pin 13 //SPORT usart tx to 5-th pin of I/O connector
+#define SX1280_RCSIGNAL_TX_pin 13
+#define SX1280_RX_pin                   25  //SERIAL CHANNELS 1-st pin of I/O connector
+
+#define BIND_SET_INPUT		pinMode(BIND_pin,INPUT)
+#define BIND_SET_PULLUP		digitalWrite(BIND_pin,HIGH)	
+#define BIND_SET_OUTPUT		pinMode(BIND_pin,OUTPUT)
+#define IS_BIND_BUTTON_on	(digitalRead(BIND_pin)==LOW)
+
+#define	IS_SX1280_DIO1_on		( digitalRead(SX1280_DIO1_pin)==HIGH )
+#define	IS_SX1280_DIO1_off		( digitalRead(SX1280_DIO1_pin)==LOW )
+#define	IS_SX1280_BUSY_on		( digitalRead(SX1280_BUSY_pin)==HIGH )
+#define	IS_SX1280_BUSY_off		( digitalRead(SX1280_BUSY_pin)==LOW)
+#define	IS_SX1280_FAN_off        ( digitalRead(SX1280_FAN_EN_pin)==LOW)
+#define	IS_SX1280_FAN_on        ( digitalRead(SX1280_FAN_EN_pin)==HIGH )
+
+
+#define	SX1280_RST_on	           digitalWrite(SX1280_RST_pin,HIGH)
+#define	SX1280_RST_off	           digitalWrite(SX1280_RST_pin,LOW)
+#define	SX1280_TXEN_on	       digitalWrite(SX1280_TXEN_pin,HIGH)
+#define	SX1280_RXEN_on	       digitalWrite(SX1280_RXEN_pin,HIGH)
+#define	SX1280_TXEN_off	       digitalWrite(SX1280_TXEN_pin,LOW)
+#define	SX1280_RXEN_off	       digitalWrite(SX1280_RXEN_pin,LOW)
+
+
+#define SX1280_CSN_on            digitalWrite(SX1280_CSN_pin,HIGH)
+#define SX1280_CSN_off            digitalWrite(SX1280_CSN_pin,LOW)
+
+#define SX1280_FAN_EN_on       digitalWrite(SX1280_FAN_EN_pin,HIGH)
+#define SX1280_FAN_EN_off       digitalWrite(SX1280_FAN_EN_pin,HIGH)
+
+#define	IS_LED_on		( digitalRead(LED_pin)==HIGH)
+#define	LED_on			               digitalWrite(LED_pin,HIGH)
+#define	LED_off			               digitalWrite(LED_pin,LOW)
+#define	LED_toggle		           digitalWrite(LED_pin ,!digitalRead(LED_pin))
+#define	LED_output		            pinMode(LED_pin,OUTPUT)
+
+#define USE_SX1280_DCDC
+#define Regulatory_Domain_ISM_2400 1
+
+#ifndef ESP32_PLATFORM
+#define	cli() 			noInterrupts()
+#define	sei() 			interrupts()
+#endif
+#define	delayMilliseconds(x) delay(x)
 #endif
 
 //*******************
@@ -370,10 +477,14 @@
 //*******************
 //***    EEPROM   ***
 //*******************
-#ifdef STM32_BOARD
+#if defined  STM32_BOARD 
 	#define EE_ADDR uint16
 	#define eeprom_write_byte EEPROM.write
 	#define eeprom_read_byte EEPROM.read
+#elif defined ESP32_PLATFORM
+#define EE_ADDR  uint32_t
+#define eeprom_write_byte EEPROM.write
+#define eeprom_read_byte EEPROM.read
 #else
 	#define EE_ADDR uint8_t*
 #endif

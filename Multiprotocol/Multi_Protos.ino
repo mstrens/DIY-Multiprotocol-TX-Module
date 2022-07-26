@@ -104,6 +104,7 @@ const char STR_CONFIG[]     ="Config";
 const char STR_LOSI[]       ="Losi";
 const char STR_MOULDKG[]    ="MouldKg";
 const char STR_XERALL[]     ="Xerall";
+const char STR_MILO[]       =  "MiLo";
 
 const char STR_SUBTYPE_FLYSKY[] =     "\x04""Std\0""V9x9""V6x6""V912""CX20";
 const char STR_SUBTYPE_HUBSAN[] =     "\x04""H107""H301""H501";
@@ -163,6 +164,7 @@ const char STR_SUBTYPE_FUTABA[] =     "\x05""SFHSS";
 const char STR_SUBTYPE_JJRC345[] =    "\x08""JJRC345\0""SkyTmblr";
 const char STR_SUBTYPE_MOULKG[] =     "\x06""Analog""Digit\0";
 const char STR_SUBTYPE_KF606[] =      "\x06""KF606\0""MIG320";
+const char STR_SUBTYPE_MILO[] =      "\x08""M16\0   ""M16_8ch""WiFi-TX""WIFI-RX";
 
 #define NO_SUBTYPE		nullptr
 
@@ -473,7 +475,11 @@ const mm_protocol_definition multi_protocols[] = {
 	#if defined(NANORF_NRF24L01_INO)
 		{PROTO_NANORF,     STR_NANORF,    NO_SUBTYPE,            0, OPTION_NONE,    0, 0, SW_NRF,    NANORF_init,     NANORF_callback     },
 	#endif
-		{0xFF,             nullptr,       nullptr,               0, 0,              0, 0, 0,         nullptr,         nullptr             }
+	#if defined(MILO_SX1280_INO)
+	{PROTO_MILO,     STR_MILO,    STR_SUBTYPE_MILO,    4, OPTION_RFPOWER,  1, 0, 0, MILO_init,     MILO_callback     },
+	#endif
+	{0xFF,             nullptr,       nullptr,               0, 0,              0, 0, 0,         nullptr,         nullptr             }
+
 };
 
 #ifdef MULTI_TELEMETRY

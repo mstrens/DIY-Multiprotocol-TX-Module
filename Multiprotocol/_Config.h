@@ -32,7 +32,7 @@
 //Allow flashing multimodule directly with TX(erky9x or opentx maintenance mode)
 //Instructions:https://github.com/pascallanger/DIY-Multiprotocol-TX-Module/blob/master/docs/Flash_from_Tx.md
 //To disable this feature add "//" at the begining of the next line.  Requires a compatible bootloader or upload method to be selected when you use the Multi 4-in-1 Boards Manager definitions.
-#define CHECK_FOR_BOOTLOADER
+//#define CHECK_FOR_BOOTLOADER
 
 
 /*******************/
@@ -65,7 +65,6 @@
 //The goal is to prevent binding other people's model when powering up the TX, changing model or scanning through protocols.
 #define WAIT_FOR_BIND
 
-
 /****************/
 /*** RF CHIPS ***/
 /****************/
@@ -74,11 +73,12 @@
 //4-in-1 modules have the A7105, CYRF6936, CC2500 and NRF24L01 RF chips installed
 //5-in-1 modules have all RF chips installed
 //!!!If a RF chip is present it MUST be marked as installed!!! or weird things will happen you have been warned.
-#define A7105_INSTALLED
-#define CYRF6936_INSTALLED
+//#define A7105_INSTALLED
+//#define CYRF6936_INSTALLED
 #define CC2500_INSTALLED
-#define NRF24L01_INSTALLED
+//#define NRF24L01_INSTALLED
 //#define SX1276_INSTALLED		// only supported on STM32 modules
+#define SX1280_INSTALLED
 
 //Uncomment (remove //) if you have an internal 5-in-1 Multi module in a Jumper T18 or T-Lite.
 //All components are considered to be installed and specifics to that module are automatically configured 
@@ -137,10 +137,10 @@
 //It can be activated when flying indoor or small models since the distance is short or if a model is causing issues when flying closed to the TX.
 //By default low power selection is enabled on all rf chips, but you can disable it by commenting (add //) the lines below if you don't want to risk
 //flying a model with low power.
-#define A7105_ENABLE_LOW_POWER
-#define CYRF6936_ENABLE_LOW_POWER
-#define CC2500_ENABLE_LOW_POWER
-#define NRF24L01_ENABLE_LOW_POWER
+//#define A7105_ENABLE_LOW_POWER
+//#define CYRF6936_ENABLE_LOW_POWER
+//#define CC2500_ENABLE_LOW_POWER
+//#define NRF24L01_ENABLE_LOW_POWER
 
 
 /*****************/
@@ -171,6 +171,8 @@
 //Protocol for module configuration
 #define MULTI_CONFIG_INO
 
+
+/*
 //The protocols below need an A7105 to be installed
 #define	AFHDS2A_A7105_INO
 #define	AFHDS2A_RX_A7105_INO
@@ -266,7 +268,9 @@
 
 //The protocols below need a SX1276 to be installed
 #define	FRSKYR9_SX1276_INO
-
+*/
+#define	FRSKYX_CC2500_INO
+#define MILO_SX1280_INO
 /***************************/
 /*** PROTOCOLS SETTINGS  ***/
 /***************************/
@@ -313,9 +317,9 @@
 //A 9XR_PRO running erskyTX will work with both commented and uncommented depending on the radio setting Invert COM1 under the Telemetry menu.
 //On other addon/replacement boards like the 9xtreme board or the Ar9x board running erskyTX, you need to uncomment the line below.
 //For er9x it depends if you have an inveter mod or not on the telemetry pin. If you don't have an inverter comment this line.
-#define INVERT_TELEMETRY
+//#define INVERT_TELEMETRY
 //For STM32 and OrangeRX modules, comment to prevent the TX from forcing the serial telemetry polarity normal/invert.
-#define INVERT_TELEMETRY_TX
+//#define INVERT_TELEMETRY_TX
 
 //Sends Multi status and allow OpenTX and erskyTX to autodetect the telemetry format. Comment to disable.
 #define MULTI_TELEMETRY
@@ -324,32 +328,33 @@
 //#define MULTI_SYNC
 
 //Comment a line to disable a specific protocol telemetry
-#define DSM_TELEMETRY				// Forward received telemetry packet directly to TX to be decoded by er9x, erskyTX and OpenTX
+//#define DSM_TELEMETRY				// Forward received telemetry packet directly to TX to be decoded by er9x, erskyTX and OpenTX
 #define SPORT_TELEMETRY				// Use FrSkyX format to send/receive telemetry
-#define AFHDS2A_FW_TELEMETRY		// Forward received telemetry packet directly to TX to be decoded by erskyTX and OpenTX
+//#define AFHDS2A_FW_TELEMETRY		// Forward received telemetry packet directly to TX to be decoded by erskyTX and OpenTX
 //#define AFHDS2A_HUB_TELEMETRY		// Use FrSkyD Hub format to send basic telemetry to TX like er9x
-#define HUB_TELEMETRY				// Use FrSkyD Hub format to send telemetry to TX
-#define BAYANG_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
-#define BUGS_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
-#define DEVO_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
-#define HUBSAN_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
-#define NCC1701_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
-#define OMP_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
-#define PROPEL_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
-#define CABELL_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
-#define RLINK_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
-#define WFLY2_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
-#define LOLI_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
-#define MT99XX_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
+//#define HUB_TELEMETRY				// Use FrSkyD Hub format to send telemetry to TX
+//#define BAYANG_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
+//#define BUGS_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
+//#define DEVO_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
+//#define HUBSAN_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
+//#define NCC1701_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
+//#define OMP_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
+//#define PROPEL_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
+//#define CABELL_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
+//#define RLINK_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
+//#define WFLY2_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
+//#define LOLI_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
+//#define MT99XX_HUB_TELEMETRY		// Use FrSkyD Hub format to send telemetry to TX
 //#define MLINK_HUB_TELEMETRY			// Use FrSkyD Hub format to send telemetry to TX
-#define MLINK_FW_TELEMETRY			// Forward received telemetry packet directly to TX to be decoded by erskyTX and OpenTX
+//#define MLINK_FW_TELEMETRY			// Forward received telemetry packet directly to TX to be decoded by erskyTX and OpenTX
 //#define HITEC_HUB_TELEMETRY		// Use FrSkyD Hub format to send basic telemetry to the radios which can decode it like er9x, erskyTX and OpenTX
-#define HITEC_FW_TELEMETRY			// Forward received telemetry packets to be decoded by erskyTX and OpenTX
-#define SCANNER_TELEMETRY			// Forward spectrum scanner data to TX
-#define FRSKY_RX_TELEMETRY			// Forward channels data to TX
-#define AFHDS2A_RX_TELEMETRY		// Forward channels data to TX
-#define HOTT_FW_TELEMETRY			// Forward received telemetry packets to be decoded by erskyTX and OpenTX
-#define BAYANG_RX_TELEMETRY			// Forward channels data to TX
+//#define HITEC_FW_TELEMETRY			// Forward received telemetry packets to be decoded by erskyTX and OpenTX
+//#define SCANNER_TELEMETRY			// Forward spectrum scanner data to TX
+//#define FRSKY_RX_TELEMETRY			// Forward channels data to TX
+//#define AFHDS2A_RX_TELEMETRY		// Forward channels data to TX
+//#define HOTT_FW_TELEMETRY			// Forward received telemetry packets to be decoded by erskyTX and OpenTX
+//#define BAYANG_RX_TELEMETRY			// Forward channels data to TX
+
 
 /**************************/
 /***  TRAINER SETTINGS  ***/
@@ -359,7 +364,7 @@
 // On a STM32 module and with a simple hardware modification, you can go around this limitation using CPPM to send the trainer information to the radio.
 // Hardware modification: add a 1K resistor between the STM32 USART1 TX pin (Boot0 programming TX pin) and the radio bay pin 2.
 //Comment to disable
-#define SEND_CPPM
+//#define SEND_CPPM
 
 /****************************/
 /*** SERIAL MODE SETTINGS ***/
@@ -377,7 +382,7 @@
 /*************************/
 //In this section you can configure all details about PPM.
 //If you do not plan to use the PPM mode comment this line using "//" to save Flash space, you don't need to configure anything below in this case
-#define ENABLE_PPM
+//#define ENABLE_PPM
 
 /** TX END POINTS **/
 //It is important for the module to know the endpoints of your radio.
@@ -834,6 +839,10 @@ const PPM_Parameters PPM_prot[14*NBR_BANKS]=	{
 		XINXUN
 		NIHUI
 	PROTO_ZSX
+	PROTO_MILO
+		CH_16
+		CH_8
+	    WIFI
 		NONE
 */
 
