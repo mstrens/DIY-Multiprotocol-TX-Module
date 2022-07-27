@@ -239,7 +239,7 @@
 		packet[2] = rx_tx_addr[2];
 		packet[3] =  (packet_count == 2) ? RX_num | 0x80 : RX_num & 0x3F ;//max 64 values
 		if(packet_count != 2){
-			if (sub_protocol & 3 == 3)
+			if (sub_protocol & 3 == WIFI_RX)
 			packet[3] = RX_num & 0x7F;//trigger WiFi updating firmware for RX
 		}
 		

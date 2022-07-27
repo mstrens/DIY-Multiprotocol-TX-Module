@@ -19,9 +19,8 @@ unsigned int  time_out   = 120; // seconds to run for
 unsigned int  startTime;
 bool portalRunning      = false;
 bool startAP            = true; // start AP and webserver if true, else start only webserver
-extern uint8_t bind_jumper(void);
-extern void  MiLoRxBinding(uint8_t bind);
 void doWiFiManager(void);
+
 bool first_time = true;
 bool second_time = true;
 
@@ -29,10 +28,10 @@ void setupWifiManager(){
 startTime = millis();
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP  
   // put your setup code here, to run once
-  //Serial.begin(115200);
+ // Serial.begin(115200);
   //Serial.setDebugOutput(true);
-  delay(1000);
- // Serial.println("\n Starting");
+  //delay(1000);
+  //Serial.println("\n Starting");
   wm.setHostname("MILO_TX");
   wm.autoConnect();
 }

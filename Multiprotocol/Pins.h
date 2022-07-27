@@ -339,7 +339,7 @@
 	#define	CYRF_RST_pin	  14								//CYRF RESET
 	#define	A7105_CSN_pin	12							//A7105
 	#define	CYRF_CSN_pin	    17							//CYRF CSN
-	#define    SPI_CSN_pin	  2
+	//#define    SPI_CSN_pin	  2
 	//SPI pins	
 	#define	SCK_pin			18							//SCK
 	#define	SDO_pin			19							//MISO
