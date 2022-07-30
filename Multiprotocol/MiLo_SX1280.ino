@@ -43,7 +43,7 @@
 		#elif defined BETAFPV_500
 		#define MinPower PWR_10mW
 		#define MaxPower PWR_500mW
-		static const int16_t powerValues[PWR_COUNT] = {-18,-15,-13,-9,-4,3} ;//10,25,50,100,250
+		static const int16_t powerValues[PWR_COUNT] = {-18,-15,-13,-9,-4,3} ;//10,25,50,100,250,500
 	#endif
 	
 	uint8_t TelemetryId;
@@ -147,7 +147,7 @@
 	
 	MiLo_rf_pref_params_s MiLo_AirRateRFperf[RATE_MAX] = {
 		{0, RATE_LORA_150HZ,  -108,  5060, 3500, 2500},
-	{1, RATE_LORA_100HZ,  -112,  7605, 3500, 2500}};
+	        {1, RATE_LORA_100HZ,  -112,  7605, 3500, 2500}};
 	
 
 	void  MiLo_SetRFLinkRate(uint8_t index) // Set speed of RF link (hz) index values
@@ -206,7 +206,7 @@
 		packet[4] = rx_tx_addr[0];
 		packet[5] = RX_num;
 		packet[6] = chanskip;
-		memset(&packet[7], 0, PayloadLength);
+		memset(&packet[7], 0, PayloadLength - 7);
 		for(uint8_t  i = 7; i < PayloadLength; i++)//XOR packets
 		packet[i] ^= 0xA7;	
 	}	
@@ -214,7 +214,6 @@
 	
 	static void ICACHE_RAM_ATTR MiLo_data_frame()
 	{
-		
 		
 		static uint8_t lpass = 0;
 		uint8_t j = 0;
@@ -233,7 +232,6 @@
 			pass = ! pass;
 		}
 		
-		
 		packet[0] |= (telemetry_counter<< 3);	
 		packet[1] = rx_tx_addr[3];
 		packet[2] = rx_tx_addr[2];
@@ -243,8 +241,6 @@
 			packet[3] = RX_num & 0x7F;//trigger WiFi updating firmware for RX
 		}
 		
-		
-		//
 		uint16_t (*ch) (uint8_t) = &convert_channel_ppm;
 		
 		packet[4] = (*ch)(0+j)&0XFF ;
@@ -272,16 +268,13 @@
 		packet[i] = 0;
 		
 		#ifdef SPORT_SEND
-			for(uint8_t i = 0; i < 4;i++)
-			FrSkyX_TX_Frames->count = 0;						//Discard frames in current output buffer
 			
-			if(TelemetryId == TelemetryExpectedId)//     
-			idxOK = SportHead;//
-			else// update read pointer to last ack'ed packet
+			if(TelemetryId == TelemetryExpectedId)     
+			idxOK = SportHead;// update read pointer to last ack'ed packet
+			else
 			SportHead = idxOK;
 			
 			TelemetryExpectedId = (TelemetryId + 1) & 0x0F;//4 bits	
-			
 			
 			packet[start]  = FrSkyX_TX_Frames->count;
 			
@@ -291,13 +284,10 @@
 				if(SportHead == SportTail)
 				break; //buffer empty
 				packet[i] = SportData[SportHead];
-				FrSkyX_TX_Frames->payload[i - start + 2] = SportData[SportHead];
 				SportHead = (SportHead + 1) & (MAX_SPORT_BUFFER - 1);
 				nbr_bytes++;
 			}
 			packet[start] = nbr_bytes|((TelemetryId &0x0F)<<4);
-			
-			FrSkyX_TX_Frames->count = nbr_bytes;
 			if(nbr_bytes)
 			{//Check the buffer status
 				uint8_t used = SportTail;
@@ -404,7 +394,7 @@
 			
 			if (packet_count == 2){// next frame is RX downlink temetry
 				state = MiLo_DWLNK_TLM1;
-				return 5400;//5060 TOA 
+				return 5400;
 			}
 			else{
 				if(SportHead != SportTail &&(frameType == CH1_16_PACKET || frameType == CH1_8_PACKET1 ||frameType == CH1_8_PACKET2) && upTLMcounter == 2){//next frame in uplink telemetry
