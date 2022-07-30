@@ -128,6 +128,7 @@
 	void ICACHE_RAM_ATTR SportSerialInit(void);
 	uint32_t OCR1A = 0;
 	uint32_t TCNT1 = 0 ;
+        volatile uint32_t chSerial_timer = 0;
 	static hw_timer_t  *timer = NULL;
 	
 	static intr_handle_t handle_console;
@@ -2574,7 +2575,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 
 #ifdef ESP32_PLATFORM
 	
-	void IRAM_ATTR uart_intr_handle(void *arg) {
+	void ICACHE_RAM_ATTR uart_intr_handle(void *arg) {
 		// rx_len = UART0.status.rxfifo_cnt;  // Read number of bytes in UART buffer
 		
 		if(rx_idx == 0|| discard_frame == true )
@@ -2587,13 +2588,17 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 				#else
 				if((rx_buff[0]&0xFE)==0x54)	// If 1st byte is 0x54 or 0x55 it looks ok
 			#endif
+				{
 			rx_idx++;
+			chSerial_timer = timerRead(timer);		
+		                }
 		}
 		else
 		{ 	 
 			if (rx_idx && rx_idx <= RXBUFFER_SIZE)
 			{
 				rx_buff [rx_idx++] = UART2.fifo.rw_byte;
+				chSerial_timer = timerRead(timer);
 			}
 			else
 			discard_frame = true; 	// Too many bytes being received...
@@ -2607,7 +2612,9 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 	
 	void ICACHE_RAM_ATTR processSerialChannels()
 	{ 
-		
+	  uint32_t  t_chSerial_timer =  timerRead(timer);
+           if(( t_chSerial_timer -  chSerial_timer) >= 500)//process only when full serial frame is received
+             {
 		if(rx_idx >= 26 && rx_idx <= RXBUFFER_SIZE)// A full frame has been received
 		{ 
 			if(!IS_RX_DONOTUPDATE_on)
@@ -2626,6 +2633,8 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 				sei();
 			#endif
 		}
-		
+	          chSerial_timer += 14000;//come again after 7ms 
+	   }
+		   
 	}
 #endif	
