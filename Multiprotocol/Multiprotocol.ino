@@ -1937,7 +1937,7 @@ void modules_reset()
 			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE
 		};
 		ESP_ERROR_CHECK(uart_param_config(UART_NUM_2 , &uart_config));
-		ESP_ERROR_CHECK(uart_set_pin(UART_NUM_2 , UART_PIN_NO_CHANGE, 25,UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));   // Set UART pins (using UART0 default pins ie no changes.)
+		ESP_ERROR_CHECK(uart_set_pin(UART_NUM_2 , -1, 25, -1, -1));   // Set UART pins (using UART0 default pins ie no changes.)
 		//Tx, Rx, RTS, and CTS signals
 		// ESP_ERROR_CHECK(uart_driver_install(UART_NUM_2 , RXBUFFER_SIZE * 2, 0, 0, NULL, 0));                    
 		ESP_ERROR_CHECK(uart_driver_install(UART_NUM_2 , 1024, 0, 0, NULL, 0)); // Install UART driver, and get the queue.
@@ -2626,7 +2626,6 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 				sei();
 			#endif
 		}
-		discard_frame = true; 	// frame wrong
 		
 	}
 #endif	
