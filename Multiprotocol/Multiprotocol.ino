@@ -122,7 +122,6 @@
 	void ICACHE_RAM_ATTR callSerialChannels(void);
 	void ICACHE_RAM_ATTR processIncomingByte (const byte inByte);
 	void ICACHE_RAM_ATTR processSerialChannels();
-	void ICACHE_RAM_ATTR callSportSerial(void);
 	void ICACHE_RAM_ATTR uart_intr_handle(void *arg);
 	void ICACHE_RAM_ATTR SerialChannelsInit(void);
 	void ICACHE_RAM_ATTR SportSerialInit(void);
@@ -1441,9 +1440,7 @@ static void protocol_init()
 
 void update_serial_data()
 {
-	
-	callSportSerial();
-	
+		
 	static bool prev_ch_mapping=false;
 	#if defined(TELEMETRY) && defined(INVERT_TELEMETRY_TX)
 		#ifdef INVERT_TELEMETRY
