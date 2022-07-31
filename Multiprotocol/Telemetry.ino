@@ -1285,25 +1285,7 @@ if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9
 		#endif		
 	}
 #endif
-	
-#ifdef ESP32_PLATFORM
-void ICACHE_RAM_ATTR  callSportSerial()
-{
-if(tx_head != tx_tail)
-{
-for (uint8_t i = 0;i <= TXBUFFER_SIZE;i++)
-{
-if(++tx_tail >= TXBUFFER_SIZE)//head{ 
-tx_tail = 0;
-
-Serial_write(tx_buff[tx_tail]);
-
-if (tx_tail == tx_head)
-break;
-}
-}
-}
-#endif	
+		
 #else	//BASH_SERIAL
 // Routines for bit-bashed serial output
 
