@@ -391,11 +391,7 @@ void Frsky_init_clone(void)
 		struct t_FrSkyX_TX_Frame
 		{
 			uint8_t count;
-			#ifdef MILO_SX1280_INO
-			uint8_t payload[11];
-			#else
 			uint8_t payload[8];
-			#endif
 		} ;
 		// Store FrskyX telemetry
 		
