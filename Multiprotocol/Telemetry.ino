@@ -877,7 +877,7 @@ void sportSendFrame()
 	switch (sport_counter)
 	{
 		case 0:	
-		    #ifdef MILO_SX1280_INO
+		        if(protocol == PROTO_MILO){
 			static bool pass = false;
 			if( pass){
 			frame[2] = 0x07;
@@ -890,13 +890,14 @@ void sportSendFrame()
 			frame[4] = RX_SNR;
 			}
 			pass = !pass;
-			#else
+		        }
+			else{
 			frame[2] = 0x05;
 			frame[3] = 0xf1;			
 			frame[4] = 0x02; //dummy values if swr 02230f00
 			frame[5] = 0x23;
 			frame[6] = 0x0F;
-			#endif
+		        }
 			break;
 			
 		case 2: // RSSI
@@ -989,6 +990,7 @@ void proces_sport_data(uint8_t data)
 void TelemetryUpdate()
 {
 	// check for space in tx buffer
+	#ifndef ESP32_PLATFORM
 	#ifdef BASH_SERIAL
 		uint8_t h ;
 		uint8_t t ;
@@ -1020,6 +1022,7 @@ void TelemetryUpdate()
 			if(t!=96)
 				debugln("TEL_BUF %d",t);
 */
+	#endif
 	#endif
 	#ifdef MULTI_TELEMETRY
 		uint32_t now = millis();
