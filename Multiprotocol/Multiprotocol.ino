@@ -2578,9 +2578,9 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
                 chSerial_timer = timerRead(timer);
 		if ( (chSerial_timer - prev_chSerial_timer) > 500) 
 		{
-                 prev_chSerial_timer = chSerial_timer;
                  rx_idx = 0;
-                }		
+                }
+		prev_chSerial_timer = chSerial_timer;
 		if(rx_idx == 0)
 		{//sync	
 			rx_buff[0] = c;
