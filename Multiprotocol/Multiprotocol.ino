@@ -2614,23 +2614,18 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
              {
 		if(rx_idx >= 26 && rx_idx <= RXBUFFER_SIZE)// A full frame has been received
 		{ 
-			if(!IS_RX_DONOTUPDATE_on)
-			{ //Good frame received and main is not working on the buffer
+
 				rx_len = rx_idx;
 				memcpy((void*)rx_ok_buff,(const void*)rx_buff,rx_len);// Duplicate the buffer
 				rx_idx = 0;      // reset buffer for next time
-				RX_FLAG_on;	// Flag for main to process data		
-			}
-			else
-			RX_MISSED_BUFF_on;	// Notify that rx_buff is good     
+				RX_FLAG_on;	// Flag for main to process data		   
 			
 			#ifdef MULTI_SYNC
-				cli();
 				last_serial_input = timerRead(timer);
-				sei();
 			#endif
 		}
-	          chSerial_timer += 14000;//come again after 7ms 
+	          chSerial_timer += 14000;//come again after 7ms
+		  discard_frame = true;
 	   }
 		   
 	}
