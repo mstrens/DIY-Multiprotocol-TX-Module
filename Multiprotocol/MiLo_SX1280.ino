@@ -61,7 +61,9 @@
 	uint8_t chanskip = 0;
 	bool frameReceived = false;
 	uint8_t frameType = 0;
-	
+	#ifdef SPORT_SEND
+		uint8_t idxOK;
+	#endif
 	void ICACHE_RAM_ATTR dioISR(void);
 	
 	typedef struct 
@@ -171,16 +173,6 @@
 		
 	}
 	
-	#ifdef SPORT_SEND
-		uint8_t idxOK;
-		//struct t_FrSkyX_TX_Frame
-		//{
-		//	uint8_t count;
-		//	uint8_t payload[11];
-		//} ;
-		// Store FrskyX telemetry
-		//struct t_FrSkyX_TX_Frame FrSkyX_TX_Frames ;
-	#endif
 	
 	static void ICACHE_RAM_ATTR MiLo_telem_init(void)
 	{
@@ -274,9 +266,7 @@
 			else
 			SportHead = idxOK;
 			
-			TelemetryExpectedId = (TelemetryId + 1) & 0x0F;//4 bits	
-			
-			packet[start]  = FrSkyX_TX_Frames->count;
+			TelemetryExpectedId = (TelemetryId + 1) & 0x0F;//4 bits				
 			
 			uint8_t nbr_bytes = 0;
 			for (uint8_t i = start + 1;i <= end;i++)
@@ -397,7 +387,7 @@
 				return 5400;
 			}
 			else{
-				if(SportHead != SportTail &&(frameType == CH1_16_PACKET || frameType == CH1_8_PACKET1 ||frameType == CH1_8_PACKET2) && upTLMcounter == 2){//next frame in uplink telemetry
+				if(SportHead != SportTail && upTLMcounter == 2){//next frame in uplink telemetry
 					state = MiLo_UPLNK_TLM;
 					upTLMcounter  = 0;//start or reset uplink telemetry counter
 					break;
@@ -569,22 +559,22 @@
 	
 	- Frame Sequence
 	
-	1- RC channels 1_8 
+	1- RC channels 1_8_1 
 	2- RC channels 9_16
 	3- downlink telemetry
-	4- RC channels 1_8
+	4- RC channels 1_8_1
 	5 -uplink telemetry                 
 	6- downlink telemetry
-	7- RC channels 1_8
-	8- RC channels 9_16
+	7- RC channels 9_16
+	8- RC channels 1_8_1
 	9- downlink telemetry
-	10- RC channels 1_8
+	10- RC channels 9_16
 	11- uplink telemetry               
 	12- downlink telemetry
-	13- RC channels 1_8
+	13- RC channels 1_8_1
 	14- RC channels 9_16
 	15- downlink telemetry
-	16- RC channels 1_8
+	16- RC channels 1_8_1
 	17  uplink telemetry 
 	
 	
@@ -601,10 +591,10 @@
 	10- RC channels 1_8_2       
 	11- uplink telemetry           
 	12- downlink telemetry
-	13- RC channels 1_8            
-	14- RC channels 1_8              
+	13- RC channels 1_8_1            
+	14- RC channels 1_8_2              
 	15- downlink telemetry
-	16- RC channels 1_8            
+	16- RC channels 1_8_1            
 	17  uplink telemetry              
 	15- downlink telemetry
 	
