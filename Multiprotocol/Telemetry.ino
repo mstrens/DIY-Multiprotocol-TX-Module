@@ -42,11 +42,7 @@ uint8_t RetrySequence ;
 	{
 		boolean valid;
 		uint8_t count;
-		#if defined(MILO_SX1280_INO)
-		uint8_t payload[15];
-		#else
 		uint8_t payload[6];
-		#endif
 	} ;
 
 	// Store for FrskyX telemetry
@@ -418,8 +414,7 @@ TX uplink telemetry( frame can be sent separate )- frame rate 7ms
 14.SPort data byte 11 --| 15bytes payload;11 bytes sport telemetry
 */
 	
-	if (protocol== PROTO_MILO)
-	{
+
 /*
 RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7ms,
 
@@ -440,12 +435,13 @@ RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7m
 14.Sport data byte10 --| 15 bytes payload ;10bytes sport telemetry
 
 */
-                uint8_t nrbytes = 0;
-	            TelemetryId = (buffer[4]>>4)&0XFF ;//telemetry uplink counter			
+        if (protocol== PROTO_MILO)
+	  {		
+                         uint8_t nrbytes = 0;
+	                 TelemetryId = (buffer[4]>>4)&0XFF ;//telemetry uplink counter			
 			    if ((buffer[3] & 0x1F ) == (telemetry_counter & 0x1F))//Check incoming telemetry sequence
 			    {//Sequence is ok
 				telemetry_lost = 0;
-				//if ( ( telemetry_counter & 0x1F ) != RetrySequence )
 				telemetry_counter =  (telemetry_counter+1)&0x1F ;
 			
 				if((buffer[3]>>5)==0)
@@ -473,16 +469,14 @@ RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7m
 		       { //Telemetry length ok
 			    for (uint8_t i = 0; i< nrbytes;i++)
 				{
-			   FrSkyX_RX_Frames->payload[i] = buffer[i+5];	// Buffer telemetry values to be sent 
-			  proces_sport_data(FrSkyX_RX_Frames->payload[i]) ;
+			  proces_sport_data(buffer[i+5]) ;
 				}
 			 }
 			 else
 			 buffer[4] &= 0xF0; 	// Discard packet
 			}
 			else
-			{//Incorrect sequence
-				RetrySequence = buffer[3] & 0x1F ;//sequence			
+			{//Incorrect sequence		
 				buffer[4] &= 0xF0  ;			// Discard current packet and wait for retransmit
 			}
 		   sportSendFrame();
