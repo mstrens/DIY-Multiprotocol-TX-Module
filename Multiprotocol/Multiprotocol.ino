@@ -128,6 +128,7 @@
 	uint32_t OCR1A = 0;
 	uint32_t TCNT1 = 0 ;
         volatile uint32_t chSerial_timer = 0;
+        uint32_t prev_chSerial_timer = 0;
 	static hw_timer_t  *timer = NULL;
 	
 	static intr_handle_t handle_console;
@@ -793,12 +794,12 @@ void loop()
 	{
 		while(remote_callback==0 || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off)
 		{			
-			processSerialChannels();
-			
+					
 			if(!Update_All())
 			{
 				cli();
 				#ifdef ESP32_PLATFORM
+				        processSerialChannels();
 					TCNT1 = timerRead(timer);
 					timerWrite(timer,TCNT1);
 				#endif					               // Disable global int due to RW of 16 bits registers
@@ -832,9 +833,8 @@ void loop()
 			TCNT1 = timerRead(timer); 		
 		#endif
 		diff = OCR1A - TCNT1;							// Calc the time difference
-		sei();		// Enable global int	
-		
 		processSerialChannels();
+		sei();		// Enable global int	
 		// Serial.println(diff);
 		
 		if((diff & 0x8000) && !(next_callback & 0x8000))//32768
@@ -1948,7 +1948,7 @@ void modules_reset()
 	void ICACHE_RAM_ATTR SportSerialInit()
 	{ 
 		portDISABLE_INTERRUPTS();
-		Serial_2.begin(100000, SERIAL_8E2, 2, SX1280_RCSIGNAL_TX_pin,true, 500);//only tx enabled and inverted
+		Serial_2.begin(100000, SERIAL_8E2, -1, SX1280_RCSIGNAL_TX_pin,true, 500);//only tx enabled and inverted
 		portENABLE_INTERRUPTS();
 	}
 	
@@ -2571,14 +2571,19 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 #endif
 
 #ifdef ESP32_PLATFORM
-	
+
 	void ICACHE_RAM_ATTR uart_intr_handle(void *arg) {
 		// rx_len = UART0.status.rxfifo_cnt;  // Read number of bytes in UART buffer
-		
-		if(rx_idx == 0|| discard_frame == true )
-		{//sync
-			rx_idx = 0; discard_frame = false;	
-			rx_buff[0] = UART2.fifo.rw_byte;//read first byte
+		uint8_t c = UART2.fifo.rw_byte; //read first byte
+                chSerial_timer = timerRead(timer);
+		if ( (chSerial_timer - prev_chSerial_timer) > 500) 
+		{
+                 prev_chSerial_timer = chSerial_timer;
+                 rx_idx = 0;
+                }		
+		if(rx_idx == 0)
+		{//sync	
+			rx_buff[0] = c;
 			
 			#ifdef FAILSAFE_ENABLE
 				if((rx_buff[0]&0xFC)==0x54)	// If 1st byte is 0x54, 0x55, 0x56 or 0x57 it looks ok
@@ -2586,19 +2591,17 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 				if((rx_buff[0]&0xFE)==0x54)	// If 1st byte is 0x54 or 0x55 it looks ok
 			#endif
 				{
-			rx_idx++;
-			chSerial_timer = timerRead(timer);		
+			rx_idx++;	
 		                }
 		}
 		else
 		{ 	 
 			if (rx_idx && rx_idx <= RXBUFFER_SIZE)
 			{
-				rx_buff [rx_idx++] = UART2.fifo.rw_byte;
-				chSerial_timer = timerRead(timer);
+				rx_buff [rx_idx++] = c;
 			}
 			else
-			discard_frame = true; 	// Too many bytes being received...
+			rx_idx = 0; 	//discard too many bytes being received...
 		}  
 		
 		// After reading bytes from buffer clear UART interrupt status
@@ -2612,7 +2615,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 	  uint32_t  t_chSerial_timer =  timerRead(timer);
            if(( t_chSerial_timer -  chSerial_timer) >= 500)//process only when full serial frame is received
              {
-		if(rx_idx >= 26 && rx_idx <= RXBUFFER_SIZE)// A full frame has been received
+		if(rx_idx >= 26)// A full frame has been received
 		{ 
 
 				rx_len = rx_idx;
@@ -2625,7 +2628,6 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 			#endif
 		}
 	          chSerial_timer += 14000;//come again after 7ms
-		  discard_frame = true;
 	   }
 		   
 	}
