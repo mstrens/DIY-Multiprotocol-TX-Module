@@ -439,6 +439,7 @@
 //*******************
 //***    Timer    ***
 //*******************
+#ifndef ESP32_PLATFORM
 #ifdef ORANGE_TX
 	#define TIFR1 TCC1.INTFLAGS
 	#define OCF1A_bm TC1_CCAIF_bm
@@ -468,7 +469,7 @@
 		#define CLR_TIMSK1_OCIE1B	TIMSK1 &=~_BV(OCIE1B)
 	#endif
 #endif
-
+#endif
 //*******************
 //***    EEPROM   ***
 //*******************
