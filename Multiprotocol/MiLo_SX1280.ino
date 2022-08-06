@@ -389,7 +389,7 @@
 			else{
 				if(SportHead != SportTail && upTLMcounter == 2){//next frame in uplink telemetry
 					state = MiLo_UPLNK_TLM;
-					upTLMcounter  = 0;//start or reset uplink telemetry counter
+					upTLMcounter  = 0;//reset uplink telemetry counter
 					break;
 				}		
 			}		
@@ -492,7 +492,7 @@
 	0. Frame type(3bits) |telemetry down link frame counter(sequence) 5 bits(0-31)
 	1. txid1 TXID on 16 bits
 	2. txid2
-	3. Model ID /Rx_Num(6 bits) | 1 bit free|1bit for sync telem frame
+	3. Model ID /Rx_Num(6 bits) | 1 bit flag activate Rx wifi|1bit for sync telem frame
 	4. channels 8 channels/frame ; 11bits/channel
 	5. channels total 11 bytes of channels data in the packet frame
 	6. channels
@@ -509,7 +509,7 @@
 	0. Frame type (3bits) | telemetry downlink frame counter(sequence) 5 bits(0-31)
 	1. txid1 TXID on 16 bits
 	2. txid2
-	3.Model ID /Rx_Num 6 bits|1 bit free|1bit for sync telem frame
+	3.Model ID /Rx_Num 6 bits|1 bit flag activate Rx wifi|1bit for sync telem frame
 	4. channels 8 channels/frame ; 11bits/channel
 	5. channels total 11 bytes of channels data in the packet frame
 	6. channels
