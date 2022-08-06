@@ -809,7 +809,7 @@ void loop()
 			}		
 		}
 		#ifdef ESP32_PLATFORM
-		if((sub_protocol&2 )== WIFI_TX)
+		if(protocol == PROTO_MILO && sub_protocol == WIFI_TX)
 			startWifiManager();
 		#endif
 		
