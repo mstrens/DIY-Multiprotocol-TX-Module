@@ -428,14 +428,12 @@
 	
 	#define USE_SX1280_DCDC
 	#define Regulatory_Domain_ISM_2400 1
-	
-	#ifndef ESP32_PLATFORM
-		#define	cli() 			noInterrupts()
-		#define	sei() 			interrupts()
-	#endif
-	#define	delayMilliseconds(x) delay(x)
 #endif
-
+#if defined STM32_BOARD || defined ESP32_PLATFORM
+	#define	cli() 			noInterrupts()
+	#define	sei() 			interrupts()
+	#define	delayMilliseconds(x)    delay(x)
+#endif
 //*******************
 //***    Timer    ***
 //*******************
