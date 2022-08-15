@@ -2,7 +2,7 @@
 #if defined (STM32_BOARD) && defined (ORANGE_TX)
 	#error You must comment the board type STM32_BOARD in _Config.h to compile ORANGE_TX
 #endif
-#if not defined (ORANGE_TX) && not defined (STM32_BOARD) && not defined (ESP32_PLATFORM)
+#if defined AVR_BOARD
 	//Atmega328p
 	#if not defined(ARDUINO_AVR_PRO) && not defined(ARDUINO_MULTI_NO_BOOT) && not defined(ARDUINO_MULTI_FLASH_FROM_TX) && not defined(ARDUINO_AVR_MINI) && not defined(ARDUINO_AVR_NANO) && not defined(ARDUINO_AVR_DUEMILANOVE)
 		#error You must select one of these boards: "Multi 4-in-1", "Arduino Pro or Pro Mini" or "Arduino Mini"
@@ -11,7 +11,7 @@
 		#error You must select the processor type "ATmega328(5V, 16MHz)"
 	#endif
 #endif
-#if defined (STM32_BOARD) && not defined (ORANGE_TX) && not defined (ESP32_PLATFORM)
+#if defined (STM32_BOARD)
 	//STM32
 	#if not defined(ARDUINO_GENERIC_STM32F103C) && not defined(ARDUINO_MULTI_STM32_FLASH_FROM_TX) && not defined(ARDUINO_MULTI_STM32_NO_BOOT) && not defined(ARDUINO_MULTI_STM32_WITH_BOOT)
 		#error You must select one of these boards: "Multi 4-in-1 (STM32F103CB)" or "Generic STM32F103C series"
@@ -489,7 +489,7 @@
 	#define SPORT_SEND
 #endif
 
-#if not defined(STM32_BOARD) && not defined (ESP32_PLATFORM)
+#if defined AVR_BOARD
 	#undef MULTI_SYNC
 #endif
 
