@@ -13,7 +13,7 @@
 //*******************
 //***   Pinouts   ***
 //*******************
-#if not defined STM32_BOARD && not defined ESP32_PLATFORM
+#if defined AVR_COMMON
 	// TX
 	#define SERIAL_TX_pin	1								//PD1
 	#define SERIAL_TX_port	PORTD
@@ -393,6 +393,32 @@
 	#define SX1280_RCSIGNAL_TX_pin 13
 	#define SX1280_RX_pin                   25  //SERIAL CHANNELS 1-st pin of I/O connector
 	
+#elif defined ESP9266_PLATFORM
+#define	BIND_pin		        0
+#define	LED_pin		            16
+#define	SX1280_RST_pin    2		
+#define	SX1280_BUSY_pin  5
+#define	SX1280_DIO1_pin  4
+
+//SPI	
+#define SX1280_MOSI_pin   13
+#define SX1280_MISO         12
+#define SX1280_SCK           14
+#define SX1280_CSN_pin     15   
+
+#define SX1280_RCSIGNAL_RX_pin  3 //SERIAL CHANNELS 1-st pin of I/O connector
+#define SX1280_RCSIGNAL_TX_pin  1  //SPORT usart tx to 5-th pin of I/O connector
+#ifdef MATEK_RX
+#define SX1280_TXEN_pin   10
+#define SX1280_ ANTENNA_SELECT_pin  9
+#define POWER_OUTPUT_FIXED          3//
+#else
+#define SX1280_RXEN_pin      9 //enable pa
+#define SX1280_TXEN_pin      10
+// Output Power
+#define POWER_OUTPUT_FIXED      1
+#endif
+#if defined ESP32_PLATFORM || defined ESP8266_PLATFORM
 	#define BIND_SET_INPUT		pinMode(BIND_pin,INPUT)
 	#define BIND_SET_PULLUP		digitalWrite(BIND_pin,HIGH)	
 	#define BIND_SET_OUTPUT		pinMode(BIND_pin,OUTPUT)
@@ -429,7 +455,7 @@
 	#define USE_SX1280_DCDC
 	#define Regulatory_Domain_ISM_2400 1
 #endif
-#if defined STM32_BOARD || defined ESP32_PLATFORM
+#if defined STM32_BOARD || defined ESP32_PLATFORM || defined ESP8266_PLATFORM
 	#define	cli() 			noInterrupts()
 	#define	sei() 			interrupts()
 	#define	delayMilliseconds(x)    delay(x)
@@ -437,7 +463,7 @@
 //*******************
 //***    Timer    ***
 //*******************
-#ifndef ESP32_PLATFORM
+
 #ifdef ORANGE_TX
 	#define TIFR1 TCC1.INTFLAGS
 	#define OCF1A_bm TC1_CCAIF_bm
@@ -460,13 +486,12 @@
 		#define RXCIE0 USART_CR1_RXNEIE_BIT
 		#define TXCIE0 USART_CR1_TXEIE_BIT
 		//#define TIFR1 TIMER2_BASE->SR
-		#else
+		#elif defined AVR_BOARD
 		#define OCF1A_bm _BV(OCF1A)
 		#define OCF1B_bm _BV(OCF1B)
 		#define SET_TIMSK1_OCIE1B	TIMSK1 |= _BV(OCIE1B)
 		#define CLR_TIMSK1_OCIE1B	TIMSK1 &=~_BV(OCIE1B)
 	#endif
-#endif
 #endif
 //*******************
 //***    EEPROM   ***
@@ -475,10 +500,10 @@
 	#define EE_ADDR uint16
 	#define eeprom_write_byte EEPROM.write
 	#define eeprom_read_byte EEPROM.read
-	#elif defined ESP32_PLATFORM
+	#elif defined ESP32_PLATFORM || defined ESP8266_PLATFORM
 	#define EE_ADDR  uint32_t
 	#define eeprom_write_byte EEPROM.write
 	#define eeprom_read_byte EEPROM.read
-	#else
+	#elif defined AVR_COMMON
 	#define EE_ADDR uint8_t*
 #endif
