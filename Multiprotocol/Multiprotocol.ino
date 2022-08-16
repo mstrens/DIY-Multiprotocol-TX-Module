@@ -37,7 +37,7 @@
 #define ESP8266_PLATFORM
 #endif
 
-#if defined ESP32_PLATFORM ||defined ESP8266_PLATFORM
+#if defined ESP32_PLATFORM || defined ESP8266_PLATFORM
 #define ESP_COMMON
 #endif
 
@@ -134,7 +134,7 @@
 	static hw_timer_t  *timer = NULL;	
 	static intr_handle_t handle_console;
 #else
-#define HWTIMER() (ESP.getCycleCount()/(2*clockCyclesPerMicrosecond()))
+#define HWTIMER() (2*ESP.getCycleCount()/clockCyclesPerMicrosecond())
 #define timerRead(timer) HWTIMER()
 #define ESP.getEfuseMac() ESP.getChipId()
 #endif	
@@ -531,7 +531,6 @@ void setup()
 		//timerAlarmEnable(timer);
 		//
 	#elif defined ESP8266_PLATFORM
-	timer0_isr_init();
 	timer0_write(ESP.getCycleCount() +(0xFFFF*80));
 	#endif
 		#else
@@ -816,7 +815,7 @@ void loop()
 		while(remote_callback==0 || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off)
 		{			
 	#ifdef ESP8266_PLATFORM
-           callSerialChannels()
+           callSerialChannels();
 		#endif		
 			if(!Update_All())
 			{
@@ -829,7 +828,7 @@ void loop()
 				#ifdef ESP32_PLATFORM
 					timerWrite(timer,TCNT1);
 				#else
-				timer0_write(TCNT1);
+				timer0_write(2*TCNT1);
 				#endif
 				#endif					               // Disable global int due to RW of 16 bits registers
 				OCR1A = TCNT1;						// Callback should already have been called... Use "now" as new sync point.
