@@ -530,7 +530,7 @@ void setup()
 		//timerAlarmWrite(timer,0xFFFF, true);
 		//timerAlarmEnable(timer);
 		//
-	#else
+	#elif defined ESP8266_PLATFORM
 	timer0_isr_init();
 	timer0_write(ESP.getCycleCount() +(0xFFFF*80));
 	#endif
@@ -2642,7 +2642,8 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 		uart_clear_intr_status(UART_NUM_2, UART_RXFIFO_FULL_INT_CLR|UART_RXFIFO_TOUT_INT_CLR);
 	}
 	
-	
+#endif
+#ifdef ESP_COMMON
 	
 	void ICACHE_RAM_ATTR processSerialChannels()
 	{ 
@@ -2673,7 +2674,6 @@ void ICACHE_RAM_ATTR callSerialChannels()
 	while (Serial.available () > 0){
 	processIncomingByte(Serial.read());
 	}
-	processSerialChannels();
 }
 
 
