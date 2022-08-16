@@ -45,20 +45,19 @@
 #define AVR_BOARD
 #endif
 
-#if defined ORANGE_TX  || defined AVR_BOARD
-#define AVR_COMMON
-#endif
-
 #endif
 #if defined (ARDUINO_AVR_XMEGA32D4) || defined (ARDUINO_MULTI_ORANGERX)
 	#include "MultiOrange.h"
+#endif
+
+#if defined ORANGE_TX  || defined AVR_BOARD
+#define AVR_COMMON
 #endif
 
 #ifdef ESP32_PLATFORM
 	#define BETAFPV_500 //if hacked this expresslrs Tx module
 	//#define HM_ES24TX //
 #endif
-
 
 #ifdef STM32_BOARD
 	/* ICACHE_RAM_ATTR1 is always linked into RAM */
@@ -86,7 +85,6 @@
 	#include "_MyConfig.h"
 #endif
 
-
 #include "Pins.h"
 #include "TX_Def.h"
 #include "Validate.h"
@@ -98,8 +96,7 @@
 	#include <avr/eeprom.h>
 #endif
 
-#ifdef STM32_BOARD
-	
+#ifdef STM32_BOARD	
 	#include <libmaple/usart.h>
 	#include <libmaple/timer.h>
 	//#include <libmaple/spi.h>
@@ -139,6 +136,7 @@
 #else
 #define HWTIMER() (ESP.getCycleCount()/(2*clockCyclesPerMicrosecond()))
 #define timerRead(timer) HWTIMER()
+#defined ESP.getEfuseMac() ESP.getChipId()
 #endif	
 	void initSPI(void);
 	void ICACHE_RAM_ATTR callSerialChannels(void);
@@ -574,7 +572,7 @@ void setup()
 		// Random
 		random_init();
 	#endif
-	#ifndef ESP32_PLATFORM
+	#if defined AVR_COMMON || defined STM32_BOARD 
 		LED2_on;
 	#endif
 	// Set Chip selects
@@ -800,7 +798,7 @@ void setup()
 		#endif //ENABLE_SERIAL
 	}
 	debugln("Init complete");
-	#ifndef ESP32_PLATFORM
+	#ifdef AVR_COMMON || STM32_PLATFORM
 		LED2_on;
 	#endif
 	
@@ -825,7 +823,7 @@ void loop()
 
 				cli();
 
-		                #if defined  ESP32_COMMON
+		                #if defined  ESP_COMMON
 				        processSerialChannels();
 					TCNT1 = timerRead(timer);
 				#ifdef ESP32_PLATFORM
@@ -839,7 +837,7 @@ void loop()
 				
 			}		
 		}
-		#if defined  ESP32_COMMON
+		#if defined  ESP_COMMON
 		if(protocol == PROTO_MILO && sub_protocol == WIFI_TX)
 			startWifiManager();
 		#endif
@@ -860,11 +858,13 @@ void loop()
 				TIMER2_BASE->SR = 0x1E5F & ~TIMER_SR_CC1IF;	// Clear Timer2/Comp1 interrupt flag
 		              #endif
 		
-		#if defined  ESP32_COMMON	
+		#if defined  ESP_COMMON	
 			TCNT1 = timerRead(timer); 		
 		#endif
-		diff = OCR1A - TCNT1;							// Calc the time difference
+		diff = OCR1A - TCNT1;// Calc the time difference
+		#ifdef ESP_COMMON
 		processSerialChannels();
+		#endif
 		sei();		// Enable global int	
 		// Serial.println(diff);
 		
@@ -908,8 +908,8 @@ void loop()
 					if(remote_callback==0)
 					break;
 					cli();
-					#if defined  ESP32_COMMON		
-						TCNT1 = timerRead(timer) ; 
+					#if defined  ESP_COMMON		
+					TCNT1 = timerRead(timer) ; 
 					#endif	// Disable global int due to RW of 16 bits registers
 					diff = OCR1A - TCNT1;				// Calc the time difference
 					sei();							// Enable global int
@@ -1020,7 +1020,7 @@ bool Update_All()
 			last_signal=millis();
 		}
 	#endif //ENABLE_PPM
-	#ifndef ESP32_PLATFORM
+	#ifndef ESP_COMMON
 	update_led_status();//need more testing do not touch	for the moment
 	#endif
 	#ifdef SEND_CPPM
@@ -1253,7 +1253,7 @@ inline void tx_pause()
 			#ifndef BASH_SERIAL
 				#ifdef STM32_BOARD
 					USART3_BASE->CR1 &= ~ USART_CR1_TXEIE;
-					#elif defined  ESP32_COMMON
+					#elif defined  ESP_COMMON
 					////
 					#else
 					UCSR0B &= ~_BV(UDRIE0);
@@ -1277,7 +1277,7 @@ inline void tx_resume()
 				#ifndef BASH_SERIAL
 					#ifdef STM32_BOARD
 						USART3_BASE->CR1 |= USART_CR1_TXEIE;
-						#elif defined  ESP32_COMMON
+						#elif defined  ESP_COMMON
 						////
 						#else
 						UCSR0B |= _BV(UDRIE0);			
@@ -1449,12 +1449,11 @@ static void protocol_init()
 	{
 		//Wait 5ms after protocol init
 		cli();										// disable global int
-		#ifdef ESP32_PLATFORM
-			
+		#ifdef ESP32_PLATFORM			
 			TCNT1 = timerRead(timer);
 			OCR1A = TCNT1 + 5000*2;
 			timerWrite(timer,OCR1A);
-			#elif defined ESP8266_PLATFORM
+		#elif defined ESP8266_PLATFORM
 		        TCNT1 = HWTIMER();
 		        OCR1A = TCNT1 + 5000*2;
 	                timer0_write(OCR1A);//5ms
@@ -1464,7 +1463,7 @@ static void protocol_init()
 
 			#if defined AVR_COMMON
 				TIFR1 = OCF1A_bm ;						// clear compare A flag
-				#elif defined STM32_BOARD
+			#elif defined STM32_BOARD
 				TIMER2_BASE->SR = 0x1E5F & ~TIMER_SR_CC1IF;	// Clear Timer2/Comp1 interrupt flag
 			#endif
 
@@ -1875,15 +1874,10 @@ void modules_reset()
 			USART2_BASE->CR1 |= USART_CR1_PCE_BIT;
 		}
 		USART2_BASE->CR1 &= ~ USART_CR1_TE;		//disable transmit
-		usart3_begin(100000,SERIAL_8E2);
-		
-		
-		
+		usart3_begin(100000,SERIAL_8E2);		
 		#elif defined ESP_COMMON
 		SerialChannelsInit();
-		SportSerialInit();//only transmitting ,inverted
-		
-		
+		SportSerialInit();//only transmitting ,inverted		
 		#else
 		//ATMEGA328p
 		#include <util/setbaud.h>	
@@ -1994,7 +1988,6 @@ void ICACHE_RAM_ATTR SerialChannelsInit()
 Serial.begin(100000, SERIAL_8E2,SX1280_RCSIGNAL_RX_pin, SX1280_RCSIGNAL_TX_pin,false, 500);
 USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal	
 }
-
 void ICACHE_RAM_ATTR SportSerialInit(){};
 #endif
 
@@ -2129,7 +2122,7 @@ static uint32_t random_id(uint16_t address, uint8_t create_new)
 				id = STM32_UUID[0] ^ STM32_UUID[1] ^ STM32_UUID[2];
 				debugln("Generated ID from STM32 UUID");
 			}
-			#elif defined ESP32_PLATFORM
+			#elif defined ESP_COMMON
 			for(int i = 0; i< 17; i= i+8) {
 				id |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
 				debugln("Generated ID from ESP32 MAC");
