@@ -37,7 +37,7 @@
 #define ESP8266_PLATFORM
 #endif
 
-#if defined ESP32_PLATFORM ||define ESP8266_PLATFORM
+#if defined ESP32_PLATFORM ||defined ESP8266_PLATFORM
 #define ESP_COMMON
 #endif
 
@@ -510,7 +510,7 @@ void setup()
 			EEPROM.format();
 			debugln("No valid EEPROM page, EEPROM formatted");
 		}
-		#elif defined ESP32_COMMON
+		#elif defined ESP_COMMON
 		pinMode(BIND_pin, INPUT);
 		pinMode(LED_pin, OUTPUT);
 		pinMode(SX1280_RST_pin , OUTPUT);	
@@ -598,7 +598,7 @@ void setup()
 	//	Set SPI lines
 	#ifdef	STM32_BOARD
 		initSPI2();
-		#elif defined  ESP32_COMMON
+		#elif defined  ESP_COMMON
 		initSPI();
 		#else
 		SDI_on;
@@ -623,7 +623,7 @@ void setup()
 		mode_select = MODE_SERIAL ;	// force serial mode
 		#elif defined STM32_BOARD
 		mode_select= 0x0F -(uint8_t)(((GPIOA->regs->IDR)>>4)&0x0F);
-		#elif defined  ESP32_COMMON
+		#elif defined  ESP_COMMON
 		mode_select = MODE_SERIAL ;	// force serial mode
 		#else
 		mode_select =
