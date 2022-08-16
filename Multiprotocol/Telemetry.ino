@@ -97,8 +97,8 @@ static void telemetry_set_input_sync(uint16_t refreshRate)
 	if (last_serial_input != 0)
 	{
 		cli();										// Disable global int due to RW of 16 bits registers
-		#ifdef ESP32_PLATFORM
-		TCNT1 = timerReadMicros(timer);
+		#ifdef ESP_COMMON
+		TCNT1 = timerRead(timer);
 		#endif
 		inputDelay = TCNT1;
 		sei();										// Enable global int
@@ -984,7 +984,7 @@ void proces_sport_data(uint8_t data)
 void TelemetryUpdate()
 {
 	// check for space in tx buffer
-	#ifndef ESP32_PLATFORM
+	#if defined AVR_COMMON || defined STM32_BOARD
 	#ifdef BASH_SERIAL
 		uint8_t h ;
 		uint8_t t ;
@@ -1160,7 +1160,12 @@ if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9
 	void Serial_write(uint8_t data)
 	{
     Serial_2.write(data);
-	}	
+	}
+        #elif defined ESP8266_PLATFORM
+        void Serial_write(uint8_t data)
+	{
+    Serial.write(data);
+	}
 	#else
 	void Serial_write(uint8_t data)
 	{
@@ -1239,16 +1244,16 @@ if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9
 		#else
 			(void)speed;
 		#endif
-		#ifndef ESP32_PLATFORM
-		#ifndef ORANGE_TX
-			#ifndef STM32_BOARD
+
+
+			#ifdef AVR_BOARD
 				UCSR0B |= (1<<TXEN0);//tx enable
 			#endif
-		#endif
-		#endif
+
+
 	}
 
-#ifndef ESP32_PLATFORM
+#if defined AVR_COMMON || defined STM32_BOARD
 	//Serial TX
 	#ifdef ORANGE_TX
 		ISR(USARTC0_DRE_vect)
