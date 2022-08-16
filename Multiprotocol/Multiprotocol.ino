@@ -119,7 +119,7 @@
 	#endif				 
 #endif
 
-#if defined  ESP32_COMMON
+#if defined  ESP_COMMON
 	#include <SPI.h>
 	#include <EEPROM.h>
 	#include <HardwareSerial.h>
@@ -136,7 +136,7 @@
 #else
 #define HWTIMER() (ESP.getCycleCount()/(2*clockCyclesPerMicrosecond()))
 #define timerRead(timer) HWTIMER()
-#defined ESP.getEfuseMac() ESP.getChipId()
+#define ESP.getEfuseMac() ESP.getChipId()
 #endif	
 	void initSPI(void);
 	void ICACHE_RAM_ATTR callSerialChannels(void);
