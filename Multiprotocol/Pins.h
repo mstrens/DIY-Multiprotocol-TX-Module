@@ -393,7 +393,7 @@
 	#define SX1280_RCSIGNAL_TX_pin 13
 	#define SX1280_RX_pin                   25  //SERIAL CHANNELS 1-st pin of I/O connector
 	
-#elif defined ESP9266_PLATFORM
+#elif defined ESP8266_PLATFORM
 #define	BIND_pin		        0
 #define	LED_pin		            16
 #define	SX1280_RST_pin    2		
@@ -418,7 +418,7 @@
 // Output Power
 #define POWER_OUTPUT_FIXED      1
 #endif
-#if defined ESP32_PLATFORM || defined ESP8266_PLATFORM
+#if defined ESP32_COMMON
 	#define BIND_SET_INPUT		pinMode(BIND_pin,INPUT)
 	#define BIND_SET_PULLUP		digitalWrite(BIND_pin,HIGH)	
 	#define BIND_SET_OUTPUT		pinMode(BIND_pin,OUTPUT)
@@ -455,7 +455,7 @@
 	#define USE_SX1280_DCDC
 	#define Regulatory_Domain_ISM_2400 1
 #endif
-#if defined STM32_BOARD || defined ESP32_PLATFORM || defined ESP8266_PLATFORM
+#if defined STM32_BOARD || defined ESP_COMMON
 	#define	cli() 			noInterrupts()
 	#define	sei() 			interrupts()
 	#define	delayMilliseconds(x)    delay(x)
@@ -500,7 +500,7 @@
 	#define EE_ADDR uint16
 	#define eeprom_write_byte EEPROM.write
 	#define eeprom_read_byte EEPROM.read
-	#elif defined ESP32_PLATFORM || defined ESP8266_PLATFORM
+	#elif defined ESP_COMMON
 	#define EE_ADDR  uint32_t
 	#define eeprom_write_byte EEPROM.write
 	#define eeprom_read_byte EEPROM.read
