@@ -37,7 +37,11 @@
 #define ESP8266_PLATFORM
 #endif
 
-#if not defined (STM32_BOARD) && not defined(ESP32_PLATFORM) && not defined(ESP8266_PLATFORM)
+#if defined ESP32_PLATFORM ||define ESP8266_PLATFORM
+#define ESP_COMMON
+#endif
+
+#if defined(__AVR_ATmega328P__)
 #define AVR_BOARD
 #endif
 
@@ -87,7 +91,7 @@
 #include "TX_Def.h"
 #include "Validate.h"
 
-#if not defined ESP32_PLATFORM && not defined ESP8266_PLATFORM
+#if defined AVR_COMMON || defined STM32_BOARD
 	#include <avr/pgmspace.h>
 #endif
 #if defined AVR_COMMON 
@@ -118,7 +122,7 @@
 	#endif				 
 #endif
 
-#if defined  ESP32_PLATFORM || defined ESP8266_PLATFORM
+#if defined  ESP32_COMMON
 	#include <SPI.h>
 	#include <EEPROM.h>
 	#include <HardwareSerial.h>
@@ -508,7 +512,7 @@ void setup()
 			EEPROM.format();
 			debugln("No valid EEPROM page, EEPROM formatted");
 		}
-		#elif defined  ESP32_PLATFORM || defined ESP8266_PLATFORM
+		#elif defined ESP32_COMMON
 		pinMode(BIND_pin, INPUT);
 		pinMode(LED_pin, OUTPUT);
 		pinMode(SX1280_RST_pin , OUTPUT);	
@@ -596,7 +600,7 @@ void setup()
 	//	Set SPI lines
 	#ifdef	STM32_BOARD
 		initSPI2();
-		#elif defined  ESP32_PLATFORM || defined ESP8266_PLATFORM
+		#elif defined  ESP32_COMMON
 		initSPI();
 		#else
 		SDI_on;
@@ -621,7 +625,7 @@ void setup()
 		mode_select = MODE_SERIAL ;	// force serial mode
 		#elif defined STM32_BOARD
 		mode_select= 0x0F -(uint8_t)(((GPIOA->regs->IDR)>>4)&0x0F);
-		#elif defined ESP32_PLATFORM || defined ESP8266_PLATFORM
+		#elif defined  ESP32_COMMON
 		mode_select = MODE_SERIAL ;	// force serial mode
 		#else
 		mode_select =
@@ -658,7 +662,7 @@ void setup()
 	
 	
 	#ifndef ORANGE_TX
-		#if defined STM32_BOARD || defined ESP32_PLATFORM
+		#if defined STM32_BOARD || defined  ESP32_COMMON
 			uint32_t seed=0;
 			for(uint8_t i=0;i<4;i++)
 			#ifdef RND_pin
@@ -821,7 +825,7 @@ void loop()
 
 				cli();
 
-		                #ifdef ESP32_PLATFORM || ESP8266_PLATFORM
+		                #if defined  ESP32_COMMON
 				        processSerialChannels();
 					TCNT1 = timerRead(timer);
 				#ifdef ESP32_PLATFORM
@@ -835,7 +839,7 @@ void loop()
 				
 			}		
 		}
-		#ifdef ESP32_PLATFORM || defined ESP8266_PLATFORM
+		#if defined  ESP32_COMMON
 		if(protocol == PROTO_MILO && sub_protocol == WIFI_TX)
 			startWifiManager();
 		#endif
@@ -856,7 +860,7 @@ void loop()
 				TIMER2_BASE->SR = 0x1E5F & ~TIMER_SR_CC1IF;	// Clear Timer2/Comp1 interrupt flag
 		              #endif
 		
-		#if defined  ESP32_PLATFORM || defined ESP8266_PLATFORM		
+		#if defined  ESP32_COMMON	
 			TCNT1 = timerRead(timer); 		
 		#endif
 		diff = OCR1A - TCNT1;							// Calc the time difference
@@ -884,7 +888,7 @@ void loop()
 				#elif defined STM32_BOARD
 				while((TIMER2_BASE->SR & TIMER_SR_CC1IF )==0)
 			#endif
-			#if defined ESP32_PLATFORM || defined ESP8266_PLATFORM
+			#if defined  ESP32_COMMON
 				while(diff > (900*2))
 			#endif
 			{
@@ -904,7 +908,7 @@ void loop()
 					if(remote_callback==0)
 					break;
 					cli();
-					#if defined ESP32_PLATFORM || defined ESP8266_PLATFORM			
+					#if defined  ESP32_COMMON		
 						TCNT1 = timerRead(timer) ; 
 					#endif	// Disable global int due to RW of 16 bits registers
 					diff = OCR1A - TCNT1;				// Calc the time difference
@@ -1249,7 +1253,7 @@ inline void tx_pause()
 			#ifndef BASH_SERIAL
 				#ifdef STM32_BOARD
 					USART3_BASE->CR1 &= ~ USART_CR1_TXEIE;
-					#elif defined ESP32_PLATFORM || defined ESP8266_PLATFORM
+					#elif defined  ESP32_COMMON
 					////
 					#else
 					UCSR0B &= ~_BV(UDRIE0);
@@ -1273,7 +1277,7 @@ inline void tx_resume()
 				#ifndef BASH_SERIAL
 					#ifdef STM32_BOARD
 						USART3_BASE->CR1 |= USART_CR1_TXEIE;
-						#elif defined ESP32_PLATFORM || defined ESP8266_PLATFORM
+						#elif defined  ESP32_COMMON
 						////
 						#else
 						UCSR0B |= _BV(UDRIE0);			
@@ -1773,7 +1777,7 @@ void update_serial_data()
 	}
 	
 	RX_DONOTUPDATE_off;
-	#if not defined  ESP32_PLATFORM && not defined ESP8266_PLATFORM
+	#if defined  AVR_COMMON || defined STM32_BOARD
 		#ifdef ORANGE_TX
 			cli();
 			#else
@@ -1790,7 +1794,7 @@ void update_serial_data()
 		}
 		RX_MISSED_BUFF_off;
 	}
-	#if not defined ESP32_PLATFORM && not defined ESP8266_PLATFORM
+	#if defined  AVR_COMMON || defined STM32_BOARD
 		#ifdef ORANGE_TX
 			sei();
 			#else
@@ -1875,7 +1879,7 @@ void modules_reset()
 		
 		
 		
-		#elif defined ESP32_PLATFORM || defined ESP8266_PLATFORM
+		#elif defined ESP_COMMON
 		SerialChannelsInit();
 		SportSerialInit();//only transmitting ,inverted
 		
@@ -1987,7 +1991,8 @@ void modules_reset()
 #ifdef ESP8266_PLATFORM
 void ICACHE_RAM_ATTR SerialChannelsInit()
 {
-Serial.begin(100000, SERIAL_8E2,SX1280_RCSIGNAL_RX_pin, SX1280_RCSIGNAL_TX_pin,false, 500);//only tx enabled and inverted
+Serial.begin(100000, SERIAL_8E2,SX1280_RCSIGNAL_RX_pin, SX1280_RCSIGNAL_TX_pin,false, 500);
+USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal	
 }
 
 void ICACHE_RAM_ATTR SportSerialInit(){};
@@ -2136,7 +2141,7 @@ static uint32_t random_id(uint16_t address, uint8_t create_new)
 		for(uint8_t i=0;i<4;i++)
 		eeprom_write_byte((EE_ADDR)address+i,id >> (i*8));
 		eeprom_write_byte((EE_ADDR)(address+10),0xf0);//write bind flag in eeprom.
-		#if defined ESP32_PLATFORM || defined ESP8266_PLATFORM
+		#if defined ESP_COMMON
 			EEPROM.commit();
 		#endif
 		return id;
@@ -2278,7 +2283,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 
 //Serial RX
 #ifdef ENABLE_SERIAL
-	#if not defined ESP32_PLATFORM && not defined ESP8266_PLATFORM
+	#if defined AVR_COMMON || defined STM32_BOARD
 		
 		#ifdef ORANGE_TX
 			ISR(USARTC0_RXC_vect)
@@ -2564,7 +2569,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 /**    Arduino random    **/
 /**************************/
 /**************************/
-#if defined AVR BOARD && not defined ORANGE_TX
+#if defined AVR BOARD
 	static void random_init(void)
 	{
 		cli();					// Temporarily turn off interrupts, until WDT configured
