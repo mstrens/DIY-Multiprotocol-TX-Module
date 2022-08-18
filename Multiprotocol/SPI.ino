@@ -95,7 +95,7 @@ void SPI_SET_UNIDIRECTIONAL()
 	SPI2_BASE->CR1 &= ~SPI_CR1_BIDIMODE;
 }
 
-#elif not defined ESP32_PLATFORM
+#elif defined AVR_COMMON
 
 #ifdef ORANGE_TX
 	#define XNOP() NOP()
