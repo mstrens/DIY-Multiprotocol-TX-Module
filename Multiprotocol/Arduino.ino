@@ -148,12 +148,12 @@ void delayMicroseconds(unsigned int us)
 #endif
 }
 
-#ifndef ORANGE_TX
+#ifdef AVR_BOARD
 	void init()
 	{
 	   // this needs to be called before setup() or some functions won't work there
 	   sei();
 	}
-#endif //ORANGE_TX
+#endif
 
-#endif //STM32_BOARD
+#endif //AVR_COMMON
