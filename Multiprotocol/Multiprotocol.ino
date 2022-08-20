@@ -122,21 +122,22 @@
 	#include <SPI.h>
 	#include <EEPROM.h>
 	#include <HardwareSerial.h>
-        #include "onDemandNonBlocking.h"
-#ifdef ESP32_PLATFORM
-	#include "driver/uart.h"
-	#include "driver/gpio.h"
-	#include "esp_intr_alloc.h"
-	#include "soc/uart_struct.h"
-	#include "soc/uart_reg.h"
-	HardwareSerial Serial_2(1);
-	static hw_timer_t  *timer = NULL;	
-	static intr_handle_t handle_console;
-#else
-    #define HWTIMER() (2*ESP.getCycleCount()/clockCyclesPerMicrosecond())
-    #define timerRead(timer) HWTIMER()
-    #define getEfuseMac() getChipId()
-#endif	
+    #include "onDemandNonBlocking.h"
+    #ifdef ESP32_PLATFORM
+        #include "driver/uart.h"
+        #include "driver/gpio.h"
+        #include "esp_intr_alloc.h"
+        #include "soc/uart_struct.h"
+        #include "soc/uart_reg.h"
+        HardwareSerial Serial_2(1);
+        static hw_timer_t  *timer = NULL;	
+        static intr_handle_t handle_console;
+    #endif
+    #ifdef ESP8266_PLATFORM
+        #define HWTIMER() (2*ESP.getCycleCount()/clockCyclesPerMicrosecond())
+        #define timerRead(timer) HWTIMER()
+        #define getEfuseMac() getChipId()
+    #endif	
 	void initSPI(void);
 	void ICACHE_RAM_ATTR callSerialChannels(void);
 	void ICACHE_RAM_ATTR processIncomingByte (const byte inByte);
@@ -1982,7 +1983,8 @@ void modules_reset()
 #ifdef ESP8266_PLATFORM
 void ICACHE_RAM_ATTR SerialChannelsInit()
 {
-Serial.begin(100000, SERIAL_8E2,SX1280_RCSIGNAL_RX_pin, SX1280_RCSIGNAL_TX_pin,false, 500);
+Serial.begin(100000, SERIAL_8E2); // Serial.begin(100000, SERIAL_8E2,SX1280_RCSIGNAL_RX_pin, SX1280_RCSIGNAL_TX_pin,false, 500); <-- this seems not to work with ESP8266
+Serial.swap(); // @todo needs fixing serial pinout, Pis 13/15 used instead of 13 for RX and TX
 USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal	
 }
 void ICACHE_RAM_ATTR SportSerialInit(){};
@@ -2666,46 +2668,45 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 #endif	
 
 #ifdef ESP8266_PLATFORM
-void ICACHE_RAM_ATTR callSerialChannels()
-{
-	while (Serial.available () > 0){
-	processIncomingByte(Serial.read());
-	}
-}
+    void ICACHE_RAM_ATTR callSerialChannels()
+    {
+        while (Serial.available () > 0){
+        processIncomingByte(Serial.read());
+        }
+    }
 
 
-void ICACHE_RAM_ATTR processIncomingByte (const byte inByte)
-{
+    void ICACHE_RAM_ATTR processIncomingByte (const byte inByte)
+    {
 
-uint8_t c = inByte;
+    uint8_t c = inByte;
 
-chSerial_timer = HWTIMER;
+    chSerial_timer = HWTIMER();
 
-if ( (chSerial_timer - prev_chSerial_timer) > 500) {
-rx_idx = 0;
-}
+    if ( (chSerial_timer - prev_chSerial_timer) > 500) {
+    rx_idx = 0;
+    }
 
-if(rx_idx == 0 )//received something
-	{//sync
-		RX_MISSED_BUFF_off;
-		rx_buff[0] = c;//read first byte		
-		#ifdef FAILSAFE_ENABLE
-		if((rx_buff[0]&0xFC)==0x54)	// If 1st byte is 0x54, 0x55, 0x56 or 0x57 it looks ok
-		#else
-		if((rx_buff[0]&0xFE)==0x54)	// If 1st byte is 0x54 or 0x55 it looks ok
-		#endif
-		rx_idx++;
-	}
-	else
-	{ 	 
-		if (rx_idx && rx_idx <= RXBUFFER_SIZE)
-		{
-			rx_buff [rx_idx++] = inByte;			
-		}
-		else
-		rx_ix = 0;
-	} 
-prev_chSerial_timer = chSerial_timer;
-}// end of processIncomingByte  
-
+    if(rx_idx == 0 )//received something
+        {//sync
+            RX_MISSED_BUFF_off;
+            rx_buff[0] = c;//read first byte		
+            #ifdef FAILSAFE_ENABLE
+            if((rx_buff[0]&0xFC)==0x54)	// If 1st byte is 0x54, 0x55, 0x56 or 0x57 it looks ok
+            #else
+            if((rx_buff[0]&0xFE)==0x54)	// If 1st byte is 0x54 or 0x55 it looks ok
+            #endif
+            rx_idx++;
+        }
+        else
+        { 	 
+            if (rx_idx && rx_idx <= RXBUFFER_SIZE)
+            {
+                rx_buff [rx_idx++] = inByte;			
+            }
+            else
+            rx_idx = 0;
+        } 
+    prev_chSerial_timer = chSerial_timer;
+    }// end of processIncomingByte  
 #endif
