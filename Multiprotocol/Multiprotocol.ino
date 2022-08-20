@@ -45,7 +45,6 @@
 #define AVR_BOARD
 #endif
 
-#endif
 #if defined (ARDUINO_AVR_XMEGA32D4) || defined (ARDUINO_MULTI_ORANGERX)
 	#include "MultiOrange.h"
 #endif
