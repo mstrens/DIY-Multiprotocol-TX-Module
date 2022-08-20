@@ -359,7 +359,6 @@
 			default :
 			SX1280_SetFrequencyReg(currFreq);//middle of the band		   
 			MiLo_build_bind_packet();
-			SX1280_setPower(MinPower);
 			SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise		
 			SX1280_WriteBuffer(0x00, packet,PayloadLength);//
 			SX1280_SetMode(SX1280_MODE_TX);
@@ -374,7 +373,6 @@
 			BIND_DONE;
 			state = MiLo_DATA1;				
 			case MiLo_DATA1:
-			//SX1280_setPower(PWR_100mW);
 			packet_count = (packet_count + 1)%3;
 			MiLo_data_frame();
 			nextChannel(1);
