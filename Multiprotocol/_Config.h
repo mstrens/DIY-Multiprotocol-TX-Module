@@ -80,6 +80,14 @@
 //#define SX1276_INSTALLED		// only supported on STM32 modules
 #define SX1280_INSTALLED
 
+#ifdef ESP8266_PLATFORM // ESP_8266 has no additional modules
+    #undef A7105_INSTALLED
+    #undef CYRF6936_INSTALLED
+    #undef CC2500_INSTALLED
+    #undef  NRF24L01_INSTALLED
+    #undef  SX1276_INSTALLED // comment if using an ELRS RX with 800/900MHz RF component instead of 2.4Ghz
+#endif
+
 //Uncomment (remove //) if you have an internal 5-in-1 Multi module in a Jumper T18 or T-Lite.
 //All components are considered to be installed and specifics to that module are automatically configured 
 //#define MULTI_5IN1_INTERNAL JP_T18
