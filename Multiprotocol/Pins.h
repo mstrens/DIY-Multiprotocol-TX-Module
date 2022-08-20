@@ -153,7 +153,7 @@
 		#define PE1_off
 		#define PE2_on
 		#define PE2_off
-		#else
+    #else
 		#define PE1_pin		1								//A1 = PC1
 		#define PE1_port	PORTC
 		#define PE1_ddr		DDRC
@@ -330,7 +330,8 @@
 		#define	IS_DIO0_off		( digitalRead(SX1276_DIO0_pin)==LOW )
 	#endif
 	
-#elif defined ESP32_PLATFORM //ESP32
+#endif
+#ifdef ESP32_PLATFORM //ESP32
 	
 	#define	PE1_pin			32							//PE1
 	#define	PE2_pin			33							//PE2
@@ -394,9 +395,18 @@
 	#define SX1280_RCSIGNAL_TX_pin 13
 	#define SX1280_RX_pin                   25  //SERIAL CHANNELS 1-st pin of I/O connector
 	
-#elif defined ESP8266_PLATFORM //ESP8285
+#endif
+#ifdef ESP8266_PLATFORM //ESP8285
     #define	BIND_pin		        0
     #define	LED_pin		            16
+
+    //RF Switch
+    #define PE1_on
+    #define PE1_off
+    #define PE2_on
+    #define PE2_off
+
+    //SX1280
     #define	SX1280_RST_pin    2		
     #define	SX1280_BUSY_pin  5
     #define	SX1280_DIO1_pin  4
@@ -490,7 +500,7 @@
 	#define TXCIE0 USART_CR1_TXEIE_BIT
 	//#define TIFR1 TIMER2_BASE->SR
 #endif
-#ifdef defined AVR_BOARD
+#ifdef AVR_BOARD
 	#define OCF1A_bm _BV(OCF1A)
 	#define OCF1B_bm _BV(OCF1B)
 	#define SET_TIMSK1_OCIE1B	TIMSK1 |= _BV(OCIE1B)

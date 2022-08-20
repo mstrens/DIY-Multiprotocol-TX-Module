@@ -133,9 +133,9 @@
 	static hw_timer_t  *timer = NULL;	
 	static intr_handle_t handle_console;
 #else
-#define HWTIMER() (2*ESP.getCycleCount()/clockCyclesPerMicrosecond())
-#define timerRead(timer) HWTIMER()
-#define ESP.getEfuseMac() ESP.getChipId()
+    #define HWTIMER() (2*ESP.getCycleCount()/clockCyclesPerMicrosecond())
+    #define timerRead(timer) HWTIMER()
+    #define getEfuseMac() getChipId()
 #endif	
 	void initSPI(void);
 	void ICACHE_RAM_ATTR callSerialChannels(void);
@@ -189,7 +189,7 @@ uint8_t  packet_sent;
 uint8_t  packet_length;
 #if defined(HOTT_CC2500_INO) || defined(ESKY150V2_CC2500_INO) || defined(MLINK_CYRF6936_INO)
 	uint8_t  hopping_frequency[78];
-	#else
+#else
 	uint8_t  hopping_frequency[50];
 #endif
 uint8_t  *hopping_frequency_ptr;
@@ -657,22 +657,21 @@ void setup()
 	modules_reset();
 	
 	
-	#ifndef ORANGE_TX
-		#if defined STM32_BOARD || defined  ESP32_COMMON
-			uint32_t seed=0;
-			for(uint8_t i=0;i<4;i++)
-			#ifdef RND_pin
-				seed=(seed<<8) | (analogRead(RND_pin)& 0xFF);
-				#else
-				//TODO find something to randomize...
-				seed=(seed<<8);
-			#endif
-			randomSeed(seed);
-			#else
-			//Init the seed with a random value created from watchdog timer for all protocols requiring random values
-			randomSeed(random_value());
-		#endif
-	#endif
+    #if defined STM32_BOARD || defined  ESP32_COMMON
+        uint32_t seed=0;
+        for(uint8_t i=0;i<4;i++)
+        #ifdef RND_pin
+            seed=(seed<<8) | (analogRead(RND_pin)& 0xFF);
+            #else
+            //TODO find something to randomize...
+            seed=(seed<<8);
+        #endif
+        randomSeed(seed);
+    #endif
+    #if defined AVR_BOARD
+        //Init the seed with a random value created from watchdog timer for all protocols requiring random values
+        randomSeed(random_value());
+    #endif
 	
 	// Read or create protocol id
 	MProtocol_id_master=random_id(EEPROM_ID_OFFSET,false);
@@ -796,7 +795,7 @@ void setup()
 		#endif //ENABLE_SERIAL
 	}
 	debugln("Init complete");
-	#ifdef AVR_COMMON || STM32_PLATFORM
+	#if defined(AVR_COMMON) || defined(STM32_PLATFORM)
 		LED2_on;
 	#endif
 	
@@ -839,8 +838,8 @@ void loop()
 		if(protocol == PROTO_MILO && sub_protocol == WIFI_TX)
 			startWifiManager();
 		#endif
-	        #ifdef ESP8266_PLATFORM
-                callSerialChannels()
+        #ifdef ESP8266_PLATFORM
+            callSerialChannels();
 		#endif
 		TX_MAIN_PAUSE_on;
 		tx_pause();
@@ -2560,7 +2559,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 /**    Arduino random    **/
 /**************************/
 /**************************/
-#if defined AVR BOARD
+#if defined AVR_BOARD
 	static void random_init(void)
 	{
 		cli();					// Temporarily turn off interrupts, until WDT configured
