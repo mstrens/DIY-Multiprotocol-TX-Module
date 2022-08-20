@@ -36,12 +36,15 @@
 		PWR_COUNT = 6,
 	} ;
 	
-	#if defined  HM_ES24TXH
-		#define MinPower PWR_10mW
+    // generic conservative values 
+    #define MinPower PWR_10mW
+	#define MaxPower PWR_10mW
+    static const int16_t powerValues[PWR_COUNT] = {-17,-13,-9,-6,-2} ;//10,25,50,100,250  --> Values from ELRS JSON for generic PA RX "power_values": [-10,-6,-3,1],
+
+    #if defined  HM_ES24TXH
 		#define MaxPower PWR_250mW
 		static const int16_t powerValues[PWR_COUNT] = {-17,-13,-9,-6,-2} ;//10,25,50,100,250
 		#elif defined BETAFPV_500
-		#define MinPower PWR_10mW
 		#define MaxPower PWR_500mW
 		static const int16_t powerValues[PWR_COUNT] = {-18,-15,-13,-9,-4,3} ;//10,25,50,100,250,500
 	#endif

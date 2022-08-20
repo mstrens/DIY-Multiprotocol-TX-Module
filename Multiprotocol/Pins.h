@@ -413,9 +413,9 @@
 
     //SPI	
     #define SX1280_MOSI_pin   13
-    #define SX1280_MISO         12
-    #define SX1280_SCK           14
-    #define SX1280_CSN_pin     15   
+    #define SX1280_MISO       12
+    #define SX1280_SCK        14
+    #define SX1280_CSN_pin    15   
 
     #define SX1280_RCSIGNAL_RX_pin  3 //SERIAL CHANNELS 1-st pin of I/O connector
     #define SX1280_RCSIGNAL_TX_pin  1  //SPORT usart tx to 5-th pin of I/O connector
@@ -440,31 +440,31 @@
 	#define	IS_SX1280_DIO1_off		( digitalRead(SX1280_DIO1_pin)==LOW )
 	#define	IS_SX1280_BUSY_on		( digitalRead(SX1280_BUSY_pin)==HIGH )
 	#define	IS_SX1280_BUSY_off		( digitalRead(SX1280_BUSY_pin)==LOW)
-	#define	IS_SX1280_FAN_off        ( digitalRead(SX1280_FAN_EN_pin)==LOW)
+	#define	IS_SX1280_FAN_off       ( digitalRead(SX1280_FAN_EN_pin)==LOW)
 	#define	IS_SX1280_FAN_on        ( digitalRead(SX1280_FAN_EN_pin)==HIGH )
 	
 	
-	#define	SX1280_RST_on	           digitalWrite(SX1280_RST_pin,HIGH)
-	#define	SX1280_RST_off	           digitalWrite(SX1280_RST_pin,LOW)
+	#define	SX1280_RST_on	       digitalWrite(SX1280_RST_pin,HIGH)
+	#define	SX1280_RST_off	       digitalWrite(SX1280_RST_pin,LOW)
 	#define	SX1280_TXEN_on	       digitalWrite(SX1280_TXEN_pin,HIGH)
 	#define	SX1280_RXEN_on	       digitalWrite(SX1280_RXEN_pin,HIGH)
 	#define	SX1280_TXEN_off	       digitalWrite(SX1280_TXEN_pin,LOW)
 	#define	SX1280_RXEN_off	       digitalWrite(SX1280_RXEN_pin,LOW)
 	
 	
-	#define SX1280_CSN_on            digitalWrite(SX1280_CSN_pin,HIGH)
-	#define SX1280_CSN_off            digitalWrite(SX1280_CSN_pin,LOW)
+	#define SX1280_CSN_on           digitalWrite(SX1280_CSN_pin,HIGH)
+	#define SX1280_CSN_off          digitalWrite(SX1280_CSN_pin,LOW)
 	
-	#define SX1280_FAN_EN_on       digitalWrite(SX1280_FAN_EN_pin,HIGH)
+	#define SX1280_FAN_EN_on        digitalWrite(SX1280_FAN_EN_pin,HIGH)
 	#define SX1280_FAN_EN_off       digitalWrite(SX1280_FAN_EN_pin,HIGH)
 	
-	#define	IS_LED_on		( digitalRead(LED_pin)==HIGH)
-	#define	LED_on			               digitalWrite(LED_pin,HIGH)
-	#define	LED_off			               digitalWrite(LED_pin,LOW)
-	#define	LED_toggle		           digitalWrite(LED_pin ,!digitalRead(LED_pin))
-	#define	LED_output		            pinMode(LED_pin,OUTPUT)
+	#define	IS_LED_on		        ( digitalRead(LED_pin)==HIGH)
+	#define	LED_on			        digitalWrite(LED_pin,HIGH)
+	#define	LED_off			        digitalWrite(LED_pin,LOW)
+	#define	LED_toggle		        digitalWrite(LED_pin ,!digitalRead(LED_pin))
+	#define	LED_output		        pinMode(LED_pin,OUTPUT)
 	
-	#define USE_SX1280_DCDC
+	#define USE_SX1280_DCDC         // undefine if HW has no inductor to avoid instabilities
 	#define Regulatory_Domain_ISM_2400 1
 #endif
 #ifdef STM32_BOARD
