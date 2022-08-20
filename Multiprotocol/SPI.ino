@@ -190,9 +190,12 @@ return SPI.transfer(0x00);
 #endif
 
 #ifdef ESP8266_PLATFORM
-	SPI.begin();
-	SPI.setBitOrder(MSBFIRST);
-	SPI.setDataMode(SPI_MODE0);
-	SPI.setFrequency(10000000);
+	void initSPI()
+    {
+        SPI.begin();
+        SPI.setBitOrder(MSBFIRST);
+        SPI.setDataMode(SPI_MODE0);
+        SPI.setFrequency(10000000);
+    }
 #endif
 

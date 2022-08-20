@@ -1984,7 +1984,6 @@ void modules_reset()
 void ICACHE_RAM_ATTR SerialChannelsInit()
 {
 Serial.begin(100000, SERIAL_8E2); // Serial.begin(100000, SERIAL_8E2,SX1280_RCSIGNAL_RX_pin, SX1280_RCSIGNAL_TX_pin,false, 500); <-- this seems not to work with ESP8266
-Serial.swap(); // @todo needs fixing serial pinout, Pis 13/15 used instead of 13 for RX and TX
 USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal	
 }
 void ICACHE_RAM_ATTR SportSerialInit(){};
