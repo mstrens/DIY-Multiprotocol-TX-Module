@@ -420,7 +420,7 @@
         #define POWER_OUTPUT_FIXED      1
     #endif
 #endif
-#ifdef ESP32_COMMON //ESP32 or ESP8285
+#ifdef ESP_COMMON //ESP32 or ESP8285
 	#define BIND_SET_INPUT		pinMode(BIND_pin,INPUT)
 	#define BIND_SET_PULLUP		digitalWrite(BIND_pin,HIGH)	
 	#define BIND_SET_OUTPUT		pinMode(BIND_pin,OUTPUT)
