@@ -496,7 +496,7 @@
 	/* Steps for startup
 		1. If not in STDBY_RC mode, then go to this mode by sending the command:
 		SetStandby(STDBY_RC)
-		2. Define the LoRa® packet type by sending the command:
+		2. Define the LoRaÂ® packet type by sending the command:
 		SetPacketType(PACKET_TYPE_LORA)
 		3. Define the RF frequency by sending the command:
 		SetRfFrequency(rfFrequency)
@@ -704,7 +704,14 @@
 	{
 		CurrentPower = PWR_COUNT;
 		//SX1280_LoadCalibration();
-		SX1280_setPower(MinPower);
+	        #ifdef ESP8266_PLATFORM
+	        SX1280_SetOutputPower(POWER_OUTPUT_FIXED);
+	        #else
+	        if(is_in_binding == true)
+	        SX1280_setPower(MinPower);
+	        else 
+	        SX1280_setPower(PWR_100mW);
+	        #endif
 	}
 	
 	uint8_t  SX1280_decPower()
