@@ -21,6 +21,35 @@
 #define VERSION_REVISION	3
 #define VERSION_PATCH_LEVEL	12
 
+//******************
+// Board selection 
+//******************
+#ifdef __arm__			// Let's automatically select the board if arm is selected
+	#define STM32_BOARD
+#endif
+#ifdef ESP32
+	#define ESP32_PLATFORM
+#endif
+#ifdef ESP8266
+#define ESP8266_PLATFORM
+#endif
+
+#if defined ESP32_PLATFORM || defined ESP8266_PLATFORM
+#define ESP_COMMON
+#endif
+
+#if defined(__AVR_ATmega328P__)
+#define AVR_BOARD
+#endif
+
+#if defined (ARDUINO_AVR_XMEGA32D4) || defined (ARDUINO_MULTI_ORANGERX)
+	#include "MultiOrange.h"
+#endif
+
+#if defined ORANGE_TX  || defined AVR_BOARD
+#define AVR_COMMON
+#endif
+
 #define MODE_SERIAL 0
 
 //******************
@@ -463,10 +492,10 @@ enum KF606
 
 enum MILO
 {
-	MCH_16	    = 0,
-	MCH_8	    = 1,
+	MCH_16	        = 0,
+	MCH_8	        = 1,
         WIFI_TX     = 2,
-	WIFI_RX     = 3,
+	WIFI_RX         = 3,
 };
 
 
@@ -539,8 +568,9 @@ enum MultiPacketTypes
 
 // Macros
 
-#define NOP() __asm__ __volatile__("nop")
-
+#ifndef ESP32
+#define NOP() __asm__ __volatile__("nop") //@todo check for which architecture this is required, if any
+#endif
 
 //***************
 //***  Flags  ***
