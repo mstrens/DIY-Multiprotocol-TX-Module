@@ -332,14 +332,13 @@
 
        #ifdef SX1280_INSTALLED
 	        #undef	RND_pin
-	        #undef  SPI_CSN_pin
                 #define SX1280_CSN_pin             PA15 
                 #define	SX1280_RST_pin	           PA2	
                 #define	SX1280_BUSY_pin            -1
                 #define	SX1280_DIO1_pin            PC13
 	        #define SX1280_TXEN_pin            PB0
 	        #define SX1280_RXEN_pin            -1
-	        #define SX1280_ ANTENNA_SELECT_pin PB4
+	        #define SX1280_ANTENNA_SELECT_pin  PB4
 	#endif
 
 #endif
@@ -429,16 +428,17 @@
     #define SX1280_CSN_pin    15   
 
     #define SX1280_RCSIGNAL_RX_pin  3  //SERIAL CHANNELS 1-st pin of I/O connector
-    #define SX1280_RCSIGNAL_TX_pin  1  //SPORT usart tx to 5-th pin of I/O connector
+    #define SX1280_RCSIGNAL_TX_pin  1  //SPORT SERIAL Tx to 5-th pin of I/O connector
+
     #ifdef MATEK_RX
-        #define SX1280_TXEN_pin   10
-        #define SX1280_ ANTENNA_SELECT_pin  9
+        #define SX1280_TXEN_pin           10
+        #define SX1280_ANTENNA_SELECT_pin  9  //diversity
         #define POWER_OUTPUT_FIXED          3
     #else
         #define SX1280_RXEN_pin         9 
         #define SX1280_TXEN_pin         10
         // Output Power
-        #define POWER_OUTPUT_FIXED      1
+        #define POWER_OUTPUT_FIXED      3
     #endif
 #endif
 #if defined ESP_COMMON || defined STM32_BOARD //ESP32 or ESP8285 or STM32
@@ -468,7 +468,10 @@
 	
 	#define SX1280_FAN_EN_on        digitalWrite(SX1280_FAN_EN_pin,HIGH)
 	#define SX1280_FAN_EN_off       digitalWrite(SX1280_FAN_EN_pin,HIGH)
-	
+
+	#define SX1280_ANTENNA_SELECT_on  digitalWrite(SX1280_ANTENNA_SELECT_pin,HIGH)
+        #define SX1280_ANTENNA_SELECT_off digitalWrite(SX1280_ANTENNA_SELECT_pin,LOW)
+
 	#define	IS_LED_on		        ( digitalRead(LED_pin)==HIGH)
 	#define	LED_on			        digitalWrite(LED_pin,HIGH)
 	#define	LED_off			        digitalWrite(LED_pin,LOW)
