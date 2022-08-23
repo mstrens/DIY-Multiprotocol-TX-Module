@@ -395,6 +395,19 @@ void setup()
 		pinMode(PE2_pin,OUTPUT);
 		pinMode(TX_INV_pin,OUTPUT);
 		pinMode(RX_INV_pin,OUTPUT);
+		#ifdef SX1280_INSTALLED	
+	        pinMode(SX1280_pin,OUTPUT);
+	        pinMode(SX1280_RST_pin,OUTPUT);	
+	        pinMode(SX1280_BUSY_pin,INPUT);	
+	        pinMode(SX1280_DIO1_pin,INPUT);	
+	        pinMode(SX1280_TXEN_pin,OUTPUT);	
+	        pinMode(SX1280_RXEN_pin,OUTPUT);	
+	        pinMode(SX1280_CSN_pin,OUTPUT);
+	        pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
+		SX1280_TXEN_off;
+	        SX1280_RXEN_off;
+	        SX1280_CSN_on;
+	        #endif
 		#if defined TELEMETRY
 			#if defined INVERT_SERIAL
 				TX_INV_on;							// activate inverter for both serial TX and RX signals
@@ -417,7 +430,9 @@ void setup()
 			pinMode(SX1276_DIO0_pin,INPUT_PULLUP);
 			#else
 			//Random pin
+	        #ifndef SX1280_INSTALLED
 			pinMode(RND_pin, INPUT_ANALOG);			// set up PB0 pin for analog input
+	        #endif
 		#endif
 		
 		#if defined ENABLE_DIRECT_INPUTS
