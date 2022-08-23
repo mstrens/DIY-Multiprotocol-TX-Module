@@ -15,7 +15,7 @@
 //*******************
 #ifdef AVR_COMMON
 	// TX
-	#define SERIAL_TX_pin	1								//PD1
+	#define SERIAL_TX_pin	1			//PD1
 	#define SERIAL_TX_port	PORTD
 	#define SERIAL_TX_ddr	DDRD
 	#define SERIAL_TX_output SERIAL_TX_ddr	|= _BV(SERIAL_TX_pin)
@@ -46,11 +46,11 @@
 	#define PROTO_DIAL4_ipr  PINC
 	
 	// PPM
-	#define PPM_pin	 3										//D3 = PD3
+	#define PPM_pin	 3				//D3 = PD3
 	#define PPM_port PORTD
 	
 	// SDIO
-	#define SDI_pin	 5										//D5 = PD5
+	#define SDI_pin	 5				//D5 = PD5
 	#define SDI_port PORTD
 	#define SDI_ipr  PIND
 	#define SDI_ddr  DDRD
@@ -67,7 +67,7 @@
 	#define SDI_output	SDI_ddr |=  _BV(SDI_pin)
 	
 	//SDO
-	#define SDO_pin		6									//D6 = PD6
+	#define SDO_pin		6			//D6 = PD6
 	#define SDO_port	PORTD
 	#define SDO_ipr		PIND
 	#ifdef ORANGE_TX
@@ -82,18 +82,18 @@
 	#define SCLK_port PORTD
 	#define SCLK_ddr DDRD
 	#ifdef ORANGE_TX
-		#define SCLK_pin	7								//PD7
+		#define SCLK_pin	7		//PD7
 		#define SCLK_on		SCLK_port.OUTSET = _BV(SCLK_pin)
 		#define SCLK_off	SCLK_port.OUTCLR = _BV(SCLK_pin)
 		#else
-		#define SCLK_pin	4								//D4 = PD4
+		#define SCLK_pin	4		//D4 = PD4
 		#define SCLK_output	SCLK_ddr  |=  _BV(SCLK_pin)
 		#define SCLK_on		SCLK_port |=  _BV(SCLK_pin)
 		#define SCLK_off	SCLK_port &= ~_BV(SCLK_pin)
 	#endif
 	
 	// A7105
-	#define A7105_CSN_pin	2								//D2 = PD2
+	#define A7105_CSN_pin	2			//D2 = PD2
 	#define A7105_CSN_port	PORTD
 	#define A7105_CSN_ddr	DDRD
 	#define A7105_CSN_output	A7105_CSN_ddr |= _BV(A7105_CSN_pin)
@@ -101,7 +101,7 @@
 	#define A7105_CSN_off	A7105_CSN_port &= ~_BV(A7105_CSN_pin)
 	
 	// CC2500
-	#define CC25_CSN_pin	7								//D7 = PD7
+	#define CC25_CSN_pin	7			//D7 = PD7
 	#define CC25_CSN_port	PORTD
 	#define CC25_CSN_ddr	DDRD
 	#define CC25_CSN_output	CC25_CSN_ddr  |=  _BV(CC25_CSN_pin)
@@ -109,7 +109,7 @@
 	#define CC25_CSN_off	CC25_CSN_port &= ~_BV(CC25_CSN_pin)
 	
 	// NRF24L01
-	#define NRF_CSN_pin		0								//D8 = PB0
+	#define NRF_CSN_pin		0		//D8 = PB0
 	#define NRF_CSN_port	PORTB
 	#define NRF_CSN_ddr		DDRB
 	#define NRF_CSN_output	NRF_CSN_ddr  |=  _BV(NRF_CSN_pin)
@@ -120,26 +120,26 @@
 	
 	// CYRF6936
 	#ifdef ORANGE_TX
-		#define CYRF_CSN_pin	4							//PD4
+		#define CYRF_CSN_pin	4		//PD4
 		#define CYRF_CSN_port	PORTD
 		#define CYRF_CSN_ddr	DDRD
 		#define CYRF_CSN_on		CYRF_CSN_port.OUTSET = _BV(CYRF_CSN_pin)
 		#define CYRF_CSN_off	CYRF_CSN_port.OUTCLR = _BV(CYRF_CSN_pin)
 		
-		#define CYRF_RST_pin	0							//PE0
+		#define CYRF_RST_pin	0		//PE0
 		#define CYRF_RST_port	PORTE
 		#define CYRF_RST_ddr	DDRE
 		#define CYRF_RST_HI		CYRF_RST_port.OUTSET = _BV(CYRF_RST_pin)
 		#define CYRF_RST_LO		CYRF_RST_port.OUTCLR = _BV(CYRF_RST_pin)
 		#else
-		#define CYRF_CSN_pin	1							//D9 = PB1
+		#define CYRF_CSN_pin	1		//D9 = PB1
 		#define CYRF_CSN_port	PORTB
 		#define CYRF_CSN_ddr	DDRB
 		#define CYRF_CSN_output	CYRF_CSN_ddr  |=  _BV(CYRF_CSN_pin)
 		#define CYRF_CSN_on		CYRF_CSN_port |=  _BV(CYRF_CSN_pin)
 		#define CYRF_CSN_off	CYRF_CSN_port &= ~_BV(CYRF_CSN_pin)
 		
-		#define CYRF_RST_pin	5							//A5 = PC5
+		#define CYRF_RST_pin	5		//A5 = PC5
 		#define CYRF_RST_port	PORTC
 		#define CYRF_RST_ddr	DDRC
 		#define CYRF_RST_output	CYRF_RST_ddr  |=  _BV(CYRF_RST_pin)
@@ -154,14 +154,14 @@
 		#define PE2_on
 		#define PE2_off
     #else
-		#define PE1_pin		1								//A1 = PC1
+		#define PE1_pin		1		//A1 = PC1
 		#define PE1_port	PORTC
 		#define PE1_ddr		DDRC
 		#define	PE1_output	PE1_ddr  |=  _BV(PE1_pin)
 		#define PE1_on		PE1_port |=  _BV(PE1_pin)
 		#define PE1_off		PE1_port &= ~_BV(PE1_pin)
 		
-		#define PE2_pin		2								//A2 = PC2
+		#define PE2_pin		2		//A2 = PC2
 		#define PE2_port	PORTC
 		#define PE2_ddr		DDRC
 		#define	PE2_output	PE2_ddr  |=  _BV(PE2_pin)
@@ -171,7 +171,7 @@
 	
 	// LED
 	#ifdef ORANGE_TX
-		#define LED_pin		1								//PD1
+		#define LED_pin		1		   //PD1
 		#define LED_port	PORTD
 		#define LED_ddr		DDRD
 		#define LED_on		LED_port.OUTCLR	= _BV(LED_pin)
@@ -180,7 +180,7 @@
 		#define LED_output	LED_port.DIRSET	= _BV(LED_pin)
 		#define IS_LED_on	(LED_port.OUT & _BV(LED_pin))
 		#else
-		#define LED_pin		5								//D13 = PB5
+		#define LED_pin		5		    //D13 = PB5
 		#define LED_port	PORTB
 		#define LED_ddr		DDRB
 		#define LED_on		LED_port |= _BV(LED_pin)
@@ -198,11 +198,11 @@
 	
 	//BIND
 	#ifdef ORANGE_TX
-		#define BIND_pin			2						//PD2
+		#define BIND_pin			2	//PD2
 		#define BIND_port			PORTD
 		#define IS_BIND_BUTTON_on	( (BIND_port.IN & _BV(BIND_pin)) == 0x00 )
 		#else
-		#define BIND_pin			5						//D13 = PB5
+		#define BIND_pin			5	//D13 = PB5
 		#define BIND_port			PORTB
 		#define BIND_ipr			PINB
 		#define BIND_ddr			DDRB
@@ -217,28 +217,28 @@
 	#define	LED_pin			PA1
 	#define	LED2_pin		PA2
 	//
-	#define	PPM_pin			PA8								//PPM  5V tolerant
+	#define	PPM_pin			PA8	//PPM  5V tolerant
 	//
-	#define	S1_pin			PA4								//Dial switch pins
+	#define	S1_pin			PA4	//Dial switch pins
 	#define	S2_pin			PA5
 	#define	S3_pin			PA6
 	#define	S4_pin			PA7
 	//
 	#define	RND_pin			PB0
-	//
-	#define	PE1_pin			PB4								//PE1
-	#define	PE2_pin			PB5								//PE2
+	//   
+        #define PE1_pin                 PB4     //PE1
+	#define	PE2_pin			PB5	//PE2
 	//CS pins
-	#define	CC25_CSN_pin	PB6								//CC2500
-	#define	NRF_CSN_pin		PB7								//NRF24L01
-	#define	CYRF_RST_pin	PB8								//CYRF RESET
-	#define	A7105_CSN_pin	PB9								//A7105
-	#define	CYRF_CSN_pin	PB12							//CYRF CSN
+	#define	CC25_CSN_pin	        PB6	//CC2500
+	#define	NRF_CSN_pin		PB7	//NRF24L01
+	#define	CYRF_RST_pin	        PB8	//CYRF RESET
+	#define	A7105_CSN_pin	        PB9	//A7105
+	#define	CYRF_CSN_pin	        PB12	//CYRF CSN
 	#define SPI_CSN_pin		PA15
 	//SPI pins	
-	#define	SCK_pin			PB13							//SCK
-	#define	SDO_pin			PB14							//MISO
-	#define	SDI_pin			PB15							//MOSI
+	#define	SCK_pin			PB13	//SCK
+	#define	SDO_pin			PB14	//MISO
+	#define	SDI_pin			PB15	//MOSI
 	//
 	#define	TX_INV_pin		PB3
 	#define	RX_INV_pin		PB1
@@ -249,8 +249,8 @@
 	#define	PE2_on  		digitalWrite(PE2_pin,HIGH)
 	#define	PE2_off 		digitalWrite(PE2_pin,LOW)
 	
-	#define	A7105_CSN_on	digitalWrite(A7105_CSN_pin,HIGH)
-	#define	A7105_CSN_off	digitalWrite(A7105_CSN_pin,LOW)
+	#define	A7105_CSN_on	        digitalWrite(A7105_CSN_pin,HIGH)
+	#define	A7105_CSN_off	        digitalWrite(A7105_CSN_pin,LOW)
 	
 	#define NRF_CE_on
 	#define	NRF_CE_off
@@ -265,13 +265,13 @@
 	#define	SDI_0			(digitalRead(SDI_pin)==LOW)
 	
 	#define	CC25_CSN_on		digitalWrite(CC25_CSN_pin,HIGH)
-	#define	CC25_CSN_off	digitalWrite(CC25_CSN_pin,LOW)
+	#define	CC25_CSN_off	        digitalWrite(CC25_CSN_pin,LOW)
 	
 	#define	NRF_CSN_on		digitalWrite(NRF_CSN_pin,HIGH)
 	#define	NRF_CSN_off		digitalWrite(NRF_CSN_pin,LOW)
 	
 	#define	CYRF_CSN_on		digitalWrite(CYRF_CSN_pin,HIGH)
-	#define	CYRF_CSN_off	digitalWrite(CYRF_CSN_pin,LOW)
+	#define	CYRF_CSN_off	        digitalWrite(CYRF_CSN_pin,LOW)
 	
 	#define	SPI_CSN_on		digitalWrite(SPI_CSN_pin,HIGH)
 	#define	SPI_CSN_off		digitalWrite(SPI_CSN_pin,LOW)
@@ -329,40 +329,51 @@
 		#define	IS_DIO0_on		( digitalRead(SX1276_DIO0_pin)==HIGH )
 		#define	IS_DIO0_off		( digitalRead(SX1276_DIO0_pin)==LOW )
 	#endif
-	
+
+       #ifdef SX1280_INSTALLED
+	        #undef	RND_pin
+	        #undef  SPI_CSN_pin
+                #define SX1280_CSN_pin             PA15 
+                #define	SX1280_RST_pin	           PA2	
+                #define	SX1280_BUSY_pin            -1
+                #define	SX1280_DIO1_pin            PC13
+	        #define SX1280_TXEN_pin            PB0
+	        #define SX1280_RXEN_pin            -1
+	        #define SX1280_ ANTENNA_SELECT_pin PB4
+	#endif
+
 #endif
 #ifdef ESP32_PLATFORM //ESP32
 	
-	#define	PE1_pin			32							//PE1
-	#define	PE2_pin			33							//PE2
+	#define	PE1_pin		  32	//PE1
+	#define	PE2_pin		  33	//PE2
 	//CS pins
-	#define	CC25_CSN_pin	  22						//CC2500
-	#define	NRF_CSN_pin	  16							//NRF24L01
-	#define	CYRF_RST_pin	  14						//CYRF RESET
-	#define	A7105_CSN_pin	12							//A7105
-	#define	CYRF_CSN_pin	    17						//CYRF CSN
-	//#define    SPI_CSN_pin	  2
+	#define	CC25_CSN_pin	  22	//CC2500
+	#define	NRF_CSN_pin	  16	//NRF24L01
+	#define	CYRF_RST_pin	  14	//CYRF RESET
+	#define	A7105_CSN_pin	  12	//A7105
+	#define	CYRF_CSN_pin	  17	//CYRF CSN
 	//SPI pins	
-	#define	SCK_pin			18							//SCK
-	#define	SDO_pin			19							//MISO
-	#define	SDI_pin			23							//MOSI
+	#define	SCK_pin			18	//SCK
+	#define	SDO_pin			19	//MISO
+	#define	SDI_pin			23	//MOSI
 	//
-	#define	PE1_on  		   digitalWrite(PE1_pin,HIGH)
+	#define	PE1_on  		digitalWrite(PE1_pin,HIGH)
 	#define	PE1_off		 	digitalWrite(PE1_pin,LOW)
 	//
 	#define	PE2_on  		digitalWrite(PE2_pin,HIGH)
 	#define	PE2_off 		digitalWrite(PE2_pin,LOW)
-	#define	A7105_CSN_on	digitalWrite(A7105_CSN_pin,HIGH)
-	#define	A7105_CSN_off	digitalWrite(A7105_CSN_pin,LOW)
+	#define	A7105_CSN_on	        digitalWrite(A7105_CSN_pin,HIGH)
+	#define	A7105_CSN_off	        digitalWrite(A7105_CSN_pin,LOW)
 	
 	#define	CC25_CSN_on		digitalWrite(CC25_CSN_pin,HIGH)
-	#define	CC25_CSN_off	digitalWrite(CC25_CSN_pin,LOW)
+	#define	CC25_CSN_off	        digitalWrite(CC25_CSN_pin,LOW)
 	
 	#define	NRF_CSN_on		digitalWrite(NRF_CSN_pin,HIGH)
 	#define	NRF_CSN_off		digitalWrite(NRF_CSN_pin,LOW)
 	
 	#define	CYRF_CSN_on		digitalWrite(CYRF_CSN_pin,HIGH)
-	#define	CYRF_CSN_off	digitalWrite(CYRF_CSN_pin,LOW)
+	#define	CYRF_CSN_off	        digitalWrite(CYRF_CSN_pin,LOW)
 	
 	#define	SPI_CSN_on		digitalWrite(SPI_CSN_pin,HIGH)
 	#define	SPI_CSN_off		digitalWrite(SPI_CSN_pin,LOW)
@@ -371,33 +382,33 @@
 	#define	CYRF_RST_LO		digitalWrite(CYRF_RST_pin,LOW)	
 	
 	//SX1280
-	#define	BIND_pin		            0//there is no bind on this pin yet bind  from TX menu
+	#define	BIND_pin		       0//there is no bind on this pin yet bind  from TX menu
 	#ifdef BETAFPV_500
 		#define	LED_pin		       16
 		#else
 		#define	LED_pin		       15
 	#endif
 	#define	SX1280_RST_pin	  14	
-	#define	SX1280_BUSY_pin  21
+	#define	SX1280_BUSY_pin   21
 	#define	SX1280_DIO1_pin   4
 	
 	#define SX1280_TXEN_pin   26
 	#define SX1280_RXEN_pin   27
 	
-	#define SX1280_CSN_pin     5//SX1280 CSN pin
-	#define SX1280_MOSI_pin   23 // MOSI pin
-	#define SX1280_MISO_pin    19//MISO pin
-	#define SX1280_SCK_pin      18//SCK pin
+	#define SX1280_CSN_pin     5  //SX1280 CSN pin
+	#define SX1280_MOSI_pin   23  // MOSI pin
+	#define SX1280_MISO_pin   19  //MISO pin
+	#define SX1280_SCK_pin    18  //SCK pin
 	
-	#define SX1280_FAN_EN_pin          17
+	#define SX1280_FAN_EN_pin      17
 	
-	#define SX1280_RCSIGNAL_RX_pin 13 //SPORT usart tx to 5-th pin of I/O connector
+	#define SX1280_RCSIGNAL_RX_pin 13  //SPORT usart tx to 5-th pin of I/O connector
 	#define SX1280_RCSIGNAL_TX_pin 13
-	#define SX1280_RX_pin                   25  //SERIAL CHANNELS 1-st pin of I/O connector
+	#define SX1280_RX_pin          25  //SERIAL CHANNELS 1-st pin of I/O connector
 	
 #endif
 #ifdef ESP8266_PLATFORM //ESP8285
-    #define	BIND_pin		        0
+    #define	BIND_pin		     0
     #define	LED_pin		            16
 
     //RF Switch
@@ -407,7 +418,7 @@
     #define PE2_off
 
     //SX1280
-    #define	SX1280_RST_pin    2		
+    #define	SX1280_RST_pin   2		
     #define	SX1280_BUSY_pin  5
     #define	SX1280_DIO1_pin  4
 
@@ -417,29 +428,29 @@
     #define SX1280_SCK        14
     #define SX1280_CSN_pin    15   
 
-    #define SX1280_RCSIGNAL_RX_pin  3 //SERIAL CHANNELS 1-st pin of I/O connector
+    #define SX1280_RCSIGNAL_RX_pin  3  //SERIAL CHANNELS 1-st pin of I/O connector
     #define SX1280_RCSIGNAL_TX_pin  1  //SPORT usart tx to 5-th pin of I/O connector
     #ifdef MATEK_RX
         #define SX1280_TXEN_pin   10
         #define SX1280_ ANTENNA_SELECT_pin  9
-        #define POWER_OUTPUT_FIXED          3//
+        #define POWER_OUTPUT_FIXED          3
     #else
-        #define SX1280_RXEN_pin      9 //enable pa
-        #define SX1280_TXEN_pin      10
+        #define SX1280_RXEN_pin         9 
+        #define SX1280_TXEN_pin         10
         // Output Power
         #define POWER_OUTPUT_FIXED      1
     #endif
 #endif
-#ifdef ESP_COMMON //ESP32 or ESP8285
+#if defined ESP_COMMON || defined STM32_BOARD //ESP32 or ESP8285 or STM32
 	#define BIND_SET_INPUT		pinMode(BIND_pin,INPUT)
 	#define BIND_SET_PULLUP		digitalWrite(BIND_pin,HIGH)	
 	#define BIND_SET_OUTPUT		pinMode(BIND_pin,OUTPUT)
 	#define IS_BIND_BUTTON_on	(digitalRead(BIND_pin)==LOW)
 	
-	#define	IS_SX1280_DIO1_on		( digitalRead(SX1280_DIO1_pin)==HIGH )
-	#define	IS_SX1280_DIO1_off		( digitalRead(SX1280_DIO1_pin)==LOW )
-	#define	IS_SX1280_BUSY_on		( digitalRead(SX1280_BUSY_pin)==HIGH )
-	#define	IS_SX1280_BUSY_off		( digitalRead(SX1280_BUSY_pin)==LOW)
+	#define	IS_SX1280_DIO1_on	( digitalRead(SX1280_DIO1_pin)==HIGH )
+	#define	IS_SX1280_DIO1_off	( digitalRead(SX1280_DIO1_pin)==LOW )
+	#define	IS_SX1280_BUSY_on	( digitalRead(SX1280_BUSY_pin)==HIGH )
+	#define	IS_SX1280_BUSY_off	( digitalRead(SX1280_BUSY_pin)==LOW)
 	#define	IS_SX1280_FAN_off       ( digitalRead(SX1280_FAN_EN_pin)==LOW)
 	#define	IS_SX1280_FAN_on        ( digitalRead(SX1280_FAN_EN_pin)==HIGH )
 	
