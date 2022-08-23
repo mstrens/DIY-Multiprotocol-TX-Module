@@ -257,7 +257,6 @@
 		{
 			
 			case SX1280_MODE_SLEEP:
-			//hal.WriteCommand(SX1280_RADIO_SET_SLEEP, (uint8_t)0x01);
 			SX1280_WriteCommand(SX1280_RADIO_SET_SLEEP,(uint8_t)0x01,15);
 			
 			break;
@@ -266,30 +265,24 @@
 			break;
 			
 			case SX1280_MODE_STDBY_RC:
-			//hal.WriteCommand(SX1280_RADIO_SET_STANDBY, SX1280_STDBY_RC, 1500);
 			SX1280_WriteCommand(SX1280_RADIO_SET_STANDBY, SX1280_STDBY_RC,1500);
 			//delayMicroseconds(1500);
 			break;
 			
 			case SX1280_MODE_STDBY_XOSC:
-			//hal.WriteCommand(SX1280_RADIO_SET_STANDBY, SX1280_STDBY_XOSC, 50);
 			SX1280_WriteCommand(SX1280_RADIO_SET_STANDBY, SX1280_STDBY_XOSC,50);
 			//delayMicroseconds(50);
 			break;
 			
 			case SX1280_MODE_FS:
-			//hal.WriteCommand(SX1280_RADIO_SET_FS, (uint8_t)0x00, 70);
 			SX1280_WriteCommand(SX1280_RADIO_SET_FS,(uint8_t)0x00,70);
-			//delayMicroseconds(70);
 			break;
 			
 			case SX1280_MODE_RX:
 			buf[0] = RX_TIMEOUT_PERIOD_BASE;
 			buf[1] = timeout >> 8;
 			buf[2] = timeout & 0xFF;
-			//hal.WriteCommand(SX1280_RADIO_SET_RX, buf, sizeof(buf), 100);
 			SX1280_WriteCommandMulti(SX1280_RADIO_SET_RX, buf, sizeof(buf),100);
-			//delayMicroseconds(100);
 			break;
 			
 			case SX1280_MODE_TX:
@@ -355,7 +348,6 @@
 		buf[6] = 0x00;
 		
 		SX1280_WriteCommandMulti(SX1280_RADIO_SET_PACKETPARAMS, buf, sizeof(buf),20);
-		//delayMicroseconds(20);
 	}
 	
 	
@@ -441,8 +433,8 @@
 		
 		uint32_t wtimeoutUS = 1000U;
 		uint32_t startTime = micros();
-		//if(SX1280_BUSY_pin != -1)
-		//{
+		if(SX1280_BUSY_pin != -1)
+		{
 		while (IS_SX1280_BUSY_on) // wait untill not busy or until wtimeoutUS
 		{
 			if ((micros() - startTime) > wtimeoutUS)
@@ -455,18 +447,18 @@
 			}
 		}
 		
-		//}
-		//else
-		//{
+		}
+		else
+		{
 		// observed BUSY time for Write* calls are 12-20uS after NSS de-assert
 		// and state transitions require extra time depending on prior state
-		//	if (BusyDelayDuration)
-		//	{
-		//		while ((micros() - BusyDelayStart) < BusyDelayDuration)
-		//		NOP();
-		//		BusyDelayDuration = 0;
-		//	}
-		//}
+			if (BusyDelayDuration)
+			{
+				while ((micros() - BusyDelayStart) < BusyDelayDuration)
+				NOP();
+				BusyDelayDuration = 0;
+			}
+		}
 		return true;
 	}
 	
@@ -474,7 +466,7 @@
 	
 	void ICACHE_RAM_ATTR BusyDelay(uint32_t duration)
 	{
-		if (IS_SX1280_BUSY_off)
+		if (SX1280_BUSY_pin == -1)
 		{
 			BusyDelayStart = micros();
 			BusyDelayDuration = duration;
@@ -515,16 +507,13 @@
 		#ifdef  SX1280_DIO1_pin
 			attachInterrupt(digitalPinToInterrupt(SX1280_DIO1_pin), dioISR, RISING); //attch interrupt to DIO1
 		#endif
-		////No interrupt for tx 
 		
 		SX1280_Reset();
 		delay(100);
 		
 		uint16_t firmwareRev = SX1280_GetFirmwareVersion();
 		
-		currOpmode = SX1280_MODE_SLEEP;
-		
-		
+		currOpmode = SX1280_MODE_SLEEP;				
 		
 		if ((firmwareRev == 0) || (firmwareRev == 65535))
 		{
@@ -537,11 +526,9 @@
 		SX1280_ConfigModParamsLoRa(SX1280_LORA_BW_0800, SX1280_LORA_SF6, SX1280_LORA_CR_4_7); //Configure Modulation Params                                                                          
 		SX1280_WriteCommand(SX1280_RADIO_SET_AUTOFS, 0x01,15);     //Enable auto FS                                                                 
 		SX1280_WriteReg(0x0891, (SX1280_ReadReg(0x0891) | 0xC0));  //default is low power mode, switch to high sensitivity instead
-		SX1280_SetPacketParamsLoRa(12, SX1280_LORA_PACKET_IMPLICIT,15, SX1280_LORA_CRC_ON, SX1280_LORA_IQ_NORMAL); 
-		
-		
-		SX1280_SetFrequencyReg(currFreq);                                                                                                    //Set Freq
-		SX1280_SetFIFOaddr(0x00, 0x00);                                                                                                      //Config FIFO addr
+		SX1280_SetPacketParamsLoRa(12, SX1280_LORA_PACKET_IMPLICIT,15, SX1280_LORA_CRC_ON, SX1280_LORA_IQ_NORMAL);				
+		SX1280_SetFrequencyReg(currFreq);     //Set Freq
+		SX1280_SetFIFOaddr(0x00, 0x00);     //Config FIFO addr
 		SX1280_SetDioIrqParams(SX1280_IRQ_RADIO_ALL, SX1280_IRQ_TX_DONE | SX1280_IRQ_RX_DONE);  //set IRQ to both RXdone/TXdone on DIO1
 		if (OPT_USE_SX1280_DCDC)
 		{
@@ -732,7 +719,6 @@
 		return CurrentPower;
 	}
 	
-	//*****************
 	void ICACHE_RAM_ATTR SX1280_setPower(uint8_t Power)
 	{	
 		if (Power == CurrentPower)
@@ -749,7 +735,6 @@
 		
 		CurrentSX1280Power = powerValues[Power - MinPower];
 		SX1280_SetOutputPower(CurrentSX1280Power);
-		//SX1280_SetOutputPower(-18);//
 		CurrentPower = Power;
 	}
 	
