@@ -17,6 +17,11 @@
 /********************/
 #ifdef STM32_BOARD
 
+#ifdef SX1280_INSTALLED
+    #define SPI SPI_2
+    #define transfer write
+#endif
+
 #ifdef DEBUG_SERIAL
 //	#define DEBUG_SPI
 #endif
