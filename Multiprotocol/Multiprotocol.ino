@@ -21,8 +21,7 @@
 	along with Multiprotocol.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
+#include "Multiprotocol.h"
 
 //#define DEBUG_PIN		// Use pin TX for AVR and SPI_CS for STM32 => DEBUG_PIN_on, DEBUG_PIN_off, DEBUG_PIN_toggle
 //#define DEBUG_SERIAL	// Only for STM32_BOARD, compiled with Upload method "Serial"->usart1, "STM32duino bootloader"->USB serial
@@ -46,8 +45,6 @@
 	#undef ICACHE_RAM_ATTR //fix to allow both esp32 and esp8266 to use ICACHE_RAM_ATTR for mapping to IRAM
 	#define ICACHE_RAM_ATTR IRAM_ATTR
 #endif
-
-#include "Multiprotocol.h"
 
 //Multiprotocol module configuration file
 #include "_Config.h"
@@ -396,7 +393,7 @@ void setup()
 		pinMode(TX_INV_pin,OUTPUT);
 		pinMode(RX_INV_pin,OUTPUT);
 		#ifdef SX1280_INSTALLED	
-	        pinMode(SX1280_pin,OUTPUT);
+//	        pinMode(SX1280_pin,OUTPUT);
 	        pinMode(SX1280_RST_pin,OUTPUT);	
 	        pinMode(SX1280_BUSY_pin,INPUT);	
 	        pinMode(SX1280_DIO1_pin,INPUT);	
