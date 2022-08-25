@@ -473,8 +473,7 @@
 		}
 	}
 	
-	
-	int32_t ICACHE_RAM_ATTR SX1280_complement2( const uint32_t num, const uint8_t bitCnt )
+/*	int32_t ICACHE_RAM_ATTR SX1280_complement2( const uint32_t num, const uint8_t bitCnt )
 	{
 		int32_t retVal = ( int32_t )num;
 		if( num >= 2<<( bitCnt - 2 ) )
@@ -483,7 +482,32 @@
 		}
 		return retVal;
 	}
+*/
+        int32_t ICACHE_RAM_ATTR SX1280_complement2( const uint32_t num, const uint8_t bitCnt ) // convert bitCnt bitlength number in 2-complement notation to int32_t
+    {
+        int32_t retVal = ( int32_t )num; //cast bitCnt length number to int32
+        if( retVal & (1<<(bitCnt-1)) ) // check for sign bit at position bitCnt, if not set return value as is, else...
+        {
+            retVal -= 1<<bitCnt;       // convert from bitCnt 2-complement to 32bit 2-complement format by inverting all bits and subtracting 1, done by subtrating binary value of 1 followed by bitCnt zeroes
+        }
+        return retVal;
+    }
+
+    int32_t ICACHE_RAM_ATTR SX1280_Fei() // return Frequency Error Indicator
+    {
+        uint32_t fei = 0;
+        fei |= SX1280_ReadReg(0x0956);
+        fei |= SX1280_ReadReg(0x0955)<<8;
+        fei |= SX1280_ReadReg(0x0954)<<16;
+        int32_t retVal = SX1280_complement2 (fei, 20);
+        return retVal;
+    }
 	
+    int32_t ICACHE_RAM_ATTR SX1280_FeiHz(const int32_t fei, uint8_t bw)  // return Frequency Error Indicator in Hz, depending on Bandwith selected
+    {
+        int32_t retVal = 1.55*fei/(1600/bw);
+        return retVal;
+    }
 	
 	/* Steps for startup
 		1. If not in STDBY_RC mode, then go to this mode by sending the command:
