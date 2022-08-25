@@ -171,7 +171,7 @@
 	
 	// LED
 	#ifdef ORANGE_TX
-		#define LED_pin		1		   //PD1
+		#define LED_pin		1		 //PD1
 		#define LED_port	PORTD
 		#define LED_ddr		DDRD
 		#define LED_on		LED_port.OUTCLR	= _BV(LED_pin)
@@ -180,7 +180,7 @@
 		#define LED_output	LED_port.DIRSET	= _BV(LED_pin)
 		#define IS_LED_on	(LED_port.OUT & _BV(LED_pin))
 		#else
-		#define LED_pin		5		    //D13 = PB5
+		#define LED_pin		5		 //D13 = PB5
 		#define LED_port	PORTB
 		#define LED_ddr		DDRB
 		#define LED_on		LED_port |= _BV(LED_pin)
@@ -318,8 +318,8 @@
 	
 	#ifdef MULTI_5IN1_INTERNAL
 		#undef	RND_pin
-		#define	SX1276_RST_pin	PA2		//LED2 on other modules
-		#define	SX1276_TXEN_pin	PB0		//Random gen on other modules
+		#define	SX1276_RST_pin	PA2	//LED2 on other modules
+		#define	SX1276_TXEN_pin	PB0	//Random gen on other modules
 		#define	SX1276_DIO0_pin	PC13	//Unused on other modules
 		
 		#define	SX1276_RST_on	digitalWrite(SX1276_RST_pin,HIGH)
@@ -395,7 +395,7 @@
 	#define SX1280_RXEN_pin   27
 	
 	#define SX1280_CSN_pin     5  //SX1280 CSN pin
-	#define SX1280_MOSI_pin   23  // MOSI pin
+	#define SX1280_MOSI_pin   23  //MOSI pin
 	#define SX1280_MISO_pin   19  //MISO pin
 	#define SX1280_SCK_pin    18  //SCK pin
 	
@@ -433,11 +433,10 @@
     #ifdef MATEK_RX
         #define SX1280_TXEN_pin           10
         #define SX1280_ANTENNA_SELECT_pin  9  //diversity
-        #define POWER_OUTPUT_FIXED          3
+        #define POWER_OUTPUT_FIXED         3
     #else
         #define SX1280_RXEN_pin         9 
         #define SX1280_TXEN_pin         10
-        // Output Power
         #define POWER_OUTPUT_FIXED      3
     #endif
 #endif
@@ -467,7 +466,7 @@
 	#define SX1280_CSN_off          digitalWrite(SX1280_CSN_pin,LOW)
 	
 	#define SX1280_FAN_EN_on        digitalWrite(SX1280_FAN_EN_pin,HIGH)
-	#define SX1280_FAN_EN_off       digitalWrite(SX1280_FAN_EN_pin,HIGH)
+	#define SX1280_FAN_EN_off       digitalWrite(SX1280_FAN_EN_pin,LOW)
 
 	#define SX1280_ANTENNA_SELECT_on  digitalWrite(SX1280_ANTENNA_SELECT_pin,HIGH)
         #define SX1280_ANTENNA_SELECT_off digitalWrite(SX1280_ANTENNA_SELECT_pin,LOW)
