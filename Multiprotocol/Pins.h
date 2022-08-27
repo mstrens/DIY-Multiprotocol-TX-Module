@@ -322,24 +322,30 @@
 		#define	SX1276_TXEN_pin	PB0	//Random gen on other modules
 		#define	SX1276_DIO0_pin	PC13	//Unused on other modules
 		
-		#define	SX1276_RST_on	digitalWrite(SX1276_RST_pin,HIGH)
-		#define	SX1276_RST_off	digitalWrite(SX1276_RST_pin,LOW)
-		#define	SX1276_TXEN_on	digitalWrite(SX1276_TXEN_pin,HIGH)
-		#define	SX1276_RXEN_on	digitalWrite(SX1276_TXEN_pin,LOW)
+		#define	SX1276_RST_on	        digitalWrite(SX1276_RST_pin,HIGH)
+		#define	SX1276_RST_off	        digitalWrite(SX1276_RST_pin,LOW)
+		#define	SX1276_TXEN_on	        digitalWrite(SX1276_TXEN_pin,HIGH)
+		#define	SX1276_RXEN_on	        digitalWrite(SX1276_TXEN_pin,LOW)
 		#define	IS_DIO0_on		( digitalRead(SX1276_DIO0_pin)==HIGH )
 		#define	IS_DIO0_off		( digitalRead(SX1276_DIO0_pin)==LOW )
 	#endif
 
        #ifdef SX1280_INSTALLED
-	        #undef	RND_pin
-                #define SX1280_CSN_pin             PA15 
-                #define	SX1280_RST_pin	           PA2	
-                #define	SX1280_BUSY_pin            -1
-                #define	SX1280_DIO1_pin            PC13
-	        #define SX1280_TXEN_pin            PB0
-	        #define SX1280_RXEN_pin            -1
-	        #define SX1280_ANTENNA_SELECT_pin  PB4
-	#endif
+                #define SX1280_CSN_pin    PA15 //SPI_CSN from external SPI port CS pin
+                #define	SX1280_RST_pin	  PA4  //PA4 dial switch pins(4 pins totally)
+                #define	SX1280_BUSY_pin   PA5  //PA5 dial switch pins(4 pins)
+                #define	SX1280_DIO1_pin   PA6  //PA6 dial switch pins(4 pins)
+                #define SX1280_SCK        PB13 //SCK from external SPI port
+                #define SX1280_MISO       PB14 //MISO from external SPI port
+	        #define SX1280_MOSI_pin   PB15 /MOSI from external SPI port
+	        #define SX1280_TXEN_pin   PA7  //PA7 dial switch pins(4 pins)
+	        #define SX1280_RXEN_pin    -1  //maybe there is no need for  RXEN (if RFX2401/2411 PA/LNA or similar logic)
+                //You can connect SX1280 RXEN pin to 3.3V using a 1K pullup resistor.
+                //PA9 TX serial - free to use 
+                //PA10 RX serial - free to use 
+	        //USB_DM PA11 -free to use for boards that have USB pins exposed
+	        //USB_DP PA12 -free to use for boards that have USB pins exposed
+       #endif
 
 #endif
 #ifdef ESP32_PLATFORM //ESP32
