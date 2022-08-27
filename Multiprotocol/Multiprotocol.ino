@@ -393,14 +393,12 @@ void setup()
 		pinMode(TX_INV_pin,OUTPUT);
 		pinMode(RX_INV_pin,OUTPUT);
 		#ifdef SX1280_INSTALLED	
-//	        pinMode(SX1280_pin,OUTPUT);
 	        pinMode(SX1280_RST_pin,OUTPUT);	
 	        pinMode(SX1280_BUSY_pin,INPUT);	
 	        pinMode(SX1280_DIO1_pin,INPUT);	
 	        pinMode(SX1280_TXEN_pin,OUTPUT);	
 	        pinMode(SX1280_RXEN_pin,OUTPUT);	
 	        pinMode(SX1280_CSN_pin,OUTPUT);
-	        pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
 		SX1280_TXEN_off;
 	        SX1280_RXEN_off;
 	        SX1280_CSN_on;
@@ -416,20 +414,19 @@ void setup()
 		#endif
 		pinMode(BIND_pin,INPUT_PULLUP);
 		pinMode(PPM_pin,INPUT);
+	        #ifndef SX1280_INSTALLED
 		pinMode(S1_pin,INPUT_PULLUP);				// dial switch
 		pinMode(S2_pin,INPUT_PULLUP);
 		pinMode(S3_pin,INPUT_PULLUP);
 		pinMode(S4_pin,INPUT_PULLUP);
-		
+		#endif
 		#ifdef MULTI_5IN1_INTERNAL
 			//pinMode(SX1276_RST_pin,OUTPUT);		// already done by LED2_pin
 			pinMode(SX1276_TXEN_pin,OUTPUT);		// PB0
 			pinMode(SX1276_DIO0_pin,INPUT_PULLUP);
 			#else
 			//Random pin
-	        #ifndef SX1280_INSTALLED
 			pinMode(RND_pin, INPUT_ANALOG);			// set up PB0 pin for analog input
-	        #endif
 		#endif
 		
 		#if defined ENABLE_DIRECT_INPUTS
@@ -607,7 +604,11 @@ void setup()
 	#ifndef ENABLE_PPM
 		mode_select = MODE_SERIAL ;	// force serial mode
 		#elif defined STM32_BOARD
+	        #ifdef SX1280_INSTALLED
+	        mode_select = MODE_SERIAL ;	// force serial mode
+	        #else
 		mode_select= 0x0F -(uint8_t)(((GPIOA->regs->IDR)>>4)&0x0F);
+	        #endif
 		#elif defined  ESP_COMMON
 		mode_select = MODE_SERIAL ;	// force serial mode
 		#else
