@@ -715,9 +715,6 @@
 	{
 		CurrentPower = PWR_COUNT;
 		//SX1280_LoadCalibration();
-	        #ifdef ESP8266_PLATFORM
-	        SX1280_SetOutputPower(POWER_OUTPUT_FIXED);
-	        #else
 	        if(is_in_binding == true)
 	        SX1280_setPower(MinPower);
 	        else 
@@ -744,7 +741,12 @@
 	}
 	
 	void ICACHE_RAM_ATTR SX1280_setPower(uint8_t Power)
-	{	
+	{
+		#ifdef ESP8266_PLATFORM
+                 SX1280_SetOutputPower(Power);
+                 return;
+                 #endif
+		
 		if (Power == CurrentPower)
 		return;
 		
