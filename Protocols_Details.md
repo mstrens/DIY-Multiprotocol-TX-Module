@@ -2073,13 +2073,17 @@ CH1|CH2|CH3|CH4|CH5|CH6|CH7|CH8
 FCC 16 channels
 ### Sub_protocol M16 - *0*
 16 channels in alternate frames
-### Sub_protocol M16-8CH - *1*
-8 channels 
-### Sub_protocol WIFI-TX - *2*
+### Sub_protocol M16_8CH - *1*
+8 channels
+### Sub_protocol MEU_16 - *2*
+LBT(EU) 16 channels on alternate frames
+### Sub_protocol MEU_8 - *3*
+LBT(EU) 8 channels
+### Sub_protocol WIFI-TX - *4*
 put TX in wifi mode for flashing TX module firmware OTA
 Choose "WiFI-TX" from TX handset protocol menu.
 Tx module  will trigger an WiFi AP for connection to a config and web portal for uploading TX firmware OTA
-### Sub_protocol WIFI-RX - *3*
+### Sub_protocol WIFI-RX - *5*
 put TX in wifi mode for flashing RX firmware OTA
 Choose "WiFI-RX" from TX handset protocol menu 
 Rx will trigger an WiFi AP for connection to a config and web portal for uploading RX firmware OTA
