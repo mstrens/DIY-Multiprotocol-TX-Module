@@ -231,7 +231,7 @@
 		packet[13] = (*ch)(6+j)>>6|((*ch)(7+j)&0xFF)<<5;
 		packet[14] = ((*ch)(7+j)>>3)& 0x00FF;
 		
-		if(sub_protocol & 1 )// in M16/CH1-8 mode send only 8ch every interval us
+		if(sub_protocol == MCH_8 || sub_protocol == MEU_8)// in M16/CH1-8 mode send only 8ch every interval us
 		lpass = 0 ;
 		else
 		lpass += 1 ;
