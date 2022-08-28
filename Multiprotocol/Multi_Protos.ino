@@ -164,7 +164,7 @@ const char STR_SUBTYPE_FUTABA[] =     "\x05""SFHSS";
 const char STR_SUBTYPE_JJRC345[] =    "\x08""JJRC345\0""SkyTmblr";
 const char STR_SUBTYPE_MOULKG[] =     "\x06""Analog""Digit\0";
 const char STR_SUBTYPE_KF606[] =      "\x06""KF606\0""MIG320";
-const char STR_SUBTYPE_MILO[] =      "\x07""M16\0   ""M16_8ch""WiFi-TX""WiFi-RX";
+const char STR_SUBTYPE_MILO[] =      "\x07""M16\0   ""M16_8ch""MEU_16 ""MEU_8  ""WiFi-TX""WiFi-RX";
 
 #define NO_SUBTYPE		nullptr
 
@@ -476,7 +476,7 @@ const mm_protocol_definition multi_protocols[] = {
 		{PROTO_NANORF,     STR_NANORF,    NO_SUBTYPE,            0, OPTION_NONE,    0, 0, SW_NRF,    NANORF_init,     NANORF_callback     },
 	#endif
 	#if defined(MILO_SX1280_INO)
-	{PROTO_MILO,     STR_MILO,    STR_SUBTYPE_MILO,    4, OPTION_RFPOWER,  1, 0, 0, MILO_init,     MILO_callback     },
+	{PROTO_MILO,     STR_MILO,    STR_SUBTYPE_MILO,    6, OPTION_RFPOWER,  1, 0, 0, MILO_init,     MILO_callback     },
 	#endif
 	{0xFF,             nullptr,       nullptr,               0, 0,              0, 0, 0,         nullptr,         nullptr             }
 
