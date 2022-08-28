@@ -494,8 +494,10 @@ enum MILO
 {
 	MCH_16	        = 0,
 	MCH_8	        = 1,
-        WIFI_TX     = 2,
-	WIFI_RX         = 3,
+	MEU_16          = 2,
+	MEU_8           = 3,
+        WIFI_TX         = 4,
+	WIFI_RX         = 5,
 };
 
 
@@ -732,6 +734,29 @@ enum MultiPacketTypes
 //************************
 //***  Power settings  ***
 //************************
+
+//MILO_SX1280 Power
+ enum SX1280_POWER
+{
+	PWR_10mW = 0,
+	PWR_25mW = 1,
+	PWR_50mW = 2,
+	PWR_100mW = 3,
+	PWR_250mW = 4,
+	PWR_500mW = 5,
+	PWR_COUNT = 6,
+} ;
+#define MinPower PWR_10mW
+#define MaxPower PWR_10mW
+static const int16_t powerValues[PWR_COUNT] = {-17,-13,-9,-6,-2} ;//10,25,50,100,250  --> Values from ELRS JSON for generic PA RX "power_values": [-10,-6,-3,1],
+#if defined  HM_ES24TXH
+#define MaxPower PWR_250mW
+static const int16_t powerValues[PWR_COUNT] = {-17,-13,-9,-6,-2} ;//10,25,50,100,250
+#elif defined BETAFPV_500
+#define MaxPower PWR_500mW
+static const int16_t powerValues[PWR_COUNT] = {-18,-15,-13,-9,-4,3} ;//10,25,50,100,250,500
+#endif
+
 enum {
 	TXPOWER_100uW,
 	TXPOWER_300uW,
