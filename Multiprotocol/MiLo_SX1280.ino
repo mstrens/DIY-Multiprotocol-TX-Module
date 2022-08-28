@@ -25,30 +25,7 @@
 	#define RATE_100HZ 1 //100HZ
 	#define RATE_150HZ 0 //150HZ
 	#define RATE_MAX 3
-	enum
-	{
-		PWR_10mW = 0,
-		PWR_25mW = 1,
-		PWR_50mW = 2,
-		PWR_100mW = 3,
-		PWR_250mW = 4,
-		PWR_500mW = 5,
-		PWR_COUNT = 6,
-	} ;
-	
-    // generic conservative values 
-    #define MinPower PWR_10mW
-	#define MaxPower PWR_10mW
-    static const int16_t powerValues[PWR_COUNT] = {-17,-13,-9,-6,-2} ;//10,25,50,100,250  --> Values from ELRS JSON for generic PA RX "power_values": [-10,-6,-3,1],
-
-    #if defined  HM_ES24TXH
-		#define MaxPower PWR_250mW
-		static const int16_t powerValues[PWR_COUNT] = {-17,-13,-9,-6,-2} ;//10,25,50,100,250
-		#elif defined BETAFPV_500
-		#define MaxPower PWR_500mW
-		static const int16_t powerValues[PWR_COUNT] = {-18,-15,-13,-9,-4,3} ;//10,25,50,100,250,500
-	#endif
-	
+		
 	uint8_t TelemetryId;
 	uint8_t TelemetryExpectedId;
 	
@@ -64,6 +41,9 @@
 	uint8_t chanskip = 0;
 	bool frameReceived = false;
 	uint8_t frameType = 0;
+        extern uint8_t CurrentPower;
+        extern bool LBTEnabled;
+        bool LBTStarted = false;
 	#ifdef SPORT_SEND
 		uint8_t idxOK;
 	#endif
@@ -92,7 +72,8 @@
 		MiLo_DATA2,
 		MiLo_UPLNK_TLM,
 		MiLo_DWLNK_TLM1,
-		MiLo_DWLNK_TLM2
+		MiLo_DWLNK_TLM2,
+	        MiLo_USE_LBT
 	};
 	
 	enum{
@@ -232,7 +213,7 @@
 		packet[2] = rx_tx_addr[2];
 		packet[3] =  (packet_count == 2) ? RX_num | 0x80 : RX_num & 0x3F ;//max 64 values
 		if(packet_count != 2){
-			if (sub_protocol & 3 == WIFI_RX)
+			if (sub_protocol == WIFI_RX)
 			packet[3] = RX_num & 0x7F;//trigger WiFi updating firmware for RX
 		}
 		
@@ -340,7 +321,13 @@
 				// MiLo_SetRFLinkRate(RATE_100HZ);
 				//else 
 				MiLo_SetRFLinkRate(RATE_150HZ);
-				state = MiLo_DATA1;
+			        if(sub_protocol == MEU_16 || sub_protocol == MEU_8)
+				{		
+		                      state = MiLo_USE_LBT;
+		                      LBTEnabled = true;
+                                }
+		                else 
+				      state = MiLo_DATA1;
 				MiLo_telem_init();
 			}
 			SX1280_SetTxRxMode(TXRX_OFF);
@@ -372,12 +359,41 @@
 			packet_count = 0;
 			is_in_binding = false;
 			BIND_DONE;
-			state = MiLo_DATA1;				
+	                if(sub_protocol == MEU_16 || sub_protocol == MEU_8)
+			{		
+		              state = MiLo_USE_LBT;
+		              LBTEnabled = true;
+                        }
+		        else
+			state = MiLo_DATA1;
+		        case MiLo_USE_LBT:
+		        packet_count = (packet_count + 1)%3;
+		        CurrentPower = PWR_100mW;
+		        SX1280_setPower(CurrentPower);
+  		        nextChannel(1);
+		        SX1280_SetFrequencyReg(GetCurrFreq());
+		        BeginClearChannelAssessment();
+			if(LBTStarted)
+			{
+			       LBTStarted = false;
+			       state = MiLo_UPLNK_TLM;
+		        }
+		        else	
+		        state = MiLo_DATA1;
+		        return SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);		
 			case MiLo_DATA1:
-			packet_count = (packet_count + 1)%3;
-			MiLo_data_frame();
-			nextChannel(1);
-			SX1280_SetFrequencyReg(GetCurrFreq());
+			if (LBTEnabled){
+		              if(!ChannelIsClear())
+		                   SX1280_setPower(PWR_10mW);
+		        MiLo_data_frame();		
+		        }
+			else
+			{		
+			       packet_count = (packet_count + 1)%3;
+			       MiLo_data_frame();
+			       nextChannel(1);
+			       SX1280_SetFrequencyReg(GetCurrFreq());
+			}
 			SX1280_WriteBuffer(0x00, packet,PayloadLength); //
 			SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise
 			SX1280_SetMode(SX1280_MODE_TX);
@@ -389,18 +405,39 @@
 			}
 			else{
 				if(SportHead != SportTail && upTLMcounter == 2){//next frame in uplink telemetry
-					state = MiLo_UPLNK_TLM;
+					if(LBTEnabled)
+					{		
+		                             state = MiLo_USE_LBT;
+					     LBTStarted = true;
+                                        }
+		                        else
+					     state = MiLo_UPLNK_TLM;
+					
 					upTLMcounter  = 0;//reset uplink telemetry counter
 					break;
 				}		
-			}		
+			}
+		        if(LBTEnabled)
+			{		
+		              state = MiLo_USE_LBT;
+                        }
+		        else
 			state = MiLo_DATA1;			
 			break;		
 			case MiLo_UPLNK_TLM:	//Uplink telemetry
-			packet_count = (packet_count + 1)%3;	
-			MiLo_Telemetry_frame();
-			nextChannel(1);
-			SX1280_SetFrequencyReg(GetCurrFreq());		
+	                if (LBTEnabled)
+			{
+		              if(!ChannelIsClear())
+		                   SX1280_setPower(PWR_10mW);
+		              MiLo_Telemetry_frame();		
+		         }
+	                else
+			{	
+			       packet_count = (packet_count + 1)%3;	
+			       MiLo_Telemetry_frame();
+			       nextChannel(1);
+			       SX1280_SetFrequencyReg(GetCurrFreq());
+			}
 			SX1280_WriteBuffer(0x00, packet, PayloadLength); 
 			SX1280_SetMode(SX1280_MODE_TX);	
 			state = MiLo_DWLNK_TLM1;// next frame is RX downlink temetry
@@ -413,9 +450,9 @@
 			packet_count = (packet_count + 1)%3;
 			
 			if(SportHead != SportTail)
-			upTLMcounter++;	//increment using downlink TLM clock
+			       upTLMcounter++;	//increment using downlink TLM clock
 			else
-			upTLMcounter = 0;//reset counter
+			       upTLMcounter = 0;//reset counter
 			
 			state = MiLo_DWLNK_TLM2;
 			return 7600; 
@@ -432,7 +469,11 @@
 					frameReceived = false;
 				}
 			}
-			
+			 if(LBTEnabled)
+			 {		
+		                state = MiLo_USE_LBT;
+                         }
+		         else	
 			state = MiLo_DATA1;
 			return 1000;		
 		}		
