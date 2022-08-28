@@ -1,6 +1,4 @@
-
-
-
+//SX1280 functions
 uint16_t ICACHE_RAM_ATTR SX1280_GetIrqStatus( void );
 void ICACHE_RAM_ATTR SX1280_ClearIrqStatus( uint16_t irqMask );
 bool  ICACHE_RAM_ATTR SX1280_Begin(void);
@@ -40,3 +38,7 @@ void  ICACHE_RAM_ATTR SX1280_SetOutputPower( int8_t power );
 int32_t ICACHE_RAM_ATTR SX1280_GetLoRaBandwidth(void);
 int32_t ICACHE_RAM_ATTR complement2( const uint32_t num, const uint8_t bitCnt );
 double ICACHE_RAM_ATTR SX1280_GetFrequencyError(void);
+uint32_t SpreadingFactorToRSSIvalidDelayUs(uint8_t SF);
+int8_t ICACHE_RAM_ATTR PowerEnumToLBTLimit(uint8_t txPower);
+void ICACHE_RAM_ATTR BeginClearChannelAssessment(void);
+bool ICACHE_RAM_ATTR ChannelIsClear(void);
