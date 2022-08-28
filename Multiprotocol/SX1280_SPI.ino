@@ -719,7 +719,7 @@
 	        SX1280_setPower(MinPower);
 	        else 
 	        SX1280_setPower(PWR_100mW);
-	        #endif
+	
 	}
 	
 	uint8_t  SX1280_decPower()
