@@ -713,12 +713,8 @@
 	
 	void ICACHE_RAM_ATTR POWER_init()
 	{
-		CurrentPower = PWR_COUNT;
-		//SX1280_LoadCalibration();
-	        if(is_in_binding == true)
-	        SX1280_setPower(MinPower);
-	        else 
-	        SX1280_setPower(PWR_100mW);
+                CurrentPower = PWR_COUNT;
+                SX1280_setPower(MinPower);// set to minimum(10mW)
 	
 	}
 	
@@ -733,7 +729,7 @@
 	
 	uint8_t  SX1280_incPower()
 	{
-		if (CurrentPower > MinPower)
+		if (CurrentPower < MaxPower)
 		{
 			SX1280_setPower((uint8_t)CurrentPower + 1);
 		}
@@ -742,10 +738,6 @@
 	
 	void ICACHE_RAM_ATTR SX1280_setPower(uint8_t Power)
 	{
-		#ifdef ESP8266_PLATFORM
-                 SX1280_SetOutputPower(Power);
-                 return;
-                 #endif
 		
 		if (Power == CurrentPower)
 		return;
@@ -758,8 +750,11 @@
 		{
 			Power = MaxPower;
 		}
-		
-		CurrentSX1280Power = powerValues[Power - MinPower];
+	       #ifdef POWER_OUTPUT_FIXED
+	         CurrentSX1280Power = power;
+	       #else
+	         CurrentSX1280Power = powerValues[Power - MinPower];
+	       #endif
 		SX1280_SetOutputPower(CurrentSX1280Power);
 		CurrentPower = Power;
 	}
