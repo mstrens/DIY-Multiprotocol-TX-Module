@@ -17,7 +17,7 @@
 
 #if defined(MILO_SX1280_INO)
 	
-	#include "FHSS.h"
+	#include "Milo_FHSS.h"
 	#include "iface_sx1280.h"
 	#include "SX1280.h"
 	#define RATE_DEFAULT 0 
