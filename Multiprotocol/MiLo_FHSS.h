@@ -212,9 +212,9 @@
     {
         _seed = seed;
             
-        bool used_flag[FHSS_FREQ_LIST_MAX_LEN];
+        bool used_flag[FHSS_MAX_NUM];
         
-        for (uint8_t ch = 0; ch < FHSS_FREQ_LIST_MAX_LEN; ch++) 
+        for (uint8_t ch = 0; ch < FHSS_MAX_NUM; ch++) 
         used_flag[ch] = false;
 
         uint8_t k = 0;
