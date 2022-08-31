@@ -11,7 +11,7 @@
     // #define SX1280_FREQ_STEP                  ((double)(SX1280_FREQ_XTAL_HZ / pow(2.0,18.0))) // 198.3642578
     // #define SX1280_FREQ_HZ_TO_REG(f_hz)       ((uint32_t)( (double)f_hz / (double)SX1280_FREQ_STEP ))
     // the pow(x,y) is ugly, and using GHz units is more convenient
-
+  
     // channel list expanded to match list in Bluetooth core specification 5.3 page 389: f=2402+k MHz, k=0..78
     const uint32_t fhss_freq_list_2p4[] = 
     {
@@ -113,9 +113,8 @@
     // redpine:
     // same prng as spektrum, picks 50 channels, ensures not close and not 0,1
 
-    #define FHSS_FREQ_LIST_MAX_LEN  80 
-    #define FHSS_MAX_NUM    68  // must be <= FHSS_FREQ_LIST_MAX_LEN
-    #define FHSS_CHANNELS_NUM  47  // must be <= FHSS_MAX_NUM
+    #define FHSS_MAX_NUM    80  
+    #define FHSS_CHANNELS_NUM  68
 
     uint32_t _seed;
     bool is_in_binding;
