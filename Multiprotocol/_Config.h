@@ -75,7 +75,7 @@
 //!!!If a RF chip is present it MUST be marked as installed!!! or weird things will happen you have been warned.
 //#define A7105_INSTALLED
 //#define CYRF6936_INSTALLED
-#define CC2500_INSTALLED
+//#define CC2500_INSTALLED
 //#define NRF24L01_INSTALLED
 //#define SX1276_INSTALLED		// only supported on STM32 modules
 #define SX1280_INSTALLED
@@ -278,7 +278,7 @@
 	//The protocols below need a SX1276 to be installed
 	#define	FRSKYR9_SX1276_INO
 */
-#define	FRSKYX_CC2500_INO
+//#define	FRSKYX_CC2500_INO
 #define MILO_SX1280_INO
 /***************************/
 /*** PROTOCOLS SETTINGS  ***/

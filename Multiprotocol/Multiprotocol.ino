@@ -103,17 +103,17 @@
         HardwareSerial Serial_2(1);
         static hw_timer_t  *timer = NULL;	
         static intr_handle_t handle_console;
+	void ICACHE_RAM_ATTR uart_intr_handle(void *arg);
     #endif
     #ifdef ESP8266_PLATFORM
         #define HWTIMER() (2*ESP.getCycleCount()/clockCyclesPerMicrosecond())
         #define timerRead(timer) HWTIMER()
         #define getEfuseMac() getChipId()
-    #endif	
-	void initSPI(void);
 	void ICACHE_RAM_ATTR callSerialChannels(void);
 	void ICACHE_RAM_ATTR processIncomingByte (const byte inByte);
+    #endif	
+	void initSPI(void);
 	void ICACHE_RAM_ATTR processSerialChannels();
-	void ICACHE_RAM_ATTR uart_intr_handle(void *arg);
 	void ICACHE_RAM_ATTR SerialChannelsInit(void);
 	void ICACHE_RAM_ATTR SportSerialInit(void);
 	uint32_t OCR1A = 0;
@@ -123,6 +123,14 @@
 	#undef CHECK_FOR_BOOTLOADER
 	#define EEPROM_SIZE 256
 	//#define TEST
+void callMicrosSerial(){
+static uint32_t tim = 0 ;
+static uint32_t timt = 0 ;	
+timt = micros();
+Serial.println(timt - tim);
+tim = micros();
+}
+	
 #endif
 
 
@@ -645,7 +653,7 @@ void setup()
 	modules_reset();
 	
 	
-    #if defined STM32_BOARD || defined  ESP32_COMMON
+    #if defined STM32_BOARD || defined  ESP_COMMON
         uint32_t seed=0;
         for(uint8_t i=0;i<4;i++)
         #ifdef RND_pin
@@ -808,12 +816,13 @@ void loop()
 
 				cli();
 
-		                #if defined  ESP_COMMON
-				        processSerialChannels();
+		                #ifdef ESP_COMMON
+                      processSerialChannels();
 					TCNT1 = timerRead(timer);
 				#ifdef ESP32_PLATFORM
 					timerWrite(timer,TCNT1);
-				#else
+					#endif
+				#ifdef ESP8266_PLATFORM
 				timer0_write(2*TCNT1);
 				#endif
 				#endif					               // Disable global int due to RW of 16 bits registers
@@ -822,12 +831,12 @@ void loop()
 				
 			}		
 		}
-		#if defined  ESP_COMMON
+		#ifdef ESP_COMMON
 		if(protocol == PROTO_MILO && sub_protocol == WIFI_TX)
 			startWifiManager();
 		#endif
         #ifdef ESP8266_PLATFORM
-            callSerialChannels();
+         callSerialChannels();
 		#endif
 		TX_MAIN_PAUSE_on;
 		tx_pause();
@@ -843,15 +852,15 @@ void loop()
 				TIMER2_BASE->SR = 0x1E5F & ~TIMER_SR_CC1IF;	// Clear Timer2/Comp1 interrupt flag
 		              #endif
 		
-		#if defined  ESP_COMMON	
-			TCNT1 = timerRead(timer); 		
-		#endif
+		//#ifdef ESP_COMMON	
+		TCNT1 = timerRead(timer); 		
+		//#endif
 		diff = OCR1A - TCNT1;// Calc the time difference
 		#ifdef ESP_COMMON
 		processSerialChannels();
 		#endif
 		sei();		// Enable global int	
-		// Serial.println(diff);
+		//Serial.println(diff);
 		
 		if((diff & 0x8000) && !(next_callback & 0x8000))//32768
 		{ // Negative result = callback should already have been called... 
@@ -873,7 +882,7 @@ void loop()
 				#elif defined STM32_BOARD
 				while((TIMER2_BASE->SR & TIMER_SR_CC1IF )==0)
 			#endif
-			#if defined  ESP32_COMMON
+			#ifdef ESP_COMMON
 				while(diff > (900*2))
 			#endif
 			{
@@ -893,7 +902,7 @@ void loop()
 					if(remote_callback==0)
 					break;
 					cli();
-					#if defined  ESP_COMMON		
+					#ifdef ESP_COMMON		
 					TCNT1 = timerRead(timer) ; 
 					#endif	// Disable global int due to RW of 16 bits registers
 					diff = OCR1A - TCNT1;				// Calc the time difference
@@ -1275,7 +1284,7 @@ inline void tx_resume()
 	#endif
 }
 
-
+#if defined AVR_COMMON || defined STM32_BOARD
 void rf_switch(uint8_t comp)
 {
 	PE1_off;
@@ -1292,7 +1301,7 @@ void rf_switch(uint8_t comp)
 		break;
 	}
 }
-
+#endif
 // Protocol start
 static void protocol_init()
 {
@@ -2628,6 +2637,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 	}
 	
 #endif
+
 #ifdef ESP_COMMON
 	
 	void ICACHE_RAM_ATTR processSerialChannels()
@@ -2642,7 +2652,6 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 				memcpy((void*)rx_ok_buff,(const void*)rx_buff,rx_len);// Duplicate the buffer
 				rx_idx = 0;      // reset buffer for next time
 				RX_FLAG_on;	// Flag for main to process data		   
-			
 			#ifdef MULTI_SYNC
 				last_serial_input = timerRead(timer);
 			#endif

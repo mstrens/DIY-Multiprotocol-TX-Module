@@ -756,6 +756,7 @@ static const int16_t powerValues[PWR_COUNT] = {-17,-13,-9,-6,-2} ;//10,25,50,100
 #define MaxPower PWR_500mW
 static const int16_t powerValues[PWR_COUNT] = {-18,-15,-13,-9,-4,3} ;//10,25,50,100,250,500
 #endif
+// MILO_SX1280 Power
 
 enum {
 	TXPOWER_100uW,
@@ -842,7 +843,7 @@ enum CYRF_POWER
 	CYRF_POWER_6 = 0x06,	//   0dbm
 	CYRF_POWER_7 = 0x07		//  +4dbm
 };
-#define CYRF_HIGH_POWER		CYRF_POWER_7
+#define    CYRF_HIGH_POWER		CYRF_POWER_7
 #define	CYRF_LOW_POWER		CYRF_POWER_3
 #define	CYRF_RANGE_POWER	CYRF_POWER_1	// 1/30 of the full power distance
 #define	CYRF_BIND_POWER		CYRF_POWER_0

@@ -446,6 +446,7 @@
         #define POWER_OUTPUT_FIXED      3
     #endif
 #endif
+
 #if defined ESP_COMMON || defined STM32_BOARD //ESP32 or ESP8285 or STM32
 	#define BIND_SET_INPUT		pinMode(BIND_pin,INPUT)
 	#define BIND_SET_PULLUP		digitalWrite(BIND_pin,HIGH)	

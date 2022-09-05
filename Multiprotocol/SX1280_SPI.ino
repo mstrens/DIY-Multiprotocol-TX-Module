@@ -290,9 +290,7 @@
 			buf[0] = RX_TIMEOUT_PERIOD_BASE;
 			buf[1] = 0xFF; // no timeout set for now
 			buf[2] = 0xFF; // TODO dynamic timeout based on expected onairtime
-			//hal.WriteCommand(SX1280_RADIO_SET_TX, buf, sizeof(buf), 100);
 			SX1280_WriteCommandMulti(SX1280_RADIO_SET_TX, buf, sizeof(buf),100);
-			//delayMicroseconds(100);
 			break;
 			
 			case SX1280_MODE_CAD:
@@ -313,7 +311,7 @@
 		uint8_t rfparams[3] = {sf, bw, cr};
 		
 		SX1280_WriteCommandMulti(SX1280_RADIO_SET_MODULATIONPARAMS, rfparams, sizeof(rfparams),25);
-
+		
 		switch (sf)
 		{
 			case SX1280_LORA_SF5:
@@ -433,8 +431,8 @@
 		
 		uint32_t wtimeoutUS = 1000U;
 		uint32_t startTime = micros();
-		if(SX1280_BUSY_pin != -1)
-		{
+		//if(SX1280_BUSY_pin != -1)
+		//{
 		while (IS_SX1280_BUSY_on) // wait untill not busy or until wtimeoutUS
 		{
 			if ((micros() - startTime) > wtimeoutUS)
@@ -447,18 +445,18 @@
 			}
 		}
 		
-		}
-		else
-		{
+		//}
+		//else
+		//{
 		// observed BUSY time for Write* calls are 12-20uS after NSS de-assert
 		// and state transitions require extra time depending on prior state
-			if (BusyDelayDuration)
-			{
-				while ((micros() - BusyDelayStart) < BusyDelayDuration)
-				NOP();
-				BusyDelayDuration = 0;
-			}
-		}
+		//if (BusyDelayDuration)
+		//{
+		//	while ((micros() - BusyDelayStart) < BusyDelayDuration)
+		//	NOP();
+		//	BusyDelayDuration = 0;
+		//}
+		//}
 		return true;
 	}
 	
@@ -473,26 +471,26 @@
 		}
 	}
 	
-/*	int32_t ICACHE_RAM_ATTR SX1280_complement2( const uint32_t num, const uint8_t bitCnt )
-	{
+	/*	int32_t ICACHE_RAM_ATTR SX1280_complement2( const uint32_t num, const uint8_t bitCnt )
+		{
 		int32_t retVal = ( int32_t )num;
 		if( num >= 2<<( bitCnt - 2 ) )
 		{
-			retVal -= 2<<( bitCnt - 1 );
+		retVal -= 2<<( bitCnt - 1 );
 		}
 		return retVal;
-	}
-*/
-        int32_t ICACHE_RAM_ATTR SX1280_complement2( const uint32_t num, const uint8_t bitCnt ) // convert bitCnt bitlength number in 2-complement notation to int32_t
+		}
+	*/
+	int32_t ICACHE_RAM_ATTR SX1280_complement2( const uint32_t num, const uint8_t bitCnt ) // convert bitCnt bitlength number in 2-complement notation to int32_t
     {
         int32_t retVal = ( int32_t )num; //cast bitCnt length number to int32
         if( retVal & (1<<(bitCnt-1)) ) // check for sign bit at position bitCnt, if not set return value as is, else...
         {
             retVal -= 1<<bitCnt;       // convert from bitCnt 2-complement to 32bit 2-complement format by inverting all bits and subtracting 1, done by subtrating binary value of 1 followed by bitCnt zeroes
-        }
+		}
         return retVal;
-    }
-
+	}
+	
     int32_t ICACHE_RAM_ATTR SX1280_Fei() // return Frequency Error Indicator
     {
         uint32_t fei = 0;
@@ -501,13 +499,13 @@
         fei |= SX1280_ReadReg(0x0954)<<16;
         int32_t retVal = SX1280_complement2 (fei, 20);
         return retVal;
-    }
+	}
 	
     int32_t ICACHE_RAM_ATTR SX1280_FeiHz(const int32_t fei, uint8_t bw)  // return Frequency Error Indicator in Hz, depending on Bandwith selected
     {
         int32_t retVal = 1.55*fei/(1600/bw);
         return retVal;
-    }
+	}
 	
 	/* Steps for startup
 		1. If not in STDBY_RC mode, then go to this mode by sending the command:
@@ -713,9 +711,9 @@
 	
 	void ICACHE_RAM_ATTR POWER_init()
 	{
-                CurrentPower = PWR_COUNT;
-                SX1280_setPower(MinPower);// set to minimum(10mW)
-	
+		CurrentPower = PWR_COUNT;
+		SX1280_setPower(MinPower);// set to minimum(10mW)
+		
 	}
 	
 	uint8_t  SX1280_decPower()
@@ -750,11 +748,11 @@
 		{
 			Power = MaxPower;
 		}
-	       #ifdef POWER_OUTPUT_FIXED
-	         CurrentSX1280Power = Power;
-	       #else
-	         CurrentSX1280Power = powerValues[Power - MinPower];
-	       #endif
+		#ifdef POWER_OUTPUT_FIXED
+			CurrentSX1280Power = Power;
+			#else
+			CurrentSX1280Power = powerValues[Power - MinPower];
+		#endif
 		SX1280_SetOutputPower(CurrentSX1280Power);
 		CurrentPower = Power;
 	}
