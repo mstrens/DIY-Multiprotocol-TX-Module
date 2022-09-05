@@ -852,9 +852,9 @@ void loop()
 				TIMER2_BASE->SR = 0x1E5F & ~TIMER_SR_CC1IF;	// Clear Timer2/Comp1 interrupt flag
 		              #endif
 		
-		//#ifdef ESP_COMMON	
+		#ifdef ESP_COMMON	
 		TCNT1 = timerRead(timer); 		
-		//#endif
+		#endif
 		diff = OCR1A - TCNT1;// Calc the time difference
 		#ifdef ESP_COMMON
 		processSerialChannels();
