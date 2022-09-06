@@ -317,7 +317,7 @@
 			{
 				packet_count = 0;
 				is_in_binding = false;
-				//if(sub_protocol == 5)
+				//if(sub_protocol == 6)
 				//MiLo_SetRFLinkRate(RATE_100HZ);
 				//else 
 				MiLo_SetRFLinkRate(RATE_150HZ);
@@ -389,7 +389,9 @@
 		        MiLo_data_frame();		
 			}
 			else
-			{		
+			{	
+				CurrentPower = PWR_100mW;
+			    SX1280_setPower(CurrentPower);
 				packet_count = (packet_count + 1)%3;
 				MiLo_data_frame();
 				nextChannel(1);
@@ -421,7 +423,8 @@
 				state = MiLo_USE_LBT;
 			}
 			else
-			state = MiLo_DATA1;			
+			state = MiLo_DATA1;
+		
 			break;		
 			case MiLo_UPLNK_TLM:	//Uplink telemetry
 			if (LBTEnabled)
