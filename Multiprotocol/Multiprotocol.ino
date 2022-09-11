@@ -69,7 +69,8 @@
 #if defined AVR_COMMON 
 	#include <avr/eeprom.h>
 #endif
-
+void ICACHE_RAM_ATTR update_serial_data(void);
+bool ICACHE_RAM_ATTR Update_All(void);
 #ifdef STM32_BOARD	
 	#include <libmaple/usart.h>
 	#include <libmaple/timer.h>
@@ -129,8 +130,6 @@
 	void ICACHE_RAM_ATTR processSerialChannels();
 	void ICACHE_RAM_ATTR SerialChannelsInit(void);
 	void ICACHE_RAM_ATTR SportSerialInit(void);
-	void ICACHE_RAM_ATTR update_serial_data(void);
-	bool ICACHE_RAM_ATTR Update_All(void);
 	uint32_t OCR1A = 0;
 	uint32_t TCNT1 = 0 ;
         volatile uint32_t chSerial_timer = 0;
@@ -823,9 +822,7 @@ void loop()
 		{
 
 	#ifdef ESP8266_PLATFORM
-	#ifndef TEST
            callSerialChannels();
-		#endif   
 		#endif
 
 			if(!Update_All())
@@ -844,9 +841,7 @@ void loop()
 			startWifiManager();
 		#endif
         #ifdef ESP8266_PLATFORM
-			#ifndef TEST
          callSerialChannels();
-		 #endif
 		#endif
 		TX_MAIN_PAUSE_on;
 		tx_pause();
@@ -1734,11 +1729,8 @@ void ICACHE_RAM_ATTR update_serial_data()
 		else
 		#endif
 	    Channel_data[i] = temp;			//value range 0..2047, 0=-125%, 2047=+125%
-		#ifdef TEST
-	    Serial.println(convert_channel_ppm(i)); 
-		#endif
 	}
-		  Serial.println("");
+
 	#ifdef HOTT_FW_TELEMETRY
 		HoTT_SerialRX=false;
 	#endif
@@ -1923,10 +1915,8 @@ void modules_reset()
 		USART2_BASE->CR1 &= ~ USART_CR1_TE;		//disable transmit
 		usart3_begin(100000,SERIAL_8E2);		
 		#elif defined ESP_COMMON
-		#ifndef TEST
 		SerialChannelsInit();
 		SportSerialInit();//only transmitting ,inverted
-		#endif
 		#else
 		//ATMEGA328p
 		#include <util/setbaud.h>	
@@ -2037,7 +2027,7 @@ void ICACHE_RAM_ATTR SerialChannelsInit()
 {
 Serial.flush();	
 Serial.begin(100000, SERIAL_8E2); // Serial.begin(100000, SERIAL_8E2,SX1280_RCSIGNAL_RX_pin, SX1280_RCSIGNAL_TX_pin,false, 500); <-- this seems not to work with ESP8266
-USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal	
+USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal
 }
 void ICACHE_RAM_ATTR SportSerialInit(void){LED_on;};
 #endif
@@ -2712,8 +2702,9 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 			#ifdef MULTI_SYNC
 				last_serial_input = timerRead(timer);
 			#endif
+
 		}
-	     			chSerial_timer += 14000;//come again after 7ms     
+				chSerial_timer += 14000;//come again after 7ms        			  
 	   }
 		   
 	}
@@ -2754,7 +2745,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
         {
             if (rx_idx && rx_idx <= RXBUFFER_SIZE)
             {
-                rx_buff [rx_idx++] = inByte;			
+                rx_buff [rx_idx++] = c;			
             }
             else
             rx_idx = 0;
