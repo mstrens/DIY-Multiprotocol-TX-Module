@@ -293,7 +293,7 @@
 		Fhss_Init();
 		Fhss_generate(MProtocol_id);
 		currFreq = GetInitialFreq(); //set frequency first or an error will occur!!!
-		currOpmode = SX1280_MODE_SLEEP;
+		currOpmode = SX1280_MODE_SLEEP;		
 		bool init_success = SX1280_Begin();
 		if (!init_success)
 		{
@@ -344,20 +344,22 @@
 		static uint32_t upTLMcounter = 2;
 		switch(state)
 		{	
-			default :		
+			default :
 			SX1280_SetFrequencyReg(currFreq);//middle of the band		   
 			MiLo_build_bind_packet();
 			SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise		
 			SX1280_WriteBuffer(0x00, packet,PayloadLength);//
 			SX1280_SetMode(SX1280_MODE_TX);
 			if(IS_BIND_DONE)
-			state = MiLo_BIND_DONE;
+		    state = MiLo_BIND_DONE;
 			else
 			state++;
 			break;
 			case MiLo_BIND_DONE:
+			MiLo_telem_init();
 			packet_count = 0;
 			is_in_binding = false;
+			MiLo_SetRFLinkRate(RATE_150HZ);
 			BIND_DONE;
 			if(sub_protocol == MEU_16 || sub_protocol == MEU_8)
 			{		
@@ -382,7 +384,6 @@
 			state = MiLo_DATA1;
 			return SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
 			case MiLo_DATA1:
-			
 			if (LBTEnabled){
 				if(!ChannelIsClear())
 				SX1280_setPower(PWR_10mW);
@@ -423,8 +424,7 @@
 				state = MiLo_USE_LBT;
 			}
 			else
-			state = MiLo_DATA1;
-		
+			state = MiLo_DATA1;	
 			break;		
 			case MiLo_UPLNK_TLM:	//Uplink telemetry
 			if (LBTEnabled)
@@ -489,7 +489,7 @@
 		
 		SX1280_ClearIrqStatus(SX1280_IRQ_RADIO_ALL);
 		#ifdef TEST
-		callMicrosSerial();
+		//callMicrosSerial();
 		#endif
 		if (irqStatus & SX1280_IRQ_TX_DONE)
 		{

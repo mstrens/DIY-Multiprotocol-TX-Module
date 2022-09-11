@@ -1156,15 +1156,10 @@ if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9
 
 #ifndef BASH_SERIAL
 	// Routines for normal serial output
-	#ifdef ESP32_PLATFORM
+	#ifdef ESP_COMMON
 	void Serial_write(uint8_t data)
 	{
     Serial_2.write(data);
-	}
-        #elif defined ESP8266_PLATFORM
-        void Serial_write(uint8_t data)
-	{
-    Serial.write(data);
 	}
 	#else
 	void Serial_write(uint8_t data)
