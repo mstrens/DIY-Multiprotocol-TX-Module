@@ -109,22 +109,22 @@ bool ICACHE_RAM_ATTR Update_All(void);
         HardwareSerial Serial_2(1);
         static hw_timer_t  *timer = NULL;	
         static intr_handle_t handle_console;
-	void ICACHE_RAM_ATTR uart_intr_handle(void *arg);
+	    void ICACHE_RAM_ATTR uart_intr_handle(void *arg);
     #endif
     #ifdef ESP8266_PLATFORM
         #define HWTIMER() ESP.getCycleCount()
         #define timerRead(timer) micros()*2;
 		#define getEfuseMac() getChipId()&0XFFFFFF
 		#define Serial_2  Serial
-	void ICACHE_RAM_ATTR callSerialChannels(void);
-	void ICACHE_RAM_ATTR processIncomingByte (const byte inByte);
-	#ifdef TEST//only one serial
-	#ifdef DEBUG_ESP_PORT
-	#define debugln(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
-	#endif
-	#else
-	#define debugln(...)
-	#endif
+        void ICACHE_RAM_ATTR callSerialChannels(void);
+        void ICACHE_RAM_ATTR processIncomingByte (const byte inByte);
+        #ifdef TEST//only one serial
+            #ifdef DEBUG_ESP_PORT
+            #define debugln(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
+            #endif
+    	#else
+	        #define debugln(...)
+	    #endif
     #endif	
 	void initSPI(void);
 	void ICACHE_RAM_ATTR processSerialChannels();
@@ -135,14 +135,14 @@ bool ICACHE_RAM_ATTR Update_All(void);
         volatile uint32_t chSerial_timer = 0;
         uint32_t prev_chSerial_timer = 0;
 		#ifdef TEST
-void callMicrosSerial(){
-static uint32_t tim = 0 ;
-static uint32_t timt = 0 ;	
-timt = micros();
-Serial.println(timt - tim);
-tim = micros();
-}
-#endif
+            void callMicrosSerial(){
+            static uint32_t tim = 0 ;
+            static uint32_t timt = 0 ;	
+            timt = micros();
+            Serial.println(timt - tim);
+            tim = micros();
+            }
+        #endif
 	#undef CHECK_FOR_BOOTLOADER
 	#define EEPROM_SIZE 256	
 #endif
@@ -355,10 +355,10 @@ uint8_t multi_protocols_index=0xFF;
 void setup()
 {
 	#ifdef TEST
-       #ifdef ESP8266_PLATFORM
-		Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
+        #ifdef ESP8266_PLATFORM
+		    Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
 		#else
-		Serial.begin(115200,SERIAL_8N1);
+		    Serial.begin(115200,SERIAL_8N1);
 		#endif
 	#endif
 	// Setup diagnostic uart before anything else
@@ -404,7 +404,7 @@ void setup()
 		TCC1.PER = 0xFFFF ;
 		TCNT1 = 0 ;
 		TCC1.CTRLA = 0x0B ;							// Event3 (prescale of 16)
-		#elif defined STM32_BOARD
+	#elif defined STM32_BOARD
 		//STM32
 		afio_cfg_debug_ports(AFIO_DEBUG_NONE);
 		pinMode(LED_pin,OUTPUT);
@@ -426,10 +426,10 @@ void setup()
 	        pinMode(SX1280_TXEN_pin,OUTPUT);	
 	        pinMode(SX1280_RXEN_pin,OUTPUT);	
 	        pinMode(SX1280_CSN_pin,OUTPUT);
-		SX1280_TXEN_off;
+		    SX1280_TXEN_off;
 	        SX1280_RXEN_off;
 	        SX1280_CSN_on;
-	        #endif
+	    #endif
 		#if defined TELEMETRY
 			#if defined INVERT_SERIAL
 				TX_INV_on;							// activate inverter for both serial TX and RX signals
@@ -441,17 +441,17 @@ void setup()
 		#endif
 		pinMode(BIND_pin,INPUT_PULLUP);
 		pinMode(PPM_pin,INPUT);
-	        #ifndef SX1280_INSTALLED
-		pinMode(S1_pin,INPUT_PULLUP);				// dial switch
-		pinMode(S2_pin,INPUT_PULLUP);
-		pinMode(S3_pin,INPUT_PULLUP);
-		pinMode(S4_pin,INPUT_PULLUP);
+	    #ifndef SX1280_INSTALLED
+            pinMode(S1_pin,INPUT_PULLUP);				// dial switch
+            pinMode(S2_pin,INPUT_PULLUP);
+            pinMode(S3_pin,INPUT_PULLUP);
+            pinMode(S4_pin,INPUT_PULLUP);
 		#endif
 		#ifdef MULTI_5IN1_INTERNAL
 			//pinMode(SX1276_RST_pin,OUTPUT);		// already done by LED2_pin
 			pinMode(SX1276_TXEN_pin,OUTPUT);		// PB0
 			pinMode(SX1276_DIO0_pin,INPUT_PULLUP);
-			#else
+		#else
 			//Random pin
 			pinMode(RND_pin, INPUT_ANALOG);			// set up PB0 pin for analog input
 		#endif
@@ -520,7 +520,7 @@ void setup()
 			EEPROM.format();
 			debugln("No valid EEPROM page, EEPROM formatted");
 		}
-		#elif defined ESP_COMMON
+	#elif defined ESP_COMMON
 		pinMode(BIND_pin, INPUT);
 		pinMode(LED_pin, OUTPUT);
 		pinMode(SX1280_RST_pin , OUTPUT);	
@@ -533,14 +533,14 @@ void setup()
 		SX1280_RXEN_off;
 		SX1280_CSN_on;
 		//timer
-	#ifdef ESP32_PLATFORM
-		timer = timerBegin(1, (APB_CLK_FREQ / 2000000), true); // timer1, prescaler = 12.5ns*40 = 0.5us, count
-		timerWrite(timer,0xFFFF);
-	#elif defined ESP8266_PLATFORM
-	   pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
-	   SX1280_ANTENNA_SELECT_on;
-	#endif
-		#else
+        #ifdef ESP32_PLATFORM
+            timer = timerBegin(1, (APB_CLK_FREQ / 2000000), true); // timer1, prescaler = 12.5ns*40 = 0.5us, count
+            timerWrite(timer,0xFFFF);
+        #elif defined ESP8266_PLATFORM
+            pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
+            SX1280_ANTENNA_SELECT_on;
+        #endif
+	#else
 		//ATMEGA328p
 		// all inputs
 		DDRB=0x00;DDRC=0x00;DDRD=0x00;
@@ -604,9 +604,9 @@ void setup()
 	//	Set SPI lines
 	#ifdef	STM32_BOARD
 		initSPI2();
-		#elif defined  ESP_COMMON
+	#elif defined  ESP_COMMON
 		initSPI();
-		#else
+	#else
 		SDI_on;
 		SCLK_off;
 	#endif
@@ -620,21 +620,21 @@ void setup()
 		BIND_IN_PROGRESS;		// Request bind
 	}
 	else
-	BIND_DONE;
+	    BIND_DONE;
 	
 	// Read status of mode select binary switch
 	// after this mode_select will be one of {0000, 0001, ..., 1111}
 	#ifndef ENABLE_PPM
 		mode_select = MODE_SERIAL ;	// force serial mode
-		#elif defined STM32_BOARD
+	#elif defined STM32_BOARD
 	        #ifdef SX1280_INSTALLED
-	        mode_select = MODE_SERIAL ;	// force serial mode
+	            mode_select = MODE_SERIAL ;	// force serial mode
 	        #else
-		mode_select= 0x0F -(uint8_t)(((GPIOA->regs->IDR)>>4)&0x0F);
+		        mode_select= 0x0F -(uint8_t)(((GPIOA->regs->IDR)>>4)&0x0F);
 	        #endif
-		#elif defined  ESP_COMMON
+	#elif defined  ESP_COMMON
 		mode_select = MODE_SERIAL ;	// force serial mode
-		#else
+	#else
 		mode_select =
 		((PROTO_DIAL1_ipr & _BV(PROTO_DIAL1_pin)) ? 0 : 1) + 
 		((PROTO_DIAL2_ipr & _BV(PROTO_DIAL2_pin)) ? 0 : 2) +
@@ -671,7 +671,7 @@ void setup()
         for(uint8_t i=0;i<4;i++)
         #ifdef RND_pin
             seed=(seed<<8) | (analogRead(RND_pin)& 0xFF);
-            #else
+        #else
             //TODO find something to randomize...
             seed=(seed<<8);
         #endif
@@ -693,7 +693,7 @@ void setup()
 		{ // PPM
 			#ifndef MY_PPM_PROT
 				const PPM_Parameters *PPM_prot_line=&PPM_prot[bank*14+mode_select-1];
-				#else
+			#else
 				const PPM_Parameters *PPM_prot_line=&My_PPM_prot[bank*14+mode_select-1];
 			#endif
 			
@@ -775,10 +775,10 @@ void setup()
 				#if PPM_pin == 2
 					EICRA |= _BV(ISC01);	// The rising edge of INT0 pin D2 generates an interrupt request
 					EIMSK |= _BV(INT0);		// INT0 interrupt enable
-					#elif PPM_pin == 3
+				#elif PPM_pin == 3
 					EICRA |= _BV(ISC11);	// The rising edge of INT1 pin D3 generates an interrupt request
 					EIMSK |= _BV(INT1);		// INT1 interrupt enable
-					#else
+				#else
 					#error PPM pin can only be 2 or 3
 				#endif
 				#else
@@ -794,12 +794,12 @@ void setup()
 	{ // Serial
 	#ifdef ENABLE_SERIAL
 			for(uint8_t i = 0;i < 3;i++){
-			cur_protocol[0] = 0;
+			    cur_protocol[0] = 0;
 			}		
 			protocol = 0;			
 			#ifdef CHECK_FOR_BOOTLOADER
 				Mprotocol_serial_init(1); 	// Configure serial and enable RX interrupt
-				#else
+			#else
 				Mprotocol_serial_init(); 	// Configure serial and enable RX interrupt
 			#endif
 	#endif //ENABLE_SERIAL
@@ -821,15 +821,15 @@ void loop()
 		while(remote_callback==0 || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off)
 		{
 
-	#ifdef ESP8266_PLATFORM
-           callSerialChannels();
-		#endif
+        	#ifdef ESP8266_PLATFORM
+                callSerialChannels();
+		    #endif
 
 			if(!Update_All())
 			{
 				cli();
-		               #ifdef ESP_COMMON
-                      processSerialChannels();
+		        #ifdef ESP_COMMON
+                    processSerialChannels();
 					TCNT1 = timerRead(timer);
 				#endif					               // Disable global int due to RW of 16 bits registers
 				OCR1A = TCNT1;						// Callback should already have been called... Use "now" as new sync point.
@@ -841,7 +841,7 @@ void loop()
 			startWifiManager();
 		#endif
         #ifdef ESP8266_PLATFORM
-         callSerialChannels();
+            callSerialChannels();
 		#endif
 		TX_MAIN_PAUSE_on;
 		tx_pause();
@@ -851,11 +851,11 @@ void loop()
 		
 		cli();										// Disable global int due to RW of 16 bits registers
 		OCR1A += next_callback;						// Calc when next_callback should happen
-	                     #if defined AVR_COMMON
-				TIFR1 = OCF1A_bm;							// Clear compare A = callback flag
-                             #elif defined STM32_BOARD
-				TIMER2_BASE->SR = 0x1E5F & ~TIMER_SR_CC1IF;	// Clear Timer2/Comp1 interrupt flag
-		              #endif
+	    #if defined AVR_COMMON
+			TIFR1 = OCF1A_bm;							// Clear compare A = callback flag
+        #elif defined STM32_BOARD
+			TIMER2_BASE->SR = 0x1E5F & ~TIMER_SR_CC1IF;	// Clear Timer2/Comp1 interrupt flag
+		#endif
 		
 		#ifdef ESP_COMMON	
 		TCNT1 = timerRead(timer); 		
@@ -882,10 +882,10 @@ void loop()
 				}
 			}
 			
-			       #if defined AVR_COMMON
-				while((TIFR1 & OCF1A_bm) == 0)
-				#elif defined STM32_BOARD
-				while((TIMER2_BASE->SR & TIMER_SR_CC1IF )==0)
+			#if defined AVR_COMMON
+			    while((TIFR1 & OCF1A_bm) == 0)
+			#elif defined STM32_BOARD
+			    while((TIMER2_BASE->SR & TIMER_SR_CC1IF )==0)
 			#endif
 			#ifdef ESP_COMMON
 				while(diff > (900*2))
@@ -902,13 +902,13 @@ void loop()
 					Update_All();
 					#if defined  DEBUG_SERIAL && not defined ESP32_PLATFORM
 						if(TIMER2_BASE->SR & TIMER_SR_CC1IF )
-						debugln("Long update");
+						    debugln("Long update");
 					#endif
 					if(remote_callback==0)
-					break;
+					    break;
 					cli();
 					#ifdef ESP_COMMON		
-					TCNT1 = timerRead(timer) ; 
+					    TCNT1 = timerRead(timer) ; 
 					#endif	// Disable global int due to RW of 16 bits registers
 					diff = OCR1A - TCNT1;				// Calc the time difference
 					sei();							// Enable global int
@@ -930,10 +930,10 @@ void End_Bind()
 	if(protocol==PROTO_FRSKYD || protocol==PROTO_FRSKYL || protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2 || protocol==PROTO_FRSKYV || protocol==PROTO_FRSKY_R9
 		|| protocol==PROTO_DSM_RX || protocol==PROTO_AFHDS2A_RX || protocol==PROTO_FRSKY_RX || protocol==PROTO_BAYANG_RX
 	|| protocol==PROTO_AFHDS2A || protocol==PROTO_BUGS || protocol==PROTO_BUGSMINI || protocol==PROTO_HOTT || protocol==PROTO_ASSAN || protocol == PROTO_MILO)
-	BIND_DONE;
+	    BIND_DONE;
 	else
-	if(bind_counter>2)
-	bind_counter=2;
+	    if(bind_counter>2)
+	        bind_counter=2;
 }
 
 
@@ -944,7 +944,7 @@ void Update_Telem()
 			if((protocol == PROTO_BAYANG_RX) || (protocol == PROTO_AFHDS2A_RX) || (protocol == PROTO_FRSKY_RX) || (protocol == PROTO_SCANNER) || (protocol==PROTO_FRSKYD) || (protocol==PROTO_BAYANG) || (protocol==PROTO_NCC1701) || (protocol==PROTO_BUGS) || (protocol==PROTO_BUGSMINI) || (protocol==PROTO_HUBSAN) || (protocol==PROTO_AFHDS2A) || (protocol==PROTO_FRSKYX) || (protocol==PROTO_FRSKYX2) || (protocol==PROTO_DSM) || (protocol==PROTO_CABELL) || (protocol==PROTO_HITEC) || (protocol==PROTO_HOTT) || (protocol==PROTO_PROPEL) || (protocol==PROTO_OMP) || (protocol==PROTO_DEVO) || (protocol==PROTO_DSM_RX) || (protocol==PROTO_FRSKY_R9) || (protocol==PROTO_RLINK) || (protocol==PROTO_WFLY2) || (protocol==PROTO_LOLI) || (protocol==PROTO_MLINK) ||( protocol==PROTO_MT99XX) ||( protocol == PROTO_MILO))
 		#endif
 		if(IS_DISABLE_TELEM_off)			
-		TelemetryUpdate();
+		    TelemetryUpdate();
 	#endif
 }
 
@@ -955,12 +955,12 @@ bool  ICACHE_RAM_ATTR Update_All()
 	#ifdef ENABLE_SERIAL
 		#ifdef CHECK_FOR_BOOTLOADER
 			if ( (mode_select==MODE_SERIAL) && (NotBootChecking == 0) )
-			pollBoot() ;
+			    pollBoot() ;
 			else
 		#endif
-	#ifdef TEST
-		RX_FLAG_on;
-	#endif	
+	    #ifdef TEST
+		    RX_FLAG_on;
+	    #endif	
 		if(mode_select==MODE_SERIAL && IS_RX_FLAG_on)		// Serial mode and something has been received
 		{	
 			update_serial_data();							// Update protocol and data
@@ -1027,7 +1027,7 @@ bool  ICACHE_RAM_ATTR Update_All()
 		}
 	#endif //ENABLE_PPM
 	#ifndef ESP_COMMON
-	update_led_status();//need more testing do not touch	for the moment
+	    update_led_status();//need more testing do not touch	for the moment
 	#endif
 	#ifdef SEND_CPPM
 		if ( telemetry_link & 0x80 )
@@ -1035,7 +1035,7 @@ bool  ICACHE_RAM_ATTR Update_All()
 			if( protocol == PROTO_FRSKY_RX || protocol == PROTO_AFHDS2A_RX || protocol == PROTO_BAYANG_RX || protocol == PROTO_DSM_RX )
 			{ // RX protocol
 				if(RX_LQI == 0)
-				telemetry_link = 0x00;					// restore normal telemetry on connection loss
+				    telemetry_link = 0x00;					// restore normal telemetry on connection loss
 				else if(telemetry_link & 1)
 				{ // New data available
 					Send_CCPM_USART1();
@@ -1077,7 +1077,7 @@ bool  ICACHE_RAM_ATTR Update_All()
 		static uint8_t counter=0;
 		
 		if(IS_BIND_IN_PROGRESS || IS_FAILSAFE_VALUES_on) 	// bind is not finished yet or Failsafe already being sent
-		return;
+		    return;
 		BIND_SET_INPUT;
 		BIND_SET_PULLUP;
 		if(IS_BIND_BUTTON_on)
@@ -1087,12 +1087,12 @@ bool  ICACHE_RAM_ATTR Update_All()
 			{ //after 5s with PPM frames @22ms
 				counter=0;
 				for(uint8_t i=0;i<NUM_CHN;i++)
-				Failsafe_data[i]=Channel_data[i];
+				    Failsafe_data[i]=Channel_data[i];
 				FAILSAFE_VALUES_on;
 			}
 		}
 		else
-		counter=0;
+		    counter=0;
 		BIND_SET_OUTPUT;
 	}
 #endif
@@ -1117,52 +1117,52 @@ static void update_channels_aux(void)
 	//Calc AUX flags
 	Channel_AUX=0;
 	for(uint8_t i=0;i<8;i++)
-	if(Channel_data[CH5+i]>CHANNEL_SWITCH)
-	Channel_AUX |= 1<<i;
+	    if(Channel_data[CH5+i]>CHANNEL_SWITCH)
+	        Channel_AUX |= 1<<i;
 }
 
 // Update led status based on binding and serial
 static void update_led_status(void)
 {
 	if(IS_INPUT_SIGNAL_on)
-	if(millis()-last_signal>70)
-	{
-		INPUT_SIGNAL_off;							//no valid signal (PPM or Serial) received for 70ms
-		debugln("No input signal");
-	}
+        if(millis()-last_signal>70)
+        {
+            INPUT_SIGNAL_off;							//no valid signal (PPM or Serial) received for 70ms
+            debugln("No input signal");
+        }
 	if(blink<millis())
 	{
 		if(IS_INPUT_SIGNAL_off)
 		{
 			if(mode_select==MODE_SERIAL)
-			blink+=BLINK_SERIAL_TIME;				//blink slowly if no valid serial input
+			    blink+=BLINK_SERIAL_TIME;				//blink slowly if no valid serial input
 			else
-			blink+=BLINK_PPM_TIME;					//blink more slowly if no valid PPM input
+			    blink+=BLINK_PPM_TIME;					//blink more slowly if no valid PPM input
 		}
 		else
-		if(remote_callback == 0)
-		{ // Invalid protocol
-			if(IS_LED_on)							//flash to indicate invalid protocol
-			blink+=BLINK_BAD_PROTO_TIME_LOW;
-			else
-			blink+=BLINK_BAD_PROTO_TIME_HIGH;
-		}
-		else
-		{
-			if(IS_WAIT_BIND_on)
-			{
-				if(IS_LED_on)							//flash to indicate WAIT_BIND
-				blink+=BLINK_WAIT_BIND_TIME_LOW;
-				else
-				blink+=BLINK_WAIT_BIND_TIME_HIGH;
-			}
-			else
-			{
-				if(IS_BIND_DONE)
-				LED_off;							//bind completed force led on
-				blink+=BLINK_BIND_TIME;					//blink fastly during binding
-			}
-		}
+            if(remote_callback == 0)
+            { // Invalid protocol
+                if(IS_LED_on)							//flash to indicate invalid protocol
+                    blink+=BLINK_BAD_PROTO_TIME_LOW;
+                else
+                    blink+=BLINK_BAD_PROTO_TIME_HIGH;
+            }
+            else
+            {
+                if(IS_WAIT_BIND_on)
+                {
+                    if(IS_LED_on)							//flash to indicate WAIT_BIND
+                        blink+=BLINK_WAIT_BIND_TIME_LOW;
+                    else
+                        blink+=BLINK_WAIT_BIND_TIME_HIGH;
+                }
+                else
+                {
+                    if(IS_BIND_DONE)
+                        LED_off;							//bind completed force led on
+                    blink+=BLINK_BIND_TIME;					//blink fastly during binding
+                }
+            }
 		LED_toggle;
 	}
 }
@@ -1188,30 +1188,30 @@ static void update_led_status(void)
 				switch(phase & 0x03)
 				{ // Flash bank number of times
 					case 0:
-					LED_on;
-					blink+=BLINK_BANK_TIME_HIGH;
-					phase++;
-					break;
+                        LED_on;
+                        blink+=BLINK_BANK_TIME_HIGH;
+                        phase++;
+                        break;
 					case 1:
-					LED_off;
-					blink+=BLINK_BANK_TIME_LOW;
-					phase++;
-					break;
+                        LED_off;
+                        blink+=BLINK_BANK_TIME_LOW;
+                        phase++;
+                        break;
 					case 2:
-					if( (phase>>2) >= bank)
-					{
-						phase=0;
-						blink+=BLINK_BANK_REPEAT;
-					}
-					else
-					phase+=2;
-					break;
+                        if( (phase>>2) >= bank)
+                        {
+                            phase=0;
+                            blink+=BLINK_BANK_REPEAT;
+                        }
+                        else
+                            phase+=2;
+                        break;
 					case 3:
-					LED_output;
-					LED_off;
-					blink+=BLINK_BANK_TIME_LOW;
-					phase=0;
-					break;
+                        LED_output;
+                        LED_off;
+                        blink+=BLINK_BANK_TIME_LOW;
+                        phase=0;
+                        break;
 				}
 			}
 			if(check<millis())
@@ -1225,9 +1225,9 @@ static void update_led_status(void)
 				bool test_bind=IS_BIND_BUTTON_on;
 				#if defined AVR_COMMON
 					if(led)
-					LED_on;
+					    LED_on;
 					else
-					LED_off;
+					    LED_off;
 					LED_output;
 				#endif
 				if( test_bind )
@@ -1235,7 +1235,7 @@ static void update_led_status(void)
 					LED_on;
 					bank++;
 					if(bank>=NBR_BANKS)
-					bank=0;
+					    bank=0;
 					eeprom_write_byte((EE_ADDR)EEPROM_BANK_OFFSET,bank);
 					debugln("Using bank %d", bank);
 					phase=3;
@@ -1255,13 +1255,13 @@ inline void tx_pause()
 		// Pause telemetry by disabling transmitter interrupt
 		#ifdef ORANGE_TX
 			USARTC0.CTRLA &= ~0x03 ;
-			#else
+		#else
 			#ifndef BASH_SERIAL
 				#ifdef STM32_BOARD
 					USART3_BASE->CR1 &= ~ USART_CR1_TXEIE;
-					#elif defined  ESP_COMMON
+				#elif defined  ESP_COMMON
 					////
-					#else
+				#else
 					UCSR0B &= ~_BV(UDRIE0);
 				#endif
 			#endif
@@ -1279,16 +1279,16 @@ inline void tx_resume()
 				cli() ;
 				USARTC0.CTRLA = (USARTC0.CTRLA & 0xFC) | 0x01 ;
 				sei() ;
-				#else
+			#else
 				#ifndef BASH_SERIAL
 					#ifdef STM32_BOARD
 						USART3_BASE->CR1 |= USART_CR1_TXEIE;
-						#elif defined  ESP_COMMON
+					#elif defined  ESP_COMMON
 						////
-						#else
+					#else
 						UCSR0B |= _BV(UDRIE0);			
 					#endif
-					#else
+				#else
 					resumeBashSerial();
 				#endif
 			#endif
@@ -1297,22 +1297,22 @@ inline void tx_resume()
 }
 
 #if defined AVR_COMMON || defined STM32_BOARD
-void rf_switch(uint8_t comp)
-{
-	PE1_off;
-	PE2_off;
-	switch(comp)
-	{
-		case SW_CC2500:
-		PE2_on;
-		break;
-		case SW_CYRF:
-		PE2_on;
-		case SW_NRF:
-		PE1_on;
-		break;
-	}
-}
+    void rf_switch(uint8_t comp)
+    {
+        PE1_off;
+        PE2_off;
+        switch(comp)
+        {
+            case SW_CC2500:
+                PE2_on;
+                break;
+            case SW_CYRF:
+                PE2_on;
+            case SW_NRF:
+                PE1_on;
+                break;
+        }
+    }
 #endif
 // Protocol start
 static void protocol_init()
@@ -1339,13 +1339,13 @@ static void protocol_init()
 				TIMSK0 = 0 ;			// Stop all timer 0 interrupts
 				#ifdef INVERT_SERIAL
 					SERIAL_TX_off;
-					#else
+				#else
 					SERIAL_TX_on;
 				#endif
 				SerialControl.tail=0;
 				SerialControl.head=0;
 				SerialControl.busy=0;
-				#else
+			#else
 				tx_tail=0;
 				tx_head=0;
 			#endif
@@ -1354,7 +1354,7 @@ static void protocol_init()
 			tx_resume();
 			#if defined(AFHDS2A_RX_A7105_INO) || defined(FRSKY_RX_CC2500_INO) || defined(BAYANG_RX_NRF24L01_INO) || defined(DSM_RX_CYRF6936_INO)
 				for(uint8_t ch=0; ch<16; ch++)
-				rx_rc_chan[ch] = 1024;
+			    	rx_rc_chan[ch] = 1024;
 			#endif
 		#endif
 		binding_idx=0;
@@ -1396,7 +1396,7 @@ static void protocol_init()
 					multi_protocols_index = index;
 					//Check sub protocol validity
 					if( ((sub_protocol&0x07) == 0) || (sub_protocol&0x07) < multi_protocols[index].nbrSubProto )
-					SUB_PROTO_VALID;
+					    SUB_PROTO_VALID;
 					if(IS_SUB_PROTO_VALID)
 					{//Start the protocol
 						//Set the RF switch
@@ -1406,7 +1406,7 @@ static void protocol_init()
 						//Init protocol
 						multi_protocols[index].Init();		// Init could invalidate the sub proto in case it is not suuported
 						if(IS_SUB_PROTO_VALID)
-						remote_callback = multi_protocols[index].CallBack;	//Save call back function address
+						    remote_callback = multi_protocols[index].CallBack;	//Save call back function address
 						
 					}
 					#ifdef DEBUG_SERIAL
@@ -1417,7 +1417,7 @@ static void protocol_init()
 							uint8_t len=multi_protocols[index].SubProtoString[0];
 							uint8_t offset=len*(sub_protocol&0x07)+1;
 							for(uint8_t j=0;j<len;j++)
-							debug("%c",multi_protocols[index].SubProtoString[j+offset]);
+							    debug("%c",multi_protocols[index].SubProtoString[j+offset]);
 						}
 						debug(", Opt=%d",multi_protocols[index].optionType);
 						debug(", FS=%d",multi_protocols[index].failSafe);
@@ -1458,12 +1458,12 @@ static void protocol_init()
 		#ifdef ESP_COMMON			
 			TCNT1 = timerRead(timer);
 		#endif
-			OCR1A = TCNT1 + 5000*2;						// set compare A for callback
-			#if defined AVR_COMMON
-				TIFR1 = OCF1A_bm ;						// clear compare A flag
-			#elif defined STM32_BOARD
-				TIMER2_BASE->SR = 0x1E5F & ~TIMER_SR_CC1IF;	// Clear Timer2/Comp1 interrupt flag
-			#endif
+        OCR1A = TCNT1 + 5000*2;						// set compare A for callback
+        #if defined AVR_COMMON
+            TIFR1 = OCF1A_bm ;						// clear compare A flag
+        #elif defined STM32_BOARD
+            TIMER2_BASE->SR = 0x1E5F & ~TIMER_SR_CC1IF;	// Clear Timer2/Comp1 interrupt flag
+        #endif
 
 		sei();										// enable global int
 		BIND_BUTTON_FLAG_off;						// do not bind/reset id anymore even if protocol change
@@ -1476,42 +1476,42 @@ void ICACHE_RAM_ATTR update_serial_data()
 	#if defined(TELEMETRY) && defined(INVERT_TELEMETRY_TX)
 		#ifdef INVERT_TELEMETRY
 			static bool prev_inv_telem=true;
-			#else
+		#else
 			static bool prev_inv_telem=false;
 		#endif
 	#endif
 
     #ifdef TEST
-	rx_len = 27;
-	rx_ok_buff[0] = 0x55;
-	rx_ok_buff[1] = 0x00;
-    //rx_ok_buff[1] |= 0x80; //binding
-	rx_ok_buff[2] = 0x10;
-	rx_ok_buff[3] = 0x00;
-	rx_ok_buff[4] = 0xE4;
-	rx_ok_buff[5] = 0x88;
-	rx_ok_buff[6] = 0xE0;
-	rx_ok_buff[7] = 0x33;
-	rx_ok_buff[8] = 0x18;
-	rx_ok_buff[9] = 0xc8;
-	rx_ok_buff[10] = 0x0C;
-	rx_ok_buff[11] = 0x66;
-	rx_ok_buff[12] = 0x00;
-	rx_ok_buff[13] = 0x10;
-	rx_ok_buff[14] = 0x80;
-	rx_ok_buff[15] = 0x00;
-	rx_ok_buff[16] = 0x04;
-	rx_ok_buff[17] = 0x20;
-	rx_ok_buff[18] = 0x00;
-	rx_ok_buff[19] = 0x01;
-	rx_ok_buff[20] = 0x08;
-	rx_ok_buff[21] = 0x40;
-	rx_ok_buff[22] = 0x00;
-	rx_ok_buff[23] = 0xD2;
-	rx_ok_buff[24] = 0x9C;
-	rx_ok_buff[25] = 0x19;
-	rx_ok_buff[26] |= 0x81;//protocol 128
-	 #endif
+        rx_len = 27;
+        rx_ok_buff[0] = 0x55;
+        rx_ok_buff[1] = 0x00;
+        //rx_ok_buff[1] |= 0x80; //binding
+        rx_ok_buff[2] = 0x10;
+        rx_ok_buff[3] = 0x00;
+        rx_ok_buff[4] = 0xE4;
+        rx_ok_buff[5] = 0x88;
+        rx_ok_buff[6] = 0xE0;
+        rx_ok_buff[7] = 0x33;
+        rx_ok_buff[8] = 0x18;
+        rx_ok_buff[9] = 0xc8;
+        rx_ok_buff[10] = 0x0C;
+        rx_ok_buff[11] = 0x66;
+        rx_ok_buff[12] = 0x00;
+        rx_ok_buff[13] = 0x10;
+        rx_ok_buff[14] = 0x80;
+        rx_ok_buff[15] = 0x00;
+        rx_ok_buff[16] = 0x04;
+        rx_ok_buff[17] = 0x20;
+        rx_ok_buff[18] = 0x00;
+        rx_ok_buff[19] = 0x01;
+        rx_ok_buff[20] = 0x08;
+        rx_ok_buff[21] = 0x40;
+        rx_ok_buff[22] = 0x00;
+        rx_ok_buff[23] = 0xD2;
+        rx_ok_buff[24] = 0x9C;
+        rx_ok_buff[25] = 0x19;
+        rx_ok_buff[26] |= 0x81;//protocol 128
+    #endif
 	yield();//feed WDT important
 	
 	RX_DONOTUPDATE_on;
@@ -1530,72 +1530,72 @@ void ICACHE_RAM_ATTR update_serial_data()
 	#endif
 	
 	if(rx_ok_buff[1]&0x20)						//check range
-	RANGE_FLAG_on;
+	    RANGE_FLAG_on;
 	else
-	RANGE_FLAG_off;
+	    RANGE_FLAG_off;
 	if(rx_ok_buff[1]&0x40)						//check autobind
-	AUTOBIND_FLAG_on;
+	    AUTOBIND_FLAG_on;
 	else
-	AUTOBIND_FLAG_off;
+	    AUTOBIND_FLAG_off;
 	if(rx_ok_buff[2]&0x80)						//if rx_ok_buff[2] ==1,power is low ,0-power high
-	POWER_FLAG_off;							//power low
+	    POWER_FLAG_off;							//power low
 	else
-	POWER_FLAG_on;							//power high
+	    POWER_FLAG_on;							//power high
 	
 	//Forced frequency tuning values for CC2500 protocols
 	#if defined(FORCE_FRSKYD_TUNING) && defined(FRSKYD_CC2500_INO)
 		if(protocol==PROTO_FRSKYD)
-		option=FORCE_FRSKYD_TUNING;			// Use config-defined tuning value for FrSkyD
+		    option=FORCE_FRSKYD_TUNING;			// Use config-defined tuning value for FrSkyD
 		else
 	#endif
 	#if defined(FORCE_FRSKYL_TUNING) && defined(FRSKYL_CC2500_INO)
 		if(protocol==PROTO_FRSKYL)
-		option=FORCE_FRSKYL_TUNING;			// Use config-defined tuning value for FrSkyL
+		    option=FORCE_FRSKYL_TUNING;			// Use config-defined tuning value for FrSkyL
 		else
 	#endif
 	#if defined(FORCE_FRSKYV_TUNING) && defined(FRSKYV_CC2500_INO)
 		if(protocol==PROTO_FRSKYV)
-		option=FORCE_FRSKYV_TUNING;			// Use config-defined tuning value for FrSkyV
+		    option=FORCE_FRSKYV_TUNING;			// Use config-defined tuning value for FrSkyV
 		else
 	#endif
 	#if defined(FORCE_FRSKYX_TUNING) && defined(FRSKYX_CC2500_INO)
 		if(protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2)
-		option=FORCE_FRSKYX_TUNING;			// Use config-defined tuning value for FrSkyX
+		    option=FORCE_FRSKYX_TUNING;			// Use config-defined tuning value for FrSkyX
 		else
 	#endif 
 	#if defined(FORCE_FUTABA_TUNING) && defined(FUTABA_CC2500_INO)
 		if (protocol==PROTO_FUTABA)
-		option=FORCE_FUTABA_TUNING;			// Use config-defined tuning value for SFHSS
+		    option=FORCE_FUTABA_TUNING;			// Use config-defined tuning value for SFHSS
 		else
 	#endif
 	#if defined(FORCE_CORONA_TUNING) && defined(CORONA_CC2500_INO)
 		if (protocol==PROTO_CORONA)
-		option=FORCE_CORONA_TUNING;			// Use config-defined tuning value for CORONA
+		    option=FORCE_CORONA_TUNING;			// Use config-defined tuning value for CORONA
 		else
 	#endif
 	#if defined(FORCE_SKYARTEC_TUNING) && defined(SKYARTEC_CC2500_INO)
 		if (protocol==PROTO_SKYARTEC)
-		option=FORCE_SKYARTEC_TUNING;			// Use config-defined tuning value for SKYARTEC
+		    option=FORCE_SKYARTEC_TUNING;			// Use config-defined tuning value for SKYARTEC
 		else
 	#endif
 	#if defined(FORCE_REDPINE_TUNING) && defined(REDPINE_CC2500_INO)
 		if (protocol==PROTO_REDPINE)
-		option=FORCE_REDPINE_TUNING;		// Use config-defined tuning value for REDPINE
+		    option=FORCE_REDPINE_TUNING;		// Use config-defined tuning value for REDPINE
 		else
 	#endif
 	#if defined(FORCE_RADIOLINK_TUNING) && defined(RADIOLINK_CC2500_INO)
 		if (protocol==PROTO_RADIOLINK)
-		option			=	FORCE_RADIOLINK_TUNING;		// Use config-defined tuning value for RADIOLINK
+		    option			=	FORCE_RADIOLINK_TUNING;		// Use config-defined tuning value for RADIOLINK
 		else
 	#endif
 	#if defined(FORCE_HITEC_TUNING) && defined(HITEC_CC2500_INO)
 		if (protocol==PROTO_HITEC)
-		option=FORCE_HITEC_TUNING;			// Use config-defined tuning value for HITEC
+		    option=FORCE_HITEC_TUNING;			// Use config-defined tuning value for HITEC
 		else
 	#endif
 	#if defined(FORCE_HOTT_TUNING) && defined(HOTT_CC2500_INO)
 		if (protocol==PROTO_HOTT)
-		option=FORCE_HOTT_TUNING;			// Use config-defined tuning value for HOTT
+		    option=FORCE_HOTT_TUNING;			// Use config-defined tuning value for HOTT
 		else
 	#endif
 
@@ -1618,9 +1618,9 @@ void ICACHE_RAM_ATTR update_serial_data()
 	{//Additional flag received at the end
 		rx_ok_buff[0]=(rx_ok_buff[26]&0xF0) | (rx_ok_buff[0]&0x0F);	// Additional protocol numbers and RX_Num available -> store them in rx_ok_buff[0]
 		if(rx_ok_buff[26]&0x02)
-		DISABLE_TELEM_on;
+		    DISABLE_TELEM_on;
 		if(rx_ok_buff[26]&0x01)
-		DISABLE_CH_MAP_on;
+		    DISABLE_CH_MAP_on;
 		#if defined(TELEMETRY) && defined(INVERT_TELEMETRY_TX)
 			if(((rx_ok_buff[26]&0x08)!=0) ^ prev_inv_telem)
 			{ //value changed
@@ -1629,7 +1629,7 @@ void ICACHE_RAM_ATTR update_serial_data()
 					debugln("Invert telem %d,%d",rx_ok_buff[26]&0x01,prev_inv_telem);
 					#if defined (ORANGE_TX)
 						PORTC.PIN3CTRL |= 0x40 ;
-						#elif defined (STM32_BOARD)
+					#elif defined (STM32_BOARD)
 						TX_INV_on;
 						RX_INV_on;
 					#endif
@@ -1639,7 +1639,7 @@ void ICACHE_RAM_ATTR update_serial_data()
 					debugln("Normal telem %d,%d",rx_ok_buff[26]&0x01,prev_inv_telem);
 					#if defined (ORANGE_TX)
 						PORTC.PIN3CTRL &= 0xBF ;
-						#elif defined (STM32_BOARD)
+					#elif defined (STM32_BOARD)
 						TX_INV_off;
 						RX_INV_off;
 					#endif
@@ -1654,18 +1654,18 @@ void ICACHE_RAM_ATTR update_serial_data()
 		CHANGE_PROTOCOL_FLAG_on;				//change protocol
 		WAIT_BIND_off;
 		if((rx_ok_buff[1]&0x80)!=0 || IS_AUTOBIND_FLAG_on)
-		BIND_IN_PROGRESS;					//launch bind right away if in autobind mode or bind is set
+		    BIND_IN_PROGRESS;					//launch bind right away if in autobind mode or bind is set
 		else
-		BIND_DONE;
+		    BIND_DONE;
 		protocol=rx_ok_buff[1]&0x1F;			//protocol no (0-31)
 		if(!(rx_ok_buff[0]&1))
-		protocol+=32;						//protocol no (0-63)
+		    protocol+=32;						//protocol no (0-63)
 		if(rx_len>26)
-		protocol |= rx_ok_buff[26]&0xC0;		//protocol no (0-255)	
+		    protocol |= rx_ok_buff[26]&0xC0;		//protocol no (0-255)	
 		sub_protocol=(rx_ok_buff[2]>>4)& 0x07;	//subprotocol no (0-7) bits 4-6
 		RX_num = rx_ok_buff[2]& 0x0F;				//rx_num no (0-15)
 		if(rx_len>26)
-		RX_num |= rx_ok_buff[26]&0x30;		//rx_num no (0-63)
+		    RX_num |= rx_ok_buff[26]&0x30;		//rx_num no (0-63)
 	}
 	else
 	if( ((rx_ok_buff[1]&0x80)!=0) && ((cur_protocol[1]&0x80)==0) )		// Bind flag has been set
@@ -1681,10 +1681,10 @@ void ICACHE_RAM_ATTR update_serial_data()
 	
 	//store current protocol values
 	for(uint8_t i=0;i<3;i++)
-	cur_protocol[i] =  rx_ok_buff[i];
+	    cur_protocol[i] =  rx_ok_buff[i];
 	//disable channel mapping
 	if(multi_protocols[multi_protocols_index].chMap == 0)
-	DISABLE_CH_MAP_off;						//not a protocol supporting ch map to be disabled
+	    DISABLE_CH_MAP_off;						//not a protocol supporting ch map to be disabled
 	
 	if(prev_ch_mapping!=IS_DISABLE_CH_MAP_on)
 	{
@@ -1692,7 +1692,7 @@ void ICACHE_RAM_ATTR update_serial_data()
 		if(IS_DISABLE_CH_MAP_on)
 		{
 			for(uint8_t i=0;i<4;i++)
-			CH_AETR[i]=CH_TAER[i]=CH_EATR[i]=i;
+			    CH_AETR[i]=CH_TAER[i]=CH_EATR[i]=i;
 			debugln("DISABLE_CH_MAP_on");
 		}
 		else
@@ -1724,9 +1724,9 @@ void ICACHE_RAM_ATTR update_serial_data()
 		inputbitsavailable -= 11 ;
 		inputbits >>= 11 ;
 		#ifdef FAILSAFE_ENABLE
-		if(failsafe)
-		Failsafe_data[i]=temp;			//value range 0..2047, 0=no pulse, 2047=hold
-		else
+		    if(failsafe)
+		        Failsafe_data[i]=temp;			//value range 0..2047, 0=no pulse, 2047=hold
+		    else
 		#endif
 	    Channel_data[i] = temp;			//value range 0..2047, 0=-125%, 2047=+125%
 	}
@@ -1752,9 +1752,9 @@ void ICACHE_RAM_ATTR update_serial_data()
 				//debug("SPort_in: ");
 				boolean sport_valid=false;
 				for(uint8_t i=28;i<28+7;i++)
-				if(rx_ok_buff[i]!=0) sport_valid=true;	//Check that the payload is not full of 0
+				    if(rx_ok_buff[i]!=0) sport_valid=true;	//Check that the payload is not full of 0
 				if((rx_ok_buff[27]&0x1F) > 0x1B)				//Check 1st byte validity
-				sport_valid=false;
+				    sport_valid=false;
 				if(sport_valid)
 				{
 					SportData[SportTail]=0x7E;
@@ -1770,15 +1770,15 @@ void ICACHE_RAM_ATTR update_serial_data()
 							SportData[SportTail]=rx_ok_buff[i]^STUFF_MASK;
 						}
 						else
-						SportData[SportTail]=rx_ok_buff[i];
+						    SportData[SportTail]=rx_ok_buff[i];
 						//debug("%02X ",SportData[SportTail]);
 						SportTail = (SportTail+1) & (MAX_SPORT_BUFFER-1);
 					}
 					uint8_t used = SportTail;
 					if ( SportHead > SportTail )
-					used += MAX_SPORT_BUFFER - SportHead ;
+					    used += MAX_SPORT_BUFFER - SportHead ;
 					else
-					used -= SportHead ;
+					    used -= SportHead ;
 					if ( used >= MAX_SPORT_BUFFER-(MAX_SPORT_BUFFER>>2) )
 					{
 						DATA_BUFFER_LOW_on;
@@ -1818,7 +1818,7 @@ void ICACHE_RAM_ATTR update_serial_data()
 	#if defined  AVR_COMMON || defined STM32_BOARD
 		#ifdef ORANGE_TX
 			cli();
-			#else
+		#else
 			UCSR0B &= ~_BV(RXCIE0);					// RX interrupt disable
 		#endif
 	#endif
@@ -1835,7 +1835,7 @@ void ICACHE_RAM_ATTR update_serial_data()
 	#if defined  AVR_COMMON || defined STM32_BOARD
 		#ifdef ORANGE_TX
 			sei();
-			#else
+		#else
 			UCSR0B |= _BV(RXCIE0) ;					// RX interrupt enable
 		#endif
 	#endif
@@ -1868,7 +1868,7 @@ void modules_reset()
 
 #ifdef CHECK_FOR_BOOTLOADER
 	void Mprotocol_serial_init( uint8_t boot )
-	#else
+#else
 	void Mprotocol_serial_init()
 #endif
 {
@@ -1898,7 +1898,7 @@ void modules_reset()
 			}
 		#endif // CHECK_FOR_BOOTLOADER
 		
-		#elif defined STM32_BOARD
+	#elif defined STM32_BOARD
 		#ifdef CHECK_FOR_BOOTLOADER
 			if ( boot )
 			{
@@ -1914,10 +1914,10 @@ void modules_reset()
 		}
 		USART2_BASE->CR1 &= ~ USART_CR1_TE;		//disable transmit
 		usart3_begin(100000,SERIAL_8E2);		
-		#elif defined ESP_COMMON
+	#elif defined ESP_COMMON
 		SerialChannelsInit();
 		SportSerialInit();//only transmitting ,inverted
-		#else
+	#else
 		//ATMEGA328p
 		#include <util/setbaud.h>	
 		UBRR0H = UBRRH_VALUE;
@@ -2023,13 +2023,13 @@ void modules_reset()
 #endif
 
 #ifdef ESP8266_PLATFORM
-void ICACHE_RAM_ATTR SerialChannelsInit()
-{
-Serial.flush();	
-Serial.begin(100000, SERIAL_8E2); // Serial.begin(100000, SERIAL_8E2,SX1280_RCSIGNAL_RX_pin, SX1280_RCSIGNAL_TX_pin,false, 500); <-- this seems not to work with ESP8266
-USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal
-}
-void ICACHE_RAM_ATTR SportSerialInit(void){LED_on;};
+    void ICACHE_RAM_ATTR SerialChannelsInit()
+    {
+        Serial.flush();	
+        Serial.begin(100000, SERIAL_8E2); // Serial.begin(100000, SERIAL_8E2,SX1280_RCSIGNAL_RX_pin, SX1280_RCSIGNAL_TX_pin,false, 500); <-- this seems not to work with ESP8266
+        USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal
+    }
+    void ICACHE_RAM_ATTR SportSerialInit(void){LED_on;};
 #endif
 
 #ifdef CHECK_FOR_BOOTLOADER
@@ -2041,9 +2041,9 @@ void ICACHE_RAM_ATTR SportSerialInit(void){LED_on;};
 		
 		#ifdef ORANGE_TX
 			if ( USARTC0.STATUS & USART_RXCIF_bm )
-			#elif defined STM32_BOARD
+		#elif defined STM32_BOARD
 			if ( USART2_BASE->SR & USART_SR_RXNE )
-			#else
+		#else
 			if ( UCSR0A & ( 1 << RXC0 ) )
 		#endif
 		{
@@ -2052,15 +2052,15 @@ void ICACHE_RAM_ATTR SportSerialInit(void){LED_on;};
 			if ( ( lState == BOOT_WAIT_30_IDLE ) || ( lState == BOOT_WAIT_30_DATA ) )
 			{
 				if ( lState == BOOT_WAIT_30_IDLE )	// Waiting for 0x30
-				BootTimer = millisTime ;		// Start timeout
+				    BootTimer = millisTime ;		// Start timeout
 				if ( rxchar == 0x30 )
-				lState = BOOT_WAIT_20 ;
+				    lState = BOOT_WAIT_20 ;
 				else
-				lState = BOOT_WAIT_30_DATA ;
+				    lState = BOOT_WAIT_30_DATA ;
 			}
 			else
-			if ( lState == BOOT_WAIT_20 && rxchar == 0x20 )	// Waiting for 0x20
-			lState = BOOT_READY ;
+			    if ( lState == BOOT_WAIT_20 && rxchar == 0x20 )	// Waiting for 0x20
+			        lState = BOOT_READY ;
 		}
 		else // No byte received
 		{
@@ -2071,7 +2071,7 @@ void ICACHE_RAM_ATTR SportSerialInit(void){LED_on;};
 				{
 					#ifdef	STM32_BOARD
 						if ( BootCount > 4 )
-						#else
+					#else
 						if ( BootCount > 2 )
 					#endif
 					{ // Run normally
@@ -2083,12 +2083,12 @@ void ICACHE_RAM_ATTR SportSerialInit(void){LED_on;};
 						#ifdef	STM32_BOARD
 							nvic_sys_reset();
 							while(1);						/* wait until reset */
-							#else
+						#else
 							cli();							// Disable global int due to RW of 16 bits registers
 							void (*p)();
 							#ifndef ORANGE_TX
 								p = (void (*)())0x3F00 ;	// Word address (0x7E00 byte)
-								#else
+							#else
 								p = (void (*)())0x4000 ;	// Word address (0x8000 byte)
 							#endif
 							(*p)() ;						// go to boot
@@ -2114,13 +2114,13 @@ void ICACHE_RAM_ATTR SportSerialInit(void){LED_on;};
 				|| (protocol==PROTO_FRSKYX) || (protocol==PROTO_FRSKYX2)
 			#endif
 		)
-		initTXSerial( SPEED_9600 ) ;
+		    initTXSerial( SPEED_9600 ) ;
 		#ifndef TELEMETRY_FRSKYX_TO_FRSKYD
 			if(protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2)
-			initTXSerial( SPEED_57600 ) ;
+			    initTXSerial( SPEED_57600 ) ;
 		#endif
 		if(protocol==PROTO_DSM)
-		initTXSerial( SPEED_125K ) ;
+		    initTXSerial( SPEED_125K ) ;
 	}
 #endif
 
@@ -2163,23 +2163,24 @@ static uint32_t random_id(uint16_t address, uint8_t create_new)
 				id = STM32_UUID[0] ^ STM32_UUID[1] ^ STM32_UUID[2];
 				debugln("Generated ID from STM32 UUID");
 			}
-			#elif defined ESP32_COMMON
-			for(int i = 0; i< 17; i= i+8) {
+		#elif defined ESP32_COMMON
+			for(int i = 0; i< 17; i= i+8)
+            {
 				id |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
 				debugln("Generated ID from ESP32 MAC");
 			}
 		#endif
 		if(create_new)
-		id = random(0xfefefefe) + ((uint32_t)random(0xfefefefe) << 16);
+		    id = random(0xfefefefe) + ((uint32_t)random(0xfefefefe) << 16);
 		
 		for(uint8_t i=0;i<4;i++)
-		eeprom_write_byte((EE_ADDR)address+i, id >> (i*8));
+		    eeprom_write_byte((EE_ADDR)address+i, id >> (i*8));
 	    eeprom_write_byte((EE_ADDR)address+10,0xf0);//write bind flag in eeprom.
 		#ifdef ESP_COMMON
-		EEPROM.commit();
+		    EEPROM.commit();
 		#endif
 		return id;
-		#else
+	#else
 		(void)address;
 		(void)create_new;
 		return FORCE_GLOBAL_ID;
@@ -2207,27 +2208,28 @@ static void __attribute__((unused)) calc_fh_channels(uint8_t num_ch)
 			if(hopping_frequency[idx-1]>next_ch)
 			{
 				if(hopping_frequency[idx-1]-next_ch<5)
-				continue;
+				    continue;
 			}
 			else
 			if(next_ch-hopping_frequency[idx-1]<5)
-			continue;
+			    continue;
 		}
 		// Check that it's not duplicated and spread uniformly
-		for (i = 0; i < idx; i++) {
+		for (i = 0; i < idx; i++) 
+        {
 			if(hopping_frequency[i] == next_ch)
-			break;
+			    break;
 			if(hopping_frequency[i] <= 26)
-			count_2_26++;
+			    count_2_26++;
 			else if (hopping_frequency[i] <= 50)
-			count_27_50++;
+			    count_27_50++;
 			else
-			count_51_74++;
+			    count_51_74++;
 		}
 		if (i != idx)
-		continue;
+		    continue;
 		if ( (next_ch <= 26 && count_2_26 < max) || (next_ch >= 27 && next_ch <= 50 && count_27_50 < max) || (next_ch >= 51 && count_51_74 < max) )
-		hopping_frequency[idx++] = next_ch;//find hopping frequency
+		    hopping_frequency[idx++] = next_ch;//find hopping frequency
 	}
 }
 
@@ -2246,20 +2248,20 @@ static void __attribute__((unused)) crc16_update(uint8_t a, uint8_t bits)
 {
 	crc ^= a << 8;
 	while(bits--)
-	if (crc & 0x8000)
-	crc = (crc << 1) ^ crc16_polynomial;
-	else
-	crc = crc << 1;
+        if (crc & 0x8000)
+            crc = (crc << 1) ^ crc16_polynomial;
+        else
+            crc = crc << 1;
 }
 
 static void __attribute__((unused)) crc8_update(uint8_t byte)
 {
 	crc8 = crc8 ^ byte;
 	for ( uint8_t j = 0; j < 8; j++ )
-	if ( crc8 & 0x80 )
-	crc8 = (crc8<<1) ^ crc8_polynomial;
-	else
-	crc8 <<= 1;
+        if ( crc8 & 0x80 )
+            crc8 = (crc8<<1) ^ crc8_polynomial;
+        else
+            crc8 <<= 1;
 }
 
 /**************************/
@@ -2273,15 +2275,15 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 	#ifdef ORANGE_TX
 		#if PPM_pin == 2
 			ISR(PORTD_INT0_vect)
-			#else
+		#else
 			ISR(PORTD_INT1_vect)
 		#endif
-		#elif defined STM32_BOARD
+	#elif defined STM32_BOARD
 		void PPM_decode()
-		#else
+	#else
 		#if PPM_pin == 2
 			ISR(INT0_vect, ISR_NOBLOCK)
-			#else
+		#else
 			ISR(INT1_vect, ISR_NOBLOCK)
 		#endif
 	#endif
@@ -2292,26 +2294,26 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 		
 		Cur_TCNT1 = TCNT1 - Prev_TCNT1 ;	// Capture current Timer1 value
 		if(Cur_TCNT1<1600)
-		bad_frame=1;					// bad frame
+	    	bad_frame=1;					// bad frame
 		else
-		if(Cur_TCNT1>4400)
-		{  //start of frame
-			if(chan>=MIN_PPM_CHANNELS)
-			{
-				PPM_FLAG_on;			// good frame received if at least 4 channels have been seen
-				if(chan>PPM_chan_max) PPM_chan_max=chan;	// Saving the number of channels received
-			}
-			chan=0;						// reset channel counter
-			bad_frame=0;
-		}
-		else
-		if(bad_frame==0)			// need to wait for start of frame
-		{  //servo values between 800us and 2200us will end up here
-			PPM_data[chan]=Cur_TCNT1;
-			if(chan++>=MAX_PPM_CHANNELS)
-			bad_frame=1;		// don't accept any new channels
-		}
-		Prev_TCNT1+=Cur_TCNT1;
+            if(Cur_TCNT1>4400)
+            {  //start of frame
+                if(chan>=MIN_PPM_CHANNELS)
+                {
+                    PPM_FLAG_on;			// good frame received if at least 4 channels have been seen
+                    if(chan>PPM_chan_max) PPM_chan_max=chan;	// Saving the number of channels received
+                }
+                chan=0;						// reset channel counter
+                bad_frame=0;
+            }
+            else
+            if(bad_frame==0)			// need to wait for start of frame
+            {  //servo values between 800us and 2200us will end up here
+                PPM_data[chan]=Cur_TCNT1;
+                if(chan++>=MAX_PPM_CHANNELS)
+                bad_frame=1;		// don't accept any new channels
+            }
+        Prev_TCNT1+=Cur_TCNT1;
 	}
 #endif //ENABLE_PPM
 
@@ -2321,17 +2323,17 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 		
 		#ifdef ORANGE_TX
 			ISR(USARTC0_RXC_vect)
-			#elif defined STM32_BOARD
+		#elif defined STM32_BOARD
 			void __irq_usart2()	
-			#else
+		#else
 			ISR(USART_RX_vect)
 		#endif
 		{	// RX interrupt
 			#ifdef ORANGE_TX
 				if((USARTC0.STATUS & 0x1C)==0)							// Check frame error, data overrun and parity error
-				#elif defined STM32_BOARD
+			#elif defined STM32_BOARD
 				if((USART2_BASE->SR & USART_SR_RXNE) && (USART2_BASE->SR &0x0F)==0)
-				#else
+			#else
 				UCSR0B &= ~_BV(RXCIE0) ;								// RX interrupt disable
 				sei() ;
 				if((UCSR0A&0x1C)==0)									// Check frame error, data overrun and parity error
@@ -2344,7 +2346,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 					rx_buff[0]=UDR0;
 					#ifdef FAILSAFE_ENABLE
 						if((rx_buff[0]&0xFC)==0x54)						// If 1st byte is 0x54, 0x55, 0x56 or 0x57 it looks ok
-						#else
+					#else
 						if((rx_buff[0]&0xFE)==0x54)						// If 1st byte is 0x54 or 0x55 it looks ok
 					#endif
 					{
@@ -2352,7 +2354,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 							TIMER3_BASE->CCR2=TIMER3_BASE->CNT + 500;	// Next byte should show up within 250us (1 byte = 120us)
 							TIMER3_BASE->SR = 0x1E5F & ~TIMER_SR_CC2IF;	// Clear Timer3/Comp2 interrupt flag
 							TIMER3_BASE->DIER |= TIMER_DIER_CC2IE;		// Enable Timer3/Comp2 interrupt
-							#else
+						#else
 							TX_RX_PAUSE_on;
 							tx_pause();
 							cli();										// Disable global int due to RW of 16 bits registers
@@ -2376,7 +2378,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 						rx_buff[rx_idx++]=UDR0;							// Store received byte
 						#if defined STM32_BOARD
 							TIMER3_BASE->CCR2=TIMER3_BASE->CNT + 500;	// Next byte should show up within 250us (1 byte = 120us)
-							#else
+						#else
 							cli();										// Disable global int due to RW of 16 bits registers
 							OCR1B = TCNT1 + 500;						// Next byte should show up within 250us (1 byte = 120us)
 							sei();										// Enable global int
@@ -2395,7 +2397,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 			{
 				#ifdef STM32_BOARD
 					TIMER3_BASE->DIER &= ~TIMER_DIER_CC2IE;				// Disable Timer3/Comp2 interrupt
-					#else							
+				#else							
 					CLR_TIMSK1_OCIE1B;									// Disable interrupt on compare B match
 					TX_RX_PAUSE_off;
 					tx_resume();
@@ -2410,9 +2412,9 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 		//Serial timer
 		#ifdef ORANGE_TX
 			ISR(TCC1_CCB_vect)
-			#elif defined STM32_BOARD
+		#elif defined STM32_BOARD
 			void ISR_COMPB()
-			#else
+		#else
 			ISR(TIMER1_COMPB_vect)
 		#endif
 		{	// Timer1 compare B interrupt
@@ -2440,7 +2442,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 			discard_frame = true;
 			#ifdef STM32_BOARD
 				TIMER3_BASE->DIER &= ~TIMER_DIER_CC2IE;					// Disable Timer3/Comp2 interrupt
-				#else
+			#else
 				CLR_TIMSK1_OCIE1B;										// Disable interrupt on compare B match
 				TX_RX_PAUSE_off;
 				tx_resume();
@@ -2568,7 +2570,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 	void Send_CCPM_USART1()
 	{
 		if ( CppmInitialised == false )
-		init_trainer_ppm() ;
+		    init_trainer_ppm() ;
 		TrainerTimer = millis() ;
 		len = packet_in[3] ;
 		uint32_t bitsavailable = 0 ;
@@ -2591,7 +2593,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 			bitsavailable -= 11 ;
 			bits >>= 11 ;
 			if ( i < 8 )
-			CppmChannels[i] = value * 5 / 4 ;
+			    CppmChannels[i] = value * 5 / 4 ;
 			i++ ;
 			len-- ;
 		}
@@ -2653,8 +2655,8 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
                 chSerial_timer = timerRead(timer);
 		if ( (chSerial_timer - prev_chSerial_timer) > 500) 
 		{
-                 rx_idx = 0;
-                }
+            rx_idx = 0;
+        }
 		prev_chSerial_timer = chSerial_timer;
 		if(rx_idx == 0)
 		{//sync	
@@ -2662,21 +2664,19 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 			
 			#ifdef FAILSAFE_ENABLE
 				if((rx_buff[0]&0xFC)==0x54)	// If 1st byte is 0x54, 0x55, 0x56 or 0x57 it looks ok
-				#else
+			#else
 				if((rx_buff[0]&0xFE)==0x54)	// If 1st byte is 0x54 or 0x55 it looks ok
 			#endif
 				{
-			rx_idx++;	
-		                }
+			        rx_idx++;	
+		        }
 		}
 		else
 		{ 	 
 			if (rx_idx && rx_idx <= RXBUFFER_SIZE)
-			{
 				rx_buff [rx_idx++] = c;
-			}
 			else
-			rx_idx = 0; 	//discard too many bytes being received...
+			    rx_idx = 0; 	//discard too many bytes being received...
 		}  
 		
 		// After reading bytes from buffer clear UART interrupt status
@@ -2689,21 +2689,19 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 	
 	void ICACHE_RAM_ATTR processSerialChannels()
 	{ 
-	  uint32_t  t_chSerial_timer =  timerRead(timer);
-           if(( t_chSerial_timer -  chSerial_timer) >= 500)//process only when full serial frame is received
-             {
-		if(rx_idx >= 26)// A full frame has been received
-		{ 
-
-				rx_len = rx_idx;
-				memcpy((void*)rx_ok_buff,(const void*)rx_buff,rx_len);// Duplicate the buffer
-				rx_idx = 0;      // reset buffer for next time
-				RX_FLAG_on;	// Flag for main to process data		   
-			#ifdef MULTI_SYNC
-				last_serial_input = timerRead(timer);
-			#endif
-
-		}
+	    uint32_t  t_chSerial_timer =  timerRead(timer);
+        if(( t_chSerial_timer -  chSerial_timer) >= 500)//process only when full serial frame is received
+        {
+            if(rx_idx >= 26)// A full frame has been received
+            { 
+                rx_len = rx_idx;
+                memcpy((void*)rx_ok_buff,(const void*)rx_buff,rx_len);// Duplicate the buffer
+                rx_idx = 0;      // reset buffer for next time
+                RX_FLAG_on;	// Flag for main to process data		   
+                #ifdef MULTI_SYNC
+                    last_serial_input = timerRead(timer);
+                #endif
+            }
 				chSerial_timer += 14000;//come again after 7ms        			  
 	   }
 		   
@@ -2713,8 +2711,9 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 #ifdef ESP8266_PLATFORM
     void ICACHE_RAM_ATTR callSerialChannels()
     {
-        while (Serial.available()){
-        processIncomingByte(Serial.read());
+        while (Serial.available())
+        {
+            processIncomingByte(Serial.read());
         }
     }
 
@@ -2722,35 +2721,30 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
     void ICACHE_RAM_ATTR processIncomingByte (const byte inByte)
     {
 
-    uint8_t c = inByte;
+        uint8_t c = inByte;
+        chSerial_timer = timerRead(timer);
 
-    chSerial_timer = timerRead(timer);
-
-    if ( (chSerial_timer - prev_chSerial_timer) > 500) {
-    rx_idx = 0;
-    }
-
-    if(rx_idx == 0 )//received something
+        if ( (chSerial_timer - prev_chSerial_timer) > 500)
+            rx_idx = 0;
+        if(rx_idx == 0 )//received something
         {//sync
             RX_MISSED_BUFF_off;
             rx_buff[0] = c;//read first byte		
             #ifdef FAILSAFE_ENABLE
-            if((rx_buff[0]&0xFC)==0x54)	// If 1st byte is 0x54, 0x55, 0x56 or 0x57 it looks ok
+                if((rx_buff[0]&0xFC)==0x54)	// If 1st byte is 0x54, 0x55, 0x56 or 0x57 it looks ok
             #else
-            if((rx_buff[0]&0xFE)==0x54)	// If 1st byte is 0x54 or 0x55 it looks ok
+                if((rx_buff[0]&0xFE)==0x54)	// If 1st byte is 0x54 or 0x55 it looks ok
             #endif
             rx_idx++;
         }
         else
         {
             if (rx_idx && rx_idx <= RXBUFFER_SIZE)
-            {
-                rx_buff [rx_idx++] = c;			
-            }
+                rx_buff [rx_idx++] = c;	
             else
-            rx_idx = 0;
+                rx_idx = 0;
         } 
-    prev_chSerial_timer = chSerial_timer;
+        prev_chSerial_timer = chSerial_timer;
     }// end of processIncomingByte 
 	
 #endif

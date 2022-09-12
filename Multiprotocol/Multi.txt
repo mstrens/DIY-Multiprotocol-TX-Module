@@ -90,3 +90,4 @@
 91,Xerall
 92,MT99xx,PA18
 93,Kyosho2,KT-17
+128,MiLo,M16_8ch,MEU_16,MEU_8,WiFi-TX,WiFi-RX
