@@ -711,7 +711,7 @@
 	
 	void ICACHE_RAM_ATTR POWER_init()
 	{
-		CurrentPower = PWR_COUNT;
+		CurrentPower = 0;
 		SX1280_setPower(MinPower);// set to minimum(10mW)
 		
 	}

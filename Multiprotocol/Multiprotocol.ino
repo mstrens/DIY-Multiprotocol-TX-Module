@@ -533,13 +533,14 @@ void setup()
         SX1280_TXEN_off;
         SX1280_RXEN_off;
         SX1280_CSN_on;
+		#ifdef ESP8266_PLATFORM
+	    pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
+        SX1280_ANTENNA_SELECT_on;
+		#endif
         //timer
         #ifdef ESP32_PLATFORM
             timer = timerBegin(1, (APB_CLK_FREQ / 2000000), true); // timer1, prescaler = 12.5ns*40 = 0.5us, count
-            timerWrite(timer,0xFFFF);
-        #elif defined ESP8266_PLATFORM
-            pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
-            SX1280_ANTENNA_SELECT_on;
+            timerWrite(timer,0xFFFF); 
         #endif
     #else
         //ATMEGA328p
@@ -796,7 +797,7 @@ void setup()
     { // Serial
     #ifdef ENABLE_SERIAL
         for(uint8_t i = 0;i < 3;i++)
-            cur_protocol[0] = 0;       
+            cur_protocol[i] = 0;       
         protocol = 0;           
         #ifdef CHECK_FOR_BOOTLOADER
             Mprotocol_serial_init(1);   // Configure serial and enable RX interrupt
@@ -837,10 +838,6 @@ void loop()
                 sei();          // Enable global int                                                
             }
         }       
-        #ifdef ESP_COMMON
-        if(protocol == PROTO_MILO && sub_protocol == WIFI_TX)
-            startWifiManager();
-        #endif
         #ifdef ESP8266_PLATFORM
             callSerialChannels();
         #endif
