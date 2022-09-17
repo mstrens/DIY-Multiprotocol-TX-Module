@@ -41,7 +41,6 @@
 	uint8_t chanskip = 0;
 	bool frameReceived = false;
 	uint8_t frameType = 0;
-    extern uint8_t CurrentPower;
     extern bool LBTEnabled;
     bool LBTStarted = false;
 	#ifdef SPORT_SEND
@@ -370,8 +369,7 @@
 			state = MiLo_DATA1;
 			case MiLo_USE_LBT:
 			packet_count = (packet_count + 1)%3;
-			CurrentPower = PWR_100mW;
-			SX1280_setPower(CurrentPower);
+			SX1280_SetOutputPower(MaxPower);
 			nextChannel(1);
 			SX1280_SetFrequencyReg(GetCurrFreq());
 			BeginClearChannelAssessment();
@@ -393,13 +391,12 @@
 			#endif
 			if (LBTEnabled){
 				if(!ChannelIsClear())
-				SX1280_setPower(PWR_10mW);
+				SX1280_SetOutputPower(MinPower);
 		        MiLo_data_frame();		
 			}
 			else
 			{	
-				CurrentPower = PWR_100mW;
-			    SX1280_setPower(CurrentPower);
+			    SX1280_SetOutputPower(MaxPower);
 				packet_count = (packet_count + 1)%3;
 				MiLo_data_frame();
 				nextChannel(1);
@@ -437,7 +434,7 @@
 			if (LBTEnabled)
 			{
 				if(!ChannelIsClear())
-				SX1280_setPower(PWR_10mW);
+				SX1280_SetOutputPower(MinPower);
 				MiLo_Telemetry_frame();		
 			}
 			else

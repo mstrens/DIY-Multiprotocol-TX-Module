@@ -431,8 +431,8 @@
 		
 		uint32_t wtimeoutUS = 1000U;
 		uint32_t startTime = micros();
-		//if(SX1280_BUSY_pin != -1)
-		//{
+		if(SX1280_BUSY_pin != -1)
+		{
 		while (IS_SX1280_BUSY_on) // wait untill not busy or until wtimeoutUS
 		{
 			if ((micros() - startTime) > wtimeoutUS)
@@ -445,18 +445,18 @@
 			}
 		}
 		
-		//}
-		//else
-		//{
+		}
+		else
+		{
 		// observed BUSY time for Write* calls are 12-20uS after NSS de-assert
 		// and state transitions require extra time depending on prior state
 		//if (BusyDelayDuration)
-		//{
-		//	while ((micros() - BusyDelayStart) < BusyDelayDuration)
-		//	NOP();
-		//	BusyDelayDuration = 0;
-		//}
-		//}
+		{
+			while ((micros() - BusyDelayStart) < BusyDelayDuration)
+			NOP();
+			BusyDelayDuration = 0;
+		}
+		}
 		return true;
 	}
 	
@@ -689,11 +689,11 @@
 	
 	//////////////////// Output Power///////////////////////
 	
-	uint8_t CurrentPower;
+	int8_t CurrentPower;
 	
-	static int8_t powerCaliValues[PWR_COUNT] = {0};
-	int8_t CurrentSX1280Power = 0;
-	
+	//static int8_t powerCaliValues[PWR_COUNT] = {0};
+	//int8_t CurrentSX1280Power = 0;
+	/*
 	uint8_t getPowerIndBm()
 	{
 		switch (CurrentPower)
@@ -708,14 +708,8 @@
 			return 0;
 		}
 	}
-	
-	void ICACHE_RAM_ATTR POWER_init()
-	{
-		CurrentPower = 0;
-		SX1280_setPower(MinPower);// set to minimum(10mW)
-		
-	}
-	
+
+
 	uint8_t  SX1280_decPower()
 	{
 		if (CurrentPower > MinPower)
@@ -756,9 +750,31 @@
 		SX1280_SetOutputPower(CurrentSX1280Power);
 		CurrentPower = Power;
 	}
+	*/
+		void  POWER_init()
+	{
+		CurrentPower = MinPower;
+		SX1280_SetOutputPower(MinPower);// set to minimum(10mW)		
+	}
 	
 	void ICACHE_RAM_ATTR SX1280_SetOutputPower( int8_t power )//default values 13 ->12.5dbm;no external PA
 	{
+	
+		if (power == CurrentPower)
+	   return;
+	#ifdef USER_MAX_POWER
+       if (power < MinPower)
+		{
+			power = UserPower;
+		}
+		else if (power > MaxPower)
+		{
+			power = UserPower;
+		}	
+	
+     #endif
+	
+	
 		// The power value to send on SPI/UART is in the range [0..31] and the
 		// physical output power is in the range [-18..13]dBm
 		uint8_t buf[2];

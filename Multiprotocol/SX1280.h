@@ -33,7 +33,7 @@ void  ICACHE_RAM_ATTR SX1280_Config(uint8_t bw, uint8_t sf, uint8_t cr, uint32_t
 void ICACHE_RAM_ATTR  SX1280_SetRxTimeoutUs(uint32_t interval);
 void  ICACHE_RAM_ATTR getRFlinkInfo(void);
 void  ICACHE_RAM_ATTR POWER_init(void);
-void  ICACHE_RAM_ATTR SX1280_setPower(uint8_t Power);
+//void  ICACHE_RAM_ATTR SX1280_setPower(uint8_t Power);
 void  ICACHE_RAM_ATTR SX1280_SetOutputPower( int8_t power );
 int32_t ICACHE_RAM_ATTR SX1280_GetLoRaBandwidth(void);
 int32_t ICACHE_RAM_ATTR complement2( const uint32_t num, const uint8_t bitCnt );

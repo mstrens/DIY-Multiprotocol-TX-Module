@@ -388,11 +388,6 @@
 	
 	//SX1280
 	#define	BIND_pin		       0//there is no bind on this pin yet bind  from TX menu
-	#ifdef BETAFPV_500
-		#define	LED_pin		       16
-		#else
-		#define	LED_pin		       15
-	#endif
 	#define	SX1280_RST_pin	  14	
 	#define	SX1280_BUSY_pin   21
 	#define	SX1280_DIO1_pin   4
@@ -410,7 +405,18 @@
 	#define SX1280_RCSIGNAL_RX_pin 13  //SPORT usart tx to 5-th pin of I/O connector
 	#define SX1280_RCSIGNAL_TX_pin 13
 	#define SX1280_RX_pin          25  //SERIAL CHANNELS 1-st pin of I/O connector
-	
+	#ifdef USER_MAX_POWER
+		 #define UserPower -17//10mW for example can be defined whatever you need
+    #endif	
+	#ifdef BETAFPV_500
+		#define	LED_pin		       16
+	    #define MinPower -18//10mW
+        #define MaxPower -9//100mW		
+		#else
+		#define	LED_pin		       15
+	    #define MinPower -17//10mW
+        #define MaxPower -6//100mW		
+	#endif
 #endif
 #ifdef ESP8266_PLATFORM //ESP8285
     #define	BIND_pin		     0
@@ -438,19 +444,41 @@
     #ifdef MATEK_RX_R24D
         #define SX1280_TXEN_pin           10
         #define SX1280_ANTENNA_SELECT_pin  9  //diversity
-        #define POWER_OUTPUT_FIXED         3
+        #define MinPower -13//10mW
+        #define MaxPower 3//100mW
+        #ifdef USER_MAX_POWER
+             #define UserPower -13//10mW for example can be defined whatever you need
+        #endif
     #elif defined BETA_FPV_RX_NANO || defined MATEK_RX_R24S
 	    #define SX1280_ANTENNA_SELECT_pin  -1
         #define SX1280_RXEN_pin         9 
         #define SX1280_TXEN_pin         10
-        #define POWER_OUTPUT_FIXED      3
-    #endif
-	#ifdef DIY_RX//diversity with no PA/LNA
-	 #define SX1280_RXEN_pin         -1 
-     #define SX1280_TXEN_pin         -1
-	 #define POWER_OUTPUT_FIXED      13
-	 #define SX1280_ANTENNA_SELECT_pin  9
-#endif
+        #define MinPower -13//10mW
+        #define MaxPower 3//100mW
+        #ifdef USER_MAX_POWER
+            #define UserPower -13//10mW for example can be defined whatever you need
+        #endif
+	#elif defined ESP8266_E28_2G4M20S
+        #undef SX1280_BUSY_pin
+        #define SX1280_BUSY_pin -1
+        #define SX1280_RXEN_pin -1
+        #define SX1280_TXEN_pin  5
+		#define MinPower -13//10mW
+        #define MaxPower -2//100mW
+        #ifdef USER_MAX_POWER
+             #define UserPower -13//10mW for example can be defined whatever you need
+		#endif	
+	#elif defined DIY_RX//diversity with no PA/LNA
+	    #define SX1280_RXEN_pin         -1 
+        #define SX1280_TXEN_pin         -1
+	    #define POWER_OUTPUT_FIXED      13
+	    #define SX1280_ANTENNA_SELECT_pin  9
+	    #define MinPower 10
+        #define MaxPower 13
+        #ifdef USER_MAX_POWER
+           #define UserPower 10//10mW for example can be defined whatever you need
+       #endif
+	   #endif
 #endif
 
 #if defined ESP_COMMON || defined STM32_BOARD //ESP32 or ESP8285 or STM32
