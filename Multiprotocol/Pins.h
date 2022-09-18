@@ -346,7 +346,13 @@
 	        //USB_DM PA11 -free to use for boards that have USB pins exposed
 	        //USB_DP PA12 -free to use for boards that have USB pins exposed
        #endif
-
+	   //to be redefined depending on the RF module used togheter with STM32
+	    #define MinPower -13//10mW
+        #define MaxPower 3//100mW
+        #ifdef USER_MAX_POWER
+            #define UserPower -13//10mW for example, can be defined to whatever you need
+        #endif   
+	   //
 #endif
 #ifdef ESP32_PLATFORM //ESP32
 	
@@ -443,6 +449,7 @@
     #define SX1280_RCSIGNAL_TX_pin  1  //SPORT SERIAL Tx to 5-th pin of I/O connector
     #ifdef MATEK_RX_R24D
         #define SX1280_TXEN_pin           10
+		#define SX1280_RXEN_pin          -1
         #define SX1280_ANTENNA_SELECT_pin  9  //diversity
         #define MinPower -13//10mW
         #define MaxPower 3//100mW
@@ -463,6 +470,7 @@
         #define SX1280_BUSY_pin -1
         #define SX1280_RXEN_pin -1
         #define SX1280_TXEN_pin  5
+		#define SX1280_ANTENNA_SELECT_pin  -1
 		#define MinPower -13//10mW
         #define MaxPower -2//100mW
         #ifdef USER_MAX_POWER

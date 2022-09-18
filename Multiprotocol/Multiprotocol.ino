@@ -34,6 +34,7 @@
     #define BETA_FPV_RX_NANO //or clone
     //#define MATEK_RX_R24D
     //#define DIY_RX //use RX as TX(diversity) no PA/LNA
+	//#define ESP8266_E28_2G4M20S
 #endif
 #ifdef STM32_BOARD
     /* ICACHE_RAM_ATTR1 is always linked into RAM */
