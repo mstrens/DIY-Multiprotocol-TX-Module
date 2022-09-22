@@ -146,10 +146,10 @@
 			&& (RFperf == MiLo_currAirRate_RFperfParams)
 		&& (invertIQ == IQinverted))
 		return;
-		uint32_t interval = ModParams->interval;
+		//uint32_t interval = ModParams->interval;
 		
 		SX1280_Config(ModParams->bw, ModParams->sf, ModParams->cr, GetCurrFreq(),
-		ModParams->PreambleLen, invertIQ, ModParams->PayloadLength, ModParams->interval);
+		ModParams->PreambleLen, invertIQ, ModParams->PayloadLength);
 		
 		MiLo_currAirRate_Modparams = ModParams;
 		MiLo_currAirRate_RFperfParams = RFperf;
@@ -329,7 +329,7 @@
 				state = MiLo_DATA1;
 				MiLo_telem_init();
 			}
-			SX1280_SetTxRxMode(TXRX_OFF);
+			//SX1280_SetTxRxMode(TXRX_OFF);
 			POWER_init();
 			PayloadLength = MiLo_currAirRate_Modparams->PayloadLength;
 		}	
@@ -338,8 +338,6 @@
 	uint16_t ICACHE_RAM_ATTR MILO_callback()
 	{
 		static uint16_t interval = MiLo_currAirRate_Modparams->interval;
-		static uint8_t TLMinterval = MiLo_currAirRate_Modparams->TLMinterval;
-		static uint16_t TOA = MiLo_currAirRate_RFperfParams->TOA;
 		static uint32_t upTLMcounter = 2;
 		switch(state)
 		{	
@@ -367,6 +365,7 @@
 			}
 			else
 			state = MiLo_DATA1;
+		    break;
 			case MiLo_USE_LBT:
 			packet_count = (packet_count + 1)%3;
 			SX1280_SetOutputPower(MaxPower);

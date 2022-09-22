@@ -197,20 +197,26 @@
 	{
 		
 		if(mode == RX_EN)
-		{	
+		{
+	     if(SX1280_RXEN_pin != -1)
 			SX1280_RXEN_on;
+		 if(SX1280_TXEN_pin != -1)
 			SX1280_TXEN_off;
 		}
 		else
 		if (mode == TX_EN)
 		{
+	      if(SX1280_RXEN_pin != -1)
 			SX1280_RXEN_off;
+		 if(SX1280_TXEN_pin != -1)
 			SX1280_TXEN_on;
 			
 		}
 		else
 		{
+	    if(SX1280_TXEN_pin != -1)
 			SX1280_TXEN_off;
+	    if(SX1280_RXEN_pin != -1)	
 			SX1280_RXEN_off;
 		}
 	}
@@ -562,7 +568,7 @@
 	
 	
 	void ICACHE_RAM_ATTR SX1280_Config(uint8_t bw, uint8_t sf, uint8_t cr, uint32_t freq,
-	uint8_t PreambleLength, bool InvertIQ, uint8_t _PayloadLength, uint32_t interval)
+	uint8_t PreambleLength, bool InvertIQ, uint8_t _PayloadLength)
 	{
 		uint8_t irqs = SX1280_IRQ_TX_DONE | SX1280_IRQ_RX_DONE;
 		uint8_t const mode = SX1280_PACKET_TYPE_LORA;

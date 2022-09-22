@@ -149,7 +149,8 @@
 //#define CYRF6936_ENABLE_LOW_POWER
 //#define CC2500_ENABLE_LOW_POWER
 //#define NRF24L01_ENABLE_LOW_POWER
-
+//SX1280
+//#define SX1280_ENABLE_LOW_POWER
 
 /*****************/
 /*** GLOBAL ID ***/

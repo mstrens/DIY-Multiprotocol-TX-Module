@@ -349,7 +349,7 @@
 	   //to be redefined depending on the RF module used togheter with STM32
 	    #define MinPower -13//10mW
         #define MaxPower 3//100mW
-        #ifdef USER_MAX_POWER
+        #ifdef SX1280_ENABLE_LOW_POWER
             #define UserPower -13//10mW for example, can be defined to whatever you need
         #endif   
 	   //
@@ -411,7 +411,7 @@
 	#define SX1280_RCSIGNAL_RX_pin 13  //SPORT usart tx to 5-th pin of I/O connector
 	#define SX1280_RCSIGNAL_TX_pin 13
 	#define SX1280_RX_pin          25  //SERIAL CHANNELS 1-st pin of I/O connector
-	#ifdef USER_MAX_POWER
+	#ifdef SX1280_ENABLE_LOW_POWER
 		 #define UserPower -17//10mW for example can be defined whatever you need
     #endif	
 	#ifdef BETAFPV_500
@@ -451,18 +451,18 @@
         #define SX1280_TXEN_pin           10
 		#define SX1280_RXEN_pin          -1
         #define SX1280_ANTENNA_SELECT_pin  9  //diversity
-        #define MinPower -13//10mW
-        #define MaxPower 3//100mW
-        #ifdef USER_MAX_POWER
+        #define MinPower -10//10mW
+        #define MaxPower 1//100mW
+        #ifdef SX1280_ENABLE_LOW_POWER
              #define UserPower -13//10mW for example can be defined whatever you need
         #endif
     #elif defined BETA_FPV_RX_NANO || defined MATEK_RX_R24S
 	    #define SX1280_ANTENNA_SELECT_pin  -1
         #define SX1280_RXEN_pin         9 
         #define SX1280_TXEN_pin         10
-        #define MinPower -13//10mW
-        #define MaxPower 3//100mW
-        #ifdef USER_MAX_POWER
+        #define MinPower -10//10mW
+        #define MaxPower 1//100mW
+        #ifdef SX1280_ENABLE_LOW_POWER
             #define UserPower -13//10mW for example can be defined whatever you need
         #endif
 	#elif defined ESP8266_E28_2G4M20S
@@ -473,17 +473,16 @@
 		#define SX1280_ANTENNA_SELECT_pin  -1
 		#define MinPower -13//10mW
         #define MaxPower -2//100mW
-        #ifdef USER_MAX_POWER
+        #ifdef SX1280_ENABLE_LOW_POWER
              #define UserPower -13//10mW for example can be defined whatever you need
 		#endif	
 	#elif defined DIY_RX//diversity with no PA/LNA
 	    #define SX1280_RXEN_pin         -1 
         #define SX1280_TXEN_pin         -1
-	    #define POWER_OUTPUT_FIXED      13
 	    #define SX1280_ANTENNA_SELECT_pin  9
 	    #define MinPower 10
         #define MaxPower 13
-        #ifdef USER_MAX_POWER
+        #ifdef SX1280_ENABLE_LOW_POWER
            #define UserPower 10//10mW for example can be defined whatever you need
        #endif
 	   #endif
@@ -518,7 +517,7 @@
 	#define SX1280_FAN_EN_off       digitalWrite(SX1280_FAN_EN_pin,LOW)
 
 	#define SX1280_ANTENNA_SELECT_on  digitalWrite(SX1280_ANTENNA_SELECT_pin,HIGH)
-        #define SX1280_ANTENNA_SELECT_off digitalWrite(SX1280_ANTENNA_SELECT_pin,LOW)
+    #define SX1280_ANTENNA_SELECT_off  digitalWrite(SX1280_ANTENNA_SELECT_pin,LOW)
 
 	#define	IS_LED_on		        ( digitalRead(LED_pin)==HIGH)
 	#define	LED_on			        digitalWrite(LED_pin,HIGH)

@@ -31,9 +31,9 @@
     //#define HM_ES24TX //
 #endif
 #ifdef ESP8266_PLATFORM
-    #define BETA_FPV_RX_NANO //or clone
+   #define BETA_FPV_RX_NANO //or clone
     //#define MATEK_RX_R24D
-    //#define DIY_RX //use RX as TX(diversity) no PA/LNA
+   //#define DIY_RX //use RX as TX(diversity) no PA/LNA
 	//#define ESP8266_E28_2G4M20S
 #endif
 #ifdef STM32_BOARD
@@ -100,6 +100,7 @@ bool ICACHE_RAM_ATTR Update_All(void);
     #include <EEPROM.h>
     #include "onDemandNonBlocking.h"
     //#define TEST
+    //#define TEST_WIFI
     #ifdef ESP32_PLATFORM
         #include <HardwareSerial.h>
         #include "driver/uart.h"
@@ -123,8 +124,6 @@ bool ICACHE_RAM_ATTR Update_All(void);
             #ifdef DEBUG_ESP_PORT
                 #define debugln(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
             #endif
-        #else
-            #define debugln(...)
         #endif
     #endif  
     void initSPI(void);
@@ -135,6 +134,7 @@ bool ICACHE_RAM_ATTR Update_All(void);
     uint32_t TCNT1 = 0 ;
     volatile uint32_t chSerial_timer = 0;
     uint32_t prev_chSerial_timer = 0;
+	bool startWifi = false;
     #ifdef TEST
         void callMicrosSerial(){
         static uint32_t tim = 0 ;
@@ -354,10 +354,12 @@ uint8_t multi_protocols_index=0xFF;
 
 // Init
 void setup()
-{
+{	
     #ifdef TEST
         #ifdef ESP8266_PLATFORM
-            Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
+		#ifndef TEST_WIFI
+           Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
+		 #endif
         #else
             Serial.begin(115200,SERIAL_8N1);
         #endif
@@ -421,14 +423,18 @@ void setup()
         pinMode(TX_INV_pin,OUTPUT);
         pinMode(RX_INV_pin,OUTPUT);
         #ifdef SX1280_INSTALLED 
-            pinMode(SX1280_RST_pin,OUTPUT); 
+            pinMode(SX1280_RST_pin,OUTPUT);
+			if(SX1280_BUSY_pin != -1)
             pinMode(SX1280_BUSY_pin,INPUT); 
             pinMode(SX1280_DIO1_pin,INPUT); 
-            pinMode(SX1280_TXEN_pin,OUTPUT);    
-            pinMode(SX1280_RXEN_pin,OUTPUT);    
+			if(SX1280_TXEN_pin != -1)
+            pinMode(SX1280_TXEN_pin,OUTPUT);
+		    SX1280_TXEN_off;
+		   if(SX1280_RXEN_pin != -1){
+            pinMode(SX1280_RXEN_pin,OUTPUT);   
+		    SX1280_RXEN_off;
+		   }		   
             pinMode(SX1280_CSN_pin,OUTPUT);
-            SX1280_TXEN_off;
-            SX1280_RXEN_off;
             SX1280_CSN_on;
         #endif
         #if defined TELEMETRY
@@ -525,18 +531,25 @@ void setup()
     #elif defined ESP_COMMON
         pinMode(BIND_pin, INPUT);
         pinMode(LED_pin, OUTPUT);
-        pinMode(SX1280_RST_pin , OUTPUT);   
-        pinMode(SX1280_BUSY_pin , INPUT);   
-        pinMode(SX1280_DIO1_pin ,INPUT);    
-        pinMode(SX1280_TXEN_pin , OUTPUT);  
-        pinMode(SX1280_RXEN_pin ,OUTPUT);   
-        pinMode(SX1280_CSN_pin , OUTPUT);   
-        SX1280_TXEN_off;
-        SX1280_RXEN_off;
+        pinMode(SX1280_RST_pin , OUTPUT);
+		if(SX1280_BUSY_pin != -1)
+        pinMode(SX1280_BUSY_pin ,INPUT);   
+        pinMode(SX1280_DIO1_pin ,INPUT);		
+		if(SX1280_TXEN_pin != -1){
+        pinMode(SX1280_TXEN_pin , OUTPUT);
+		SX1280_TXEN_off;
+		}
+		if(SX1280_RXEN_pin != -1){
+        pinMode(SX1280_RXEN_pin ,OUTPUT);  // here is the issue with wifi
+	     SX1280_RXEN_off;
+		}
+        pinMode(SX1280_CSN_pin , OUTPUT);	
         SX1280_CSN_on;
 		#ifdef ESP8266_PLATFORM
+		if(SX1280_ANTENNA_SELECT_pin != -1){
 	    pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
         SX1280_ANTENNA_SELECT_on;
+		}	
 		#endif
         //timer
         #ifdef ESP32_PLATFORM
@@ -838,7 +851,7 @@ void loop()
                 OCR1A = TCNT1;                      // Callback should already have been called... Use "now" as new sync point.
                 sei();          // Enable global int                                                
             }
-        }       
+        }
         #ifdef ESP8266_PLATFORM
             callSerialChannels();
         #endif
@@ -846,8 +859,7 @@ void loop()
         tx_pause();
         next_callback = remote_callback()<<1;   
         TX_MAIN_PAUSE_off;
-        tx_resume();
-        
+        tx_resume();       
         cli();                                      // Disable global int due to RW of 16 bits registers
         OCR1A += next_callback;                     // Calc when next_callback should happen
         #if defined AVR_COMMON
@@ -863,7 +875,7 @@ void loop()
         #ifdef ESP_COMMON
         processSerialChannels();
         #endif
-        sei();      // Enable global int    
+        sei();      // Enable global int   		
         //Serial.println(diff);
         if((diff & 0x8000) && !(next_callback & 0x8000))//32768
         { // Negative result = callback should already have been called... 
@@ -1480,7 +1492,7 @@ void ICACHE_RAM_ATTR update_serial_data()
         rx_len = 27;
         rx_ok_buff[0] = 0x55;
         rx_ok_buff[1] = 0x00;
-        //rx_ok_buff[1] |= 0x80; //binding
+       // rx_ok_buff[1] |= 0x80; //binding
         rx_ok_buff[2] = 0x10;
         rx_ok_buff[3] = 0x00;
         rx_ok_buff[4] = 0xE4;
@@ -1674,6 +1686,10 @@ void ICACHE_RAM_ATTR update_serial_data()
         End_Bind();
     }
     
+	#ifdef TEST_WIFI
+		sub_protocol = WIFI_TX;//WIFI test
+	#endif
+	
     //store current protocol values
     for(uint8_t i=0;i<3;i++)
         cur_protocol[i] =  rx_ok_buff[i];
@@ -2013,7 +2029,7 @@ void modules_reset()
         portDISABLE_INTERRUPTS();
         Serial_2.begin(100000, SERIAL_8E2, -1, SX1280_RCSIGNAL_TX_pin,true, 500);//only tx enabled and inverted
         portENABLE_INTERRUPTS();
-    }
+	}
     
 #endif
 

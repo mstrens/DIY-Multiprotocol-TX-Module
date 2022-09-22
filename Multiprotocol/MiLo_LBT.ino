@@ -7,7 +7,7 @@
 #endif
 
 
-static uint32_t rxStartTime;
+//static uint32_t rxStartTime;
 extern int8_t CurrentPower;
 bool LBTEnabled = false;
 
