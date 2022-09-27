@@ -31,7 +31,7 @@
     //#define HM_ES24TX //
 #endif
 #ifdef ESP8266_PLATFORM
-   #define BETA_FPV_RX_NANO //or clone
+  #define BETA_FPV_RX_NANO //or clone
     //#define MATEK_RX_R24D
    //#define DIY_RX //use RX as TX(diversity) no PA/LNA
 	//#define ESP8266_E28_2G4M20S
@@ -98,7 +98,8 @@ bool ICACHE_RAM_ATTR Update_All(void);
 #if defined  ESP_COMMON
     #include <SPI.h>
     #include <EEPROM.h>
-    #include "onDemandNonBlocking.h"
+    //#include "onDemandNonBlocking.h"
+	#include "devWIFI_elegantOTA.h"
     //#define TEST
     //#define TEST_WIFI
     #ifdef ESP32_PLATFORM
@@ -111,21 +112,23 @@ bool ICACHE_RAM_ATTR Update_All(void);
         HardwareSerial Serial_2(1);
         static hw_timer_t  *timer = NULL;   
         static intr_handle_t handle_console;
-        void ICACHE_RAM_ATTR uart_intr_handle(void *arg);
+       void ICACHE_RAM_ATTR uart_intr_handle(void *arg);
     #endif
     #ifdef ESP8266_PLATFORM
+	    #include "uart_register.h"
         #define HWTIMER() ESP.getCycleCount()
         #define timerRead(timer) micros()*2;
+		//#define timerRead(timer) (2*ESP.getCycleCount())/clockCyclesPerMicrosecond()
         #define getEfuseMac() getChipId()&0XFFFFFF
         #define Serial_2  Serial
-        void ICACHE_RAM_ATTR callSerialChannels(void);
+	    void ICACHE_RAM_ATTR callSerialChannels(void);
         void ICACHE_RAM_ATTR processIncomingByte (const byte inByte);
         #ifdef TEST//only one serial
             #ifdef DEBUG_ESP_PORT
                 #define debugln(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
             #endif
         #endif
-    #endif  
+    #endif
     void initSPI(void);
     void ICACHE_RAM_ATTR processSerialChannels();
     void ICACHE_RAM_ATTR SerialChannelsInit(void);
@@ -136,6 +139,11 @@ bool ICACHE_RAM_ATTR Update_All(void);
     uint32_t prev_chSerial_timer = 0;
 	bool startWifi = false;
     #ifdef TEST
+	uint32_t test_time;
+	uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
+	                                     0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
+	                                     0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
+		                                 0x9C,0x19,0x81};
         void callMicrosSerial(){
         static uint32_t tim = 0 ;
         static uint32_t timt = 0 ;  
@@ -354,14 +362,14 @@ uint8_t multi_protocols_index=0xFF;
 
 // Init
 void setup()
-{	
+{
     #ifdef TEST
         #ifdef ESP8266_PLATFORM
 		#ifndef TEST_WIFI
-           Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
+           //Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
 		 #endif
         #else
-            Serial.begin(115200,SERIAL_8N1);
+            //Serial.begin(115200,SERIAL_8N1);
         #endif
     #endif
     // Setup diagnostic uart before anything else
@@ -426,10 +434,11 @@ void setup()
             pinMode(SX1280_RST_pin,OUTPUT);
 			if(SX1280_BUSY_pin != -1)
             pinMode(SX1280_BUSY_pin,INPUT); 
-            pinMode(SX1280_DIO1_pin,INPUT); 
-			if(SX1280_TXEN_pin != -1)
+            pinMode(SX1280_DIO1_pin,INPUT);
+			if(SX1280_TXEN_pin != -1){
             pinMode(SX1280_TXEN_pin,OUTPUT);
-		    SX1280_TXEN_off;
+			SX1280_TXEN_off;
+			}
 		   if(SX1280_RXEN_pin != -1){
             pinMode(SX1280_RXEN_pin,OUTPUT);   
 		    SX1280_RXEN_off;
@@ -529,12 +538,15 @@ void setup()
             debugln("No valid EEPROM page, EEPROM formatted");
         }
     #elif defined ESP_COMMON
+        EEPROM.begin(EEPROM_SIZE);
         pinMode(BIND_pin, INPUT);
         pinMode(LED_pin, OUTPUT);
         pinMode(SX1280_RST_pin , OUTPUT);
 		if(SX1280_BUSY_pin != -1)
         pinMode(SX1280_BUSY_pin ,INPUT);   
-        pinMode(SX1280_DIO1_pin ,INPUT);		
+        pinMode(SX1280_DIO1_pin ,INPUT);
+	    pinMode(SX1280_CSN_pin , OUTPUT);	
+        SX1280_CSN_on;
 		if(SX1280_TXEN_pin != -1){
         pinMode(SX1280_TXEN_pin , OUTPUT);
 		SX1280_TXEN_off;
@@ -543,8 +555,6 @@ void setup()
         pinMode(SX1280_RXEN_pin ,OUTPUT);  // here is the issue with wifi
 	     SX1280_RXEN_off;
 		}
-        pinMode(SX1280_CSN_pin , OUTPUT);	
-        SX1280_CSN_on;
 		#ifdef ESP8266_PLATFORM
 		if(SX1280_ANTENNA_SELECT_pin != -1){
 	    pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
@@ -840,7 +850,6 @@ void loop()
             #ifdef ESP8266_PLATFORM
                 callSerialChannels();
             #endif
-
             if(!Update_All())
             {
                 cli();
@@ -851,7 +860,8 @@ void loop()
                 OCR1A = TCNT1;                      // Callback should already have been called... Use "now" as new sync point.
                 sei();          // Enable global int                                                
             }
-        }
+						
+        }		
         #ifdef ESP8266_PLATFORM
             callSerialChannels();
         #endif
@@ -879,7 +889,7 @@ void loop()
         //Serial.println(diff);
         if((diff & 0x8000) && !(next_callback & 0x8000))//32768
         { // Negative result = callback should already have been called... 
-            //debugln("Short CB:%d",next_callback);
+            debugln("Short CB:%d",next_callback);
         }
         else
         {
@@ -965,8 +975,17 @@ bool  ICACHE_RAM_ATTR Update_All()
             else
         #endif
         #ifdef TEST
-            RX_FLAG_on;
+		if((micros()- test_time)>= 7000){
+		test_time = micros();
+		rx_len = 27;
+		memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
+		//rx_ok_buff[26] |= 0x81;//protocol 128
+		//rx_ok_buff[1] |= 0x80; //binding
+        RX_FLAG_on;
+		}
         #endif  
+		  yield();//feed WDT important
+		
         if(mode_select==MODE_SERIAL && IS_RX_FLAG_on)       // Serial mode and something has been received
         {   
             update_serial_data();                           // Update protocol and data
@@ -1487,40 +1506,7 @@ void ICACHE_RAM_ATTR update_serial_data()
             static bool prev_inv_telem=false;
         #endif
     #endif
-
-    #ifdef TEST
-        rx_len = 27;
-        rx_ok_buff[0] = 0x55;
-        rx_ok_buff[1] = 0x00;
-       // rx_ok_buff[1] |= 0x80; //binding
-        rx_ok_buff[2] = 0x10;
-        rx_ok_buff[3] = 0x00;
-        rx_ok_buff[4] = 0xE4;
-        rx_ok_buff[5] = 0x88;
-        rx_ok_buff[6] = 0xE0;
-        rx_ok_buff[7] = 0x33;
-        rx_ok_buff[8] = 0x18;
-        rx_ok_buff[9] = 0xc8;
-        rx_ok_buff[10] = 0x0C;
-        rx_ok_buff[11] = 0x66;
-        rx_ok_buff[12] = 0x00;
-        rx_ok_buff[13] = 0x10;
-        rx_ok_buff[14] = 0x80;
-        rx_ok_buff[15] = 0x00;
-        rx_ok_buff[16] = 0x04;
-        rx_ok_buff[17] = 0x20;
-        rx_ok_buff[18] = 0x00;
-        rx_ok_buff[19] = 0x01;
-        rx_ok_buff[20] = 0x08;
-        rx_ok_buff[21] = 0x40;
-        rx_ok_buff[22] = 0x00;
-        rx_ok_buff[23] = 0xD2;
-        rx_ok_buff[24] = 0x9C;
-        rx_ok_buff[25] = 0x19;
-        rx_ok_buff[26] |= 0x81;//protocol 128
-    #endif
-    yield();//feed WDT important
-    
+   
     RX_DONOTUPDATE_on;
     RX_FLAG_off;                                //data is being processed
     
@@ -2003,6 +1989,7 @@ void modules_reset()
 #endif
 
 #ifdef ESP32_PLATFORM
+	
     void ICACHE_RAM_ATTR SerialChannelsInit()
     {
         // Setup UART
@@ -2022,8 +2009,7 @@ void modules_reset()
         ESP_ERROR_CHECK(uart_isr_register(UART_NUM_2,uart_intr_handle, NULL, ESP_INTR_FLAG_IRAM, &handle_console));
         ESP_ERROR_CHECK(uart_enable_rx_intr(UART_NUM_2 ));
     }
-    
-    
+ 
     void ICACHE_RAM_ATTR SportSerialInit()
     { 
         portDISABLE_INTERRUPTS();
@@ -2037,7 +2023,7 @@ void modules_reset()
     void ICACHE_RAM_ATTR SerialChannelsInit()
     {
         Serial.flush(); 
-        Serial.begin(100000, SERIAL_8E2); // Serial.begin(100000, SERIAL_8E2,SX1280_RCSIGNAL_RX_pin, SX1280_RCSIGNAL_TX_pin,false, 500); <-- this seems not to work with ESP8266
+        Serial.begin(100000, SERIAL_8E2); 
         USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal
     }
     void ICACHE_RAM_ATTR SportSerialInit(void){LED_on;};
@@ -2148,11 +2134,7 @@ static void set_rx_tx_addr(uint32_t id)
 static uint32_t random_id(uint16_t address, uint8_t create_new)
 {
     #ifndef FORCE_GLOBAL_ID
-        uint32_t id = 0;
-        #ifdef ESP_COMMON
-            EEPROM.begin(EEPROM_SIZE);
-        #endif
-        
+        uint32_t id = 0;       
         if(eeprom_read_byte((EE_ADDR)(address+10))==0xf0 && !create_new)
         {  // TXID exists in EEPROM
             for(uint8_t i=4;i>0;i--)
@@ -2174,7 +2156,7 @@ static uint32_t random_id(uint16_t address, uint8_t create_new)
                 id = STM32_UUID[0] ^ STM32_UUID[1] ^ STM32_UUID[2];
                 debugln("Generated ID from STM32 UUID");
             }
-        #elif defined ESP32_COMMON
+        #elif defined ESP_COMMON
             for(int i = 0; i< 17; i= i+8)
             {
                 id |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
@@ -2692,7 +2674,6 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
         // After reading bytes from buffer clear UART interrupt status
         uart_clear_intr_status(UART_NUM_2, UART_RXFIFO_FULL_INT_CLR|UART_RXFIFO_TOUT_INT_CLR);
     }
-    
 #endif
 
 #ifdef ESP_COMMON
@@ -2716,9 +2697,10 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
        }
            
     }
-#endif  
-
-#ifdef ESP8266_PLATFORM
+	
+ #endif
+ 
+ #ifdef ESP8266_PLATFORM
     void ICACHE_RAM_ATTR callSerialChannels()
     {
         while (Serial.available())
@@ -2755,6 +2737,6 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
                 rx_idx = 0;
         } 
         prev_chSerial_timer = chSerial_timer;
-    }// end of processIncomingByte 
-    
+    }// end of processIncomingByte
+
 #endif

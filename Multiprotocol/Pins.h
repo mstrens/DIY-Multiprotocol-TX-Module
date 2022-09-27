@@ -417,11 +417,11 @@
 	#ifdef BETAFPV_500
 		#define	LED_pin		       16
 	    #define MinPower -18//10mW
-        #define MaxPower -9//100mW		
+        #define MaxPower -8//100mW [-18,-15,-11,-8,-4,3] 10/25/50/100/250/500	
 		#else
 		#define	LED_pin		       15
 	    #define MinPower -17//10mW
-        #define MaxPower -6//100mW		
+        #define MaxPower -6//100mW HM[-17,-13,-9,-6,-2];HMPRO[-18,-15,-12,-7,-4,2],
 	#endif
 #endif
 #ifdef ESP8266_PLATFORM //ESP8285

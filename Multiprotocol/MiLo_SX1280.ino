@@ -382,11 +382,34 @@
 			return SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
 			case MiLo_DATA1:
 			#ifdef ESP_COMMON
+			static uint32_t now = millis();
 		    if(sub_protocol == WIFI_TX){
-		    SX1280_SetMode(SX1280_MODE_SLEEP);//start sleep mode to reduce SX120 current before starting WiFi
+		    if(startWifi == false ){
+			SX1280_SetOutputPower(MinPower);
 		    SX1280_SetTxRxMode(TXRX_OFF);//stop PA/LNA to reduce current before starting WiFi
-		    startWifiManager();
-		    }
+		    SX1280_SetMode(SX1280_MODE_SLEEP);//start sleep mode to reduce SX120 current before starting WiFi					
+			WIFI_start();
+			now = millis();
+			startWifi = true;
+			break;
+			}
+			else 
+			if((millis() - now) >= 100) {//wait for WIFI setting on TXscreen
+		     detachInterrupt(digitalPinToInterrupt(SX1280_DIO1_pin));
+			while(1){
+			WIFI_event();
+			 if (millis() - now >= 50) {
+		     now = millis();
+			 #ifndef BETAFPV_500
+			 digitalWrite(LED_pin ,!digitalRead(LED_pin));
+			 #endif
+			 }
+			}
+			}
+			break;
+			}
+			//else
+			//startWifi = false;			
 			#endif
 			if (LBTEnabled){
 				if(!ChannelIsClear())
