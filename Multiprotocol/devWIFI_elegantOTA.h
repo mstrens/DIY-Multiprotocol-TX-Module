@@ -91,7 +91,7 @@
 	
 	static bool captivePortal(AsyncWebServerRequest *request)
 	{
-		extern const char *wifi_hostname;
+		//extern const char *wifi_hostname;
 		
 		if (!isIp(request->host()) && request->host() != (String(wifi_hostname) + ".local"))
 		{
