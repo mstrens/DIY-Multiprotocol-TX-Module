@@ -30,8 +30,8 @@ Navigate to the protocol menu screen in your TX select protocol number **128** (
 Check your wifi connections and find the AP opened by the TX module.
 
 It will open an AP with SSID name **"MiLo_TX"** click connect and introduce the password **"milo_sx1280"**.
-9.bin file you already st
-It will open a captive portal at **"10.0.0.1"** adress.Inside you will browse to the firmware(you already stored before) and upload it.After uploading is completed restart the TX with new firmware.
+
+It will open a captive portal at **"10.0.0.1"** adress.Inside you will browse to the firmware(.bin file you already stored before) and upload it.After uploading is completed restart the TX with new firmware.
 
 **ESP 8266 -target**
 
