@@ -25,11 +25,13 @@ Click [here](https://github.com/me-no-dev/ESPAsyncWebServer/archive/refs/heads/m
 After libraries installation restart Arduino IdE and Browse to Multiprotocol.ino file and load it in Arduino IDE.Select **Tools,ESP32 arduino, ESP32 Dev module,**.
 Connect the USB cable tom the TX module if it has one if not connect your USB-FTDI serial device TX,RX,5V,GND pins to  coresponding board pins(TX ->RX and RX->TX).
 Select the serial port in Tools and press(select) **Upload**.The firmware will be uploaded on your board.First flashing must be done serially using USB port or an USB -serial device(FTDI).
-Subsequent flashing can be done via OTA.For that press **Sketch ,select Export compiled  Binary**.Browse to the location of the binary(in the same folder as multiprotocol)
+Subsequent flashing can be done via OTA.For that press **Sketch ,select Export compiled  Binary**.Browse to the location of the binary(in the same folder as multiprotocol).Copy and store it in an accesible location for flashing.
 Navigate to the protocol menu screen in your TX select protocol number **128** (MiLo protocol number) then select **WiFi-TX**.
-Check your wifi connections and find the AP opened by the TX module 
-and connect to it.It will open a captive portal for configuration where you can put your wifi credentials(SSID,Password).After suscfully confi8gured and 
-connectecd to your wifi locval network will open a web portal where you can upload the binary you already made for that board.
+Check your wifi connections and find the AP opened by the TX module.
+
+It will open an AP with SSID name **"MiLo_TX"** click connect and introduce the password **"milo_sx1280"**.
+9.bin file you already st
+It will open a captive portal at **"10.0.0.1"** adress.Inside you will browse to the firmware(you already stored before) and upload it.After uploading is completed restart the TX with new firmware.
 
 **ESP 8266 -target**
 
