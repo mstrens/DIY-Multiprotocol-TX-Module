@@ -121,7 +121,7 @@ bool ICACHE_RAM_ATTR Update_All(void);
         #define HWTIMER() ESP.getCycleCount()
 		 #define timerRead(timer) (micros()*2)
 		//#define timerRead(timer) (2*ESP.getCycleCount())/clockCyclesPerMicrosecond()
-        #define getEfuseMac() getChipId()&0XFFFFFF
+        //#define getEfuseMac() getChipId()&0XFFFFFF
         #define Serial_2  Serial
 	    void ICACHE_RAM_ATTR callSerialChannels(void);
         void ICACHE_RAM_ATTR processIncomingByte (const byte inByte);
@@ -2156,11 +2156,15 @@ static uint32_t random_id(uint16_t address, uint8_t create_new)
                 debugln("Generated ID from STM32 UUID");
             }
         #elif defined ESP_COMMON
+		  #ifdef ESP32_PLATFORM
             for(int i = 0; i< 17; i= i+8)
             {
                 id |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
                 debugln("Generated ID from ESP32 MAC");
             }
+			#else
+			id = ESP.getChipId()&0XFFFFFFFF;
+			#endif
         #endif
         if(create_new)
             id = random(0xfefefefe) + ((uint32_t)random(0xfefefefe) << 16);
