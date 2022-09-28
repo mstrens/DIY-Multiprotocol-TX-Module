@@ -11,16 +11,17 @@ or **nothing if used DIY TX module**.Make sure use only one selection.
 - #endif
 
 For ESP32 target using Arduino IDE version > 1.8.13, **Board manager** and install ESP32 core by Expressif Systems.
-Along with ESP32 core  you nned to install 2 more libraries **AsyncElegantOTA and  ESPAsyncWebserver** like below :
+Along with ESP32 core  you nned to install 3 more libraries **AsyncElegantOTA and  ESPAsyncWebserver and ESPAsyncTCP** like below :
 
 For  AsyncElegantOTA  Go to Sketch > Include Library > Library Manager > Search for "AsyncElegantOTA" > Install
 
-For ESPAsyncWebserver you nned to do it manually see below.
+For ESPAsyncWebserver and  ESPAsyncTCP you need to do install manually see below.
 
-Click [here](https://github.com/me-no-dev/ESPAsyncWebServer/archive/refs/heads/master.zip) to download the ESPAsyncWebServer library. You should have a .zip folder in your Downloads folder.
-- Unzip the .zip folder and you should get ESPAsyncWebServer-master folder
-- Rename your folder from ESPAsyncWebServer-master to ESPAsyncWebServer
-- Move the ESPAsyncWebServer folder to your Arduino IDE installation libraries folder.
+Click [AsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer/archive/refs/heads/master.zip)  to download the ESPAsyncWebServer library.
+
+Click [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP/archive/refs/heads/master.zip)   to download the ESPAsyncTCP library.
+
+Next open Arduino IDE Sketch/Include Library/Add Zip library...and select the .zip file).Do this for both libraries. Next close Arduino IDE and start again to re-load libraries automatically.
 
 After libraries installation restart Arduino IdE and Browse to Multiprotocol.ino file and load it in Arduino IDE.Select **Tools,ESP32 arduino, ESP32 Dev module,**.
 Connect the USB cable tom the TX module if it has one if not connect your USB-FTDI serial device TX,RX,5V,GND pins to  coresponding board pins(TX ->RX and RX->TX).
