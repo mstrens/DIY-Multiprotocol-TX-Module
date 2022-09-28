@@ -100,7 +100,7 @@ bool ICACHE_RAM_ATTR Update_All(void);
     #include <EEPROM.h>
     //#include "onDemandNonBlocking.h"
 	#include "devWIFI_elegantOTA.h"
-   // #define TEST
+    //#define TEST
 	//#define TEST_CH
     //#define TEST_WIFI
     #ifdef ESP32_PLATFORM
@@ -135,7 +135,7 @@ bool ICACHE_RAM_ATTR Update_All(void);
     volatile uint32_t chSerial_timer = 0;
     uint32_t prev_chSerial_timer = 0;
 	bool startWifi = false;
-    #ifdef TEST
+    #ifdef TEST_CH
 	uint32_t test_time;
 	uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
 	                                     0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
@@ -880,7 +880,7 @@ void loop()
         else
         {
             if(IS_RX_FLAG_on || IS_PPM_FLAG_on)
-            { // Serial or PPM is waiting...
+            { // Serial or PPM is waiting...	
                 if(++count>10)
                 { //The protocol does not leave enough time for an update so forcing it
                     count = 0;
@@ -893,9 +893,9 @@ void loop()
             #elif defined STM32_BOARD
                 while((TIMER2_BASE->SR & TIMER_SR_CC1IF )==0)
             #elif defined ESP_COMMON
-                //while(diff > (900*2))//important not use here
+                while(diff > (900*2))
             #endif
-            {
+            {		
                 if(diff > (900*2))
                 {   //If at least 1ms is available update values 
                     if((diff & 0x8000) && !(next_callback & 0x8000))
@@ -968,7 +968,7 @@ bool  ICACHE_RAM_ATTR Update_All()
 		rx_ok_buff[26] |= 0x81;//protocol 128
 		counting++;
 		if(counting > 200){
-		rx_ok_buff[1] |= 0x80; //binding
+		//rx_ok_buff[1] |= 0x80; //binding
 		}
         RX_FLAG_on;
 		}
@@ -1498,7 +1498,6 @@ void ICACHE_RAM_ATTR update_serial_data()
    
     RX_DONOTUPDATE_on;
     RX_FLAG_off;                                //data is being processed
-    
     #ifdef SAMSON   // Extremely dangerous, do not enable this unless you know what you are doing...
         if( rx_ok_buff[0]==0x55 && (rx_ok_buff[1]&0x1F)==PROTO_FRSKYD && rx_ok_buff[2]==0x7F && rx_ok_buff[24]==217 && rx_ok_buff[25]==202 )
         {//proto==FRSKYD+sub==7+rx_num==7+CH15==73%+CH16==73%
@@ -1903,7 +1902,7 @@ void modules_reset()
     #elif defined ESP_COMMON
 	    #ifdef TEST
         #ifdef ESP8266_PLATFORM
-		#ifndef TEST_WIFI
+		#ifdef TEST_CH
            Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
 		 #endif
         #else
