@@ -183,7 +183,7 @@
 		packet[6] = chanskip;
 		memset(&packet[7], 0, PayloadLength - 7);
 		for(uint8_t  i = 7; i < PayloadLength; i++)//XOR packets
-		packet[i] ^= 0xA7;	
+		packet[i] ^= 0xA7;
 	}	
 	//0 240 184 107 0 0 15 167 167 167 167 167 167 167 167
 	
@@ -287,7 +287,7 @@
 		packet[2] = rx_tx_addr[2];	
 	}
 	
-	void ICACHE_RAM_ATTR MILO_init()
+	void MILO_init()
 	{
 		Fhss_Init();
 		Fhss_generate(MProtocol_id);
@@ -295,8 +295,7 @@
 		currOpmode = SX1280_MODE_SLEEP;		
 		bool init_success = SX1280_Begin();
 		if (!init_success)
-		{
-			
+		{			
 			return ;		
 		}
 		else
@@ -342,7 +341,6 @@
 		switch(state)
 		{	
 			default :
-			//callMicrosSerial();
 			SX1280_SetFrequencyReg(currFreq);//middle of the band		   
 			MiLo_build_bind_packet();
 			SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise		
@@ -508,7 +506,7 @@
 		uint16_t irqStatus = SX1280_GetIrqStatus();
 		
 		SX1280_ClearIrqStatus(SX1280_IRQ_RADIO_ALL);
-		#ifdef TEST
+		#ifdef TEST_CH
 		//callMicrosSerial();
 		#endif
 		if (irqStatus & SX1280_IRQ_TX_DONE)

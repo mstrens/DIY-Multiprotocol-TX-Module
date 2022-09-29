@@ -2,7 +2,7 @@
 	
 	#include "iface_sx1280.h"
 	#include "Pins.h"
-	
+	#include "SX1280.h"
 	#define RX_TIMEOUT_PERIOD_BASE SX1280_RADIO_TICK_SIZE_0015_US
 	#define RX_TIMEOUT_PERIOD_BASE_NANOS 15625
 	
@@ -176,7 +176,7 @@
 	}
 	
 	
-	void ICACHE_RAM_ATTR SX1280_Reset()
+	void SX1280_Reset()
 	{
 		
 		pinMode(SX1280_RST_pin, OUTPUT);
@@ -529,15 +529,15 @@
 		5. Define the modulation parameter signal BW SF CR
 	*/
 	
-	bool ICACHE_RAM_ATTR SX1280_Begin()
+	bool SX1280_Begin()
 	{
 		
 		#ifdef  SX1280_DIO1_pin
 			attachInterrupt(digitalPinToInterrupt(SX1280_DIO1_pin), dioISR, RISING); //attch interrupt to DIO1
 		#endif
 		
-		SX1280_Reset();
-		delay(100);
+		//SX1280_Reset();
+		//delay(100);
 		
 		uint16_t firmwareRev = SX1280_GetFirmwareVersion();
 		
@@ -768,11 +768,7 @@
 	
 		if (power == CurrentPower)
 	   return;
-	#ifdef USER_MAX_POWER
-       if (power < MinPower)
-		{
-			power = UserPower;
-		}
+	#ifdef SX1280_ENABLE_LOW_POWER
 		else if (power > MaxPower)
 		{
 			power = UserPower;

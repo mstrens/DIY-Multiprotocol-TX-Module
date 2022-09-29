@@ -1,7 +1,10 @@
+
+
+
 //SX1280 functions
 uint16_t ICACHE_RAM_ATTR SX1280_GetIrqStatus( void );
 void ICACHE_RAM_ATTR SX1280_ClearIrqStatus( uint16_t irqMask );
-bool  ICACHE_RAM_ATTR SX1280_Begin(void);
+//bool  ICACHE_RAM_ATTR SX1280_Begin(void);
 void ICACHE_RAM_ATTR SX1280_SetMode(uint8_t  OPmode);
 void  ICACHE_RAM_ATTR SX1280_ReadBuffer( uint8_t offset, volatile uint8_t *buffer, uint8_t size);
 uint8_t  ICACHE_RAM_ATTR SX1280_ReadReg(uint16_t address);
@@ -13,7 +16,7 @@ void  ICACHE_RAM_ATTR SX1280_WriteCommand(uint8_t command, uint8_t val,uint32_t 
 void  ICACHE_RAM_ATTR SX1280_WriteCommandMulti(uint8_t command, uint8_t *data, uint16_t size,uint32_t busyDelay);
 void  ICACHE_RAM_ATTR SX1280_ReadCommand(uint8_t command, uint8_t data);
 void  ICACHE_RAM_ATTR SX1280_ReadCommandMulti(uint8_t command, uint8_t *data, uint8_t size);
-void  ICACHE_RAM_ATTR SX1280_Reset(void);
+//void  ICACHE_RAM_ATTR SX1280_Reset(void);
 uint16_t ICACHE_RAM_ATTR SX1280_GetFirmwareVersion( void );
 void ICACHE_RAM_ATTR SX1280_SetFrequency(uint32_t frequency);
 void ICACHE_RAM_ATTR SX1280_SetFrequencyReg(uint32_t frequency);
