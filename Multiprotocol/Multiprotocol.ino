@@ -877,7 +877,7 @@ void loop()
             #elif defined STM32_BOARD
                 while((TIMER2_BASE->SR & TIMER_SR_CC1IF )==0)
             #elif defined ESP_COMMON
-			while(diff > 0)
+			while(OCR1A > TCNT1)
 			//while(diff > (900*2))
             #endif
             {				
@@ -907,7 +907,6 @@ void loop()
 				else{
 				        cli();
                         TCNT1 = micros()<<1 ; 
-						diff = OCR1A - TCNT1;               // Calc the time difference
 						sei();
 						callSerialChannels();
 				        processSerialChannels();
@@ -2629,7 +2628,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
     void ICACHE_RAM_ATTR uart_intr_handle(void *arg) {
         // rx_len = UART0.status.rxfifo_cnt;  // Read number of bytes in UART buffer
         uint8_t c = UART2.fifo.rw_byte; //read first byte
-                chSerial_timer = timerRead(timer);
+                chSerial_timer = micros()<<1;
         if ( (chSerial_timer - prev_chSerial_timer) > 500) 
         {
             rx_idx = 0;
