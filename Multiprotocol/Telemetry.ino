@@ -446,11 +446,11 @@ RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7m
 			
 				if((buffer[3]>>5)==0)
 				{
-			    MiLoStats.uplink_RSSI_1 = buffer[2]; ;
-				TX_RSSI = MiLoStats.uplink_RSSI_1;
+			    MiLoStats.uplink_RSSI_1 = buffer[2];				
+				TX_RSSI = map(MiLoStats.uplink_RSSI_1,113,10,0,100);//RSSI%-CISCO		
 				if(LastPacketRSSI < 0)
 				MiLoStats.downlink_RSSI = -LastPacketRSSI;
-				RX_RSSI = MiLoStats.downlink_RSSI;
+				RX_RSSI = map(MiLoStats.downlink_RSSI,113,10,0,100);//RSSI%-CISCO
 				}
 				else
 				if((buffer[3]>>5)==1){
@@ -876,14 +876,15 @@ void sportSendFrame()
 			if( pass){
 			frame[2] = 0x07;
 			frame[3] = 0xf1;//sensor TX_SNR custom	
-			frame[4] = TX_SNR; 
+			frame[4] = TX_SNR;
+			pass = 0;
 			}
 			else{
 			frame[2] = 0x08;
 			frame[3] = 0xf1;//sensor RX SNR custom			
 			frame[4] = RX_SNR;
+			pass = 1;
 			}
-			pass = !pass;
 		        }
 			else{
 			frame[2] = 0x05;
