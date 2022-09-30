@@ -111,8 +111,8 @@ bool ICACHE_RAM_ATTR Update_All(void);
         #include "esp_intr_alloc.h"
         #include "soc/uart_struct.h"
         #include "soc/uart_reg.h"
-        HardwareSerial Serial_2(1);
-		HardwareSerial Serial_1(2);
+        HardwareSerial Serial_2(1);  // used for sending Sport to handset
+		HardwareSerial Serial_1(2);  // used for receiving data from handset
         static hw_timer_t  *timer = NULL;   
         //static intr_handle_t handle_console;
        //void ICACHE_RAM_ATTR uart_intr_handle(void *arg);
@@ -120,8 +120,8 @@ bool ICACHE_RAM_ATTR Update_All(void);
     #endif
     #ifdef ESP8266_PLATFORM
 	    //#include "uart_register.h"
-        #define HWTIMER() ESP.getCycleCount()
-		 #define timerRead(timer) (micros()*2)
+        //#define HWTIMER() ESP.getCycleCount()
+		#define timerRead(timer) (micros()*2)
 		//#define timerRead(timer) (2*ESP.getCycleCount())/clockCyclesPerMicrosecond()
         #define Serial_2  Serial
     #endif
@@ -137,17 +137,17 @@ bool ICACHE_RAM_ATTR Update_All(void);
     int32_t prev_chSerial_timer = 0;
 	bool startWifi = false;
     #ifdef TEST_CH
-	uint32_t test_time;
-	uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
+	    uint32_t test_time;
+	    uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
 	                                     0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
 	                                     0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
 		                                 0x9C,0x19,0x81};
         void callMicrosSerial(){
-        static uint32_t tim = 0 ;
-        static uint32_t timt = 0 ;  
-        timt = micros();
-        Serial.println(timt - tim);
-        tim = micros();
+            static uint32_t tim = 0 ;
+            static uint32_t timt = 0 ;  
+            timt = micros();
+            Serial.println(timt - tim);
+            tim = micros();
         }
     #endif
     #undef CHECK_FOR_BOOTLOADER
@@ -532,23 +532,23 @@ void setup()
         pinMode(LED_pin, OUTPUT);
         pinMode(SX1280_RST_pin , OUTPUT);
 		if(SX1280_BUSY_pin != -1)
-        pinMode(SX1280_BUSY_pin ,INPUT);   
+            pinMode(SX1280_BUSY_pin ,INPUT);   
         pinMode(SX1280_DIO1_pin ,INPUT);
 	    pinMode(SX1280_CSN_pin , OUTPUT);	
         SX1280_CSN_on;
 		if(SX1280_TXEN_pin != -1){
-        pinMode(SX1280_TXEN_pin , OUTPUT);
-		SX1280_TXEN_off;
+            pinMode(SX1280_TXEN_pin , OUTPUT);
+		    SX1280_TXEN_off;
 		}
 		if(SX1280_RXEN_pin != -1){
-        pinMode(SX1280_RXEN_pin ,OUTPUT);  // here is the issue with wifi
-	     SX1280_RXEN_off;
+            pinMode(SX1280_RXEN_pin ,OUTPUT);  // here is the issue with wifi
+	        SX1280_RXEN_off;
 		}
 		#ifdef ESP8266_PLATFORM
-		if(SX1280_ANTENNA_SELECT_pin != -1){
-	    pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
-        SX1280_ANTENNA_SELECT_on;
-		}	
+            if(SX1280_ANTENNA_SELECT_pin != -1){
+                pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
+                SX1280_ANTENNA_SELECT_on;
+            }	
 		#endif
         //timer
         #ifdef ESP32_PLATFORM
@@ -847,10 +847,10 @@ void loop()
 						
         }		
         TX_MAIN_PAUSE_on;
-        tx_pause();
-        next_callback = remote_callback()<<1;
+        tx_pause();                               // Pause telemetry by disabling transmitter interrupt on some MCU's (not for ESP)
+        next_callback = remote_callback()<<1;     // Remote_callback() performs all RF actions (send/receive) and returns the number of usec before next call 
         TX_MAIN_PAUSE_off;
-        tx_resume();       
+        tx_resume();                              // // Resume telemetry by enabling transmitter interrupt
         cli();                                      // Disable global int due to RW of 16 bits registers
         OCR1A += next_callback;                     // Calc when next_callback should happen
         #if defined AVR_COMMON
@@ -956,20 +956,20 @@ bool  ICACHE_RAM_ATTR Update_All()
         #endif
 	
         #ifdef TEST_CHS
-		static uint32_t counting = 0;
-		if((micros()- test_time)>= 7000){
-		test_time = micros();
-		rx_len = 27;
-		memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
-		rx_ok_buff[26] |= 0x81;//protocol 128
-		counting++;
-		if(counting > 100){
-		//rx_ok_buff[1] |= 0x80; //binding
-		}
-        RX_FLAG_on;
-		}
+            static uint32_t counting = 0;
+            if((micros()- test_time)>= 7000){
+                test_time = micros();
+                rx_len = 27;
+                memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
+                rx_ok_buff[26] |= 0x81;//protocol 128
+                counting++;
+                if(counting > 100){
+                    //rx_ok_buff[1] |= 0x80; //binding
+                }
+                RX_FLAG_on;
+            }
         #endif  
-		  yield();//feed WDT important
+		    yield();//feed WDT important
 		
         if(mode_select==MODE_SERIAL && IS_RX_FLAG_on)       // Serial mode and something has been received
         {   
@@ -1898,14 +1898,14 @@ void modules_reset()
         usart3_begin(100000,SERIAL_8E2);        
     #elif defined ESP_COMMON
 	    #ifdef TEST_CH
-        #ifdef ESP8266_PLATFORM 
-           Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);   
-	   #else
-		Serial.begin(250000,SERIAL_8N1); 
-	   #endif	   
-	   #else
-        SerialChannelsInit();
-        SportSerialInit();//only transmitting ,inverted
+            #ifdef ESP8266_PLATFORM 
+                Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);   
+            #else
+                Serial.begin(250000,SERIAL_8N1); 
+	        #endif	   
+	    #else
+            SerialChannelsInit();
+            SportSerialInit();//only transmitting ,inverted
 		#endif
     #else
         //ATMEGA328p
@@ -2156,14 +2156,14 @@ static uint32_t random_id(uint16_t address, uint8_t create_new)
                 debugln("Generated ID from STM32 UUID");
             }
         #elif defined ESP_COMMON
-		  #ifdef ESP32_PLATFORM
-            for(int i = 0; i< 17; i= i+8)
-            {
-                id |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
-                debugln("Generated ID from ESP32 MAC");
-            }
-			#else
-			id = ESP.getChipId()&0XFFFFFFFF;
+		    #ifdef ESP32_PLATFORM
+                for(int i = 0; i< 17; i= i+8)
+                {
+                    id |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+                    debugln("Generated ID from ESP32 MAC");
+                }
+            #else
+                id = ESP.getChipId()&0XFFFFFFFF;
 			#endif
         #endif
         if(create_new)
