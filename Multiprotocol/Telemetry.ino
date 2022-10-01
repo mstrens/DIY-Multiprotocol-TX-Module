@@ -42,7 +42,11 @@ uint8_t RetrySequence ;
 	{
 		boolean valid;
 		uint8_t count;
+		#ifdef MILO_SX1280_INO
+		uint8_t payload[10];
+		#else
 		uint8_t payload[6];
+		#endif
 	} ;
 
 	// Store for FrskyX telemetry
@@ -435,22 +439,22 @@ RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7m
 14.Sport data byte10 --| 15 bytes payload ;10bytes sport telemetry
 
 */
-        if (protocol== PROTO_MILO)
-	  {		
-                         uint8_t nrbytes = 0;
+        if (protocol == PROTO_MILO)
+	  {
+  				telemetry_lost = 0;
 	                 TelemetryId = (buffer[4]>>4)&0XFF ;//telemetry uplink counter			
 			    if ((buffer[3] & 0x1F ) == (telemetry_counter & 0x1F))//Check incoming telemetry sequence
 			    {//Sequence is ok
-				telemetry_lost = 0;
+
 				telemetry_counter =  (telemetry_counter+1)&0x1F ;
 			
 				if((buffer[3]>>5)==0)
 				{
-			    MiLoStats.uplink_RSSI_1 = buffer[2];				
-				TX_RSSI = map(MiLoStats.uplink_RSSI_1,113,10,0,100);//RSSI%-CISCO		
+			    MiLoStats.uplink_RSSI_1 = buffer[2];	
+				TX_RSSI = signal_quality_perc_quad(MiLoStats.uplink_RSSI_1,10,113);//RSSI% quadratic formula conversion	
 				if(LastPacketRSSI < 0)
 				MiLoStats.downlink_RSSI = -LastPacketRSSI;
-				RX_RSSI = map(MiLoStats.downlink_RSSI,113,10,0,100);//RSSI%-CISCO
+			    RX_RSSI = signal_quality_perc_quad(MiLoStats.downlink_RSSI,10,113);	
 				}
 				else
 				if((buffer[3]>>5)==1){
@@ -463,24 +467,29 @@ RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7m
 				MiLoStats.uplink_Link_quality = buffer[2];
 				TX_LQI = buffer[2];	
                  }
-				 nrbytes = buffer[4] & 0x0F;
-				
-		        if(nrbytes > 0 && nrbytes <= 10)//nr bytes on telemetry frame
+				 //FrSkyX_RX_Frames[0].valid = false ;
+			   struct t_FrSkyX_RX_Frame *p ;			   
+			    uint8_t count ;
+				count = buffer[4] & 0x0F;
+			   p = &FrSkyX_RX_Frames[FrSkyX_RX_NextFrame] ;
+		        if(count <= 10)//nr bytes on telemetry frame
 		       { //Telemetry length ok
-			    for (uint8_t i = 0; i< nrbytes;i++)
+			   	p->count = count ;
+			    for (uint8_t i = 0; i< count;i++)
 				{
-			  proces_sport_data(buffer[i+5]) ;
+			     p->payload[i] = (buffer[i+5]) ;
 				}
 			 }
-			 else
+			 else{
+			 p->count = 0;
 			 buffer[4] &= 0xF0; 	// Discard packet
+			 }
+			 p->valid = true;
 			}
 			else
 			{//Incorrect sequence		
 				buffer[4] &= 0xF0  ;			// Discard current packet and wait for retransmit
 			}
-		   sportSendFrame();
-		   telemetry_link = 0;
 	}
 	#endif
 	
@@ -1038,7 +1047,7 @@ void TelemetryUpdate()
 		#endif
 	#endif
 	#if defined SPORT_TELEMETRY
-if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9 ) && telemetry_link 
+if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9|| protocol ==PROTO_MILO) && telemetry_link 
 		#ifdef TELEMETRY_FRSKYX_TO_FRSKYD
 			&& mode_select==MODE_SERIAL
 		#endif
@@ -1055,7 +1064,9 @@ if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9
 					for (uint8_t i=0; i < count ; i++)
 						proces_sport_data(p->payload[i]) ;
 					p->valid = false ;	// Sent
+					#ifndef MILO_SX1280_INO
 					FrSkyX_RX_NextFrame = ( FrSkyX_RX_NextFrame + 1 ) & 3 ;
+					#endif
 				}
 				else
 					break ;
@@ -1509,5 +1520,20 @@ ISR(TIMER0_OVF_vect)
 
 
 #endif // BASH_SERIAL
+#ifdef MILO_SX1280_INO
+uint8_t  signal_quality_perc_quad(uint8_t rssi ,uint8_t perfect_rssi, uint8_t worst_rssi) //quadratic conversion  formula
+{
+int8_t nominal_rssi = perfect_rssi - worst_rssi;
+uint8_t signal_quality = (100 *nominal_rssi*nominal_rssi - (int8_t)(perfect_rssi - rssi)*(15*nominal_rssi + 62*(int8_t)(perfect_rssi - rssi))) / (nominal_rssi*nominal_rssi);
+
+if (signal_quality > 100) {
+signal_quality = 100;
+} 
+else if (signal_quality < 1) {
+signal_quality = 0;
+}
+return signal_quality;
+}
+#endif
 
 #endif // TELEMETRY
