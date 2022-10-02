@@ -102,7 +102,7 @@ bool ICACHE_RAM_ATTR Update_All(void);
     //#define DEBUG_ESP8266
 	//#define DEBUG_ESP32
 	#ifdef DEBUG_ESP8266
-	#define SIMU_HANDSET_DATA
+	#define SIM_HANDSET_DATA
 	#endif
 	#if defined DEBUG_ESP8266 || defined DEBUG_ESP32
 		#define DEBUG_ESP_COMMON
@@ -132,13 +132,14 @@ bool ICACHE_RAM_ATTR Update_All(void);
     uint32_t chSerial_timer = 0;
     uint32_t prev_chSerial_timer = 0;
 	bool startWifi = false;
-   #ifdef SIMU_HANDSET_DATA
+   #ifdef SIM_HANDSET_DATA
+   #define BIND_BUTTON_SIM_pin 10
 	uint32_t test_time;
 	uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
 	                                     0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
 	                                     0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
 		                                 0x9C,0x19,0x81};
-										 #endif
+                                        #endif
 	 #ifdef DEBUG_ESP_COMMON								 
         void callMicrosSerial(){
         static uint32_t tim = 0 ;
@@ -855,8 +856,10 @@ void loop()
         TCNT1 = micros()<<1;       
         #endif
         diff = OCR1A - TCNT1;// Calc the time difference		
-        sei();      // Enable global int 
+        sei();      // Enable global int
+		#ifdef DEBUG_ESP_COMMON
         //Serial.println(diff);
+		#endif
         if((diff & 0x8000) && !(next_callback & 0x8000))//32768
         { // Negative result = callback should already have been called... 
             debugln("Short CB:%d",next_callback);
@@ -878,7 +881,6 @@ void loop()
                 while((TIMER2_BASE->SR & TIMER_SR_CC1IF )==0)
             #elif defined ESP_COMMON
 			while(OCR1A > TCNT1)
-			//while(diff > (900*2))
             #endif
             {				
                 if(diff > (900*2))
@@ -959,14 +961,15 @@ bool  ICACHE_RAM_ATTR Update_All()
 				processSerialChannels();
         #endif
 	
-        #ifdef SIMU_HANDSET_DATA
+        #ifdef SIM_HANDSET_DATA
 		if((micros()- test_time) >= 7000){
 		test_time = micros();
 		rx_len = 27;
 		memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
 		rx_ok_buff[26] |= 0x81;//protocol 128
-		counting++;
-		//rx_ok_buff[1] |= 0x80; //binding
+		pinMode(BIND_BUTTON_SIM_pin,INPUT_PULLUP);
+		if(digitalRead(BIND_BUTTON_SIM_pin)==LOW)
+		rx_ok_buff[1] |= 0x80; //binding
         RX_FLAG_on;
 		}
         #endif  
@@ -1395,7 +1398,7 @@ static void protocol_init()
             //Reset all modules
             modules_reset();
 			#ifdef ESP_COMMON
-			#ifndef DEBUG_ESP_COMMON
+			#ifndef DEBUG_ESP8266
             SerialChannelsInit();
 			#endif
 			#endif

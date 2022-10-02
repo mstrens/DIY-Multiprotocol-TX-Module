@@ -43,6 +43,8 @@
 	uint8_t frameType = 0;
     extern bool LBTEnabled;
     bool LBTStarted = false;
+	uint32_t miloSportTimer = 0;
+	bool miloSportStart = false;
 	#ifdef SPORT_SEND
 		uint8_t idxOK;
 	#endif
@@ -503,8 +505,10 @@
 					frsky_process_telemetry(packet_in, PayloadLength);//check if valid telemetry packets
 					memset(&packet_in[0], 0, PayloadLength );				
 					frameReceived = false;
-				}
+				}				
 			}
+			else
+				miloSportStart = false;
 			#ifdef MILO_USE_LBT
 			if(LBTEnabled)
 			{		
@@ -525,7 +529,7 @@
 		
 		SX1280_ClearIrqStatus(SX1280_IRQ_RADIO_ALL);
 		#ifdef DEBUG_ESP_COMMON
-		callMicrosSerial();
+		//callMicrosSerial();
 		#endif
 		if (irqStatus & SX1280_IRQ_TX_DONE)
 		{
@@ -549,7 +553,9 @@
 			if (fail == SX1280_RX_OK)
 			{
 				frameReceived = true;
-			}	
+			}
+			else
+			miloSportStart = false;
 		}
 	}
 #endif

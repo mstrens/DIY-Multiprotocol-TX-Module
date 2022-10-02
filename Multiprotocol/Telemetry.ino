@@ -442,10 +442,11 @@ RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7m
         if (protocol == PROTO_MILO)
 	  {
   				telemetry_lost = 0;
+				//FrSkyX_RX_Frames[0].valid = false ;
 	                 TelemetryId = (buffer[4]>>4)&0XFF ;//telemetry uplink counter			
 			    if ((buffer[3] & 0x1F ) == (telemetry_counter & 0x1F))//Check incoming telemetry sequence
 			    {//Sequence is ok
-
+				miloSportStart = true;
 				telemetry_counter =  (telemetry_counter+1)&0x1F ;
 			
 				if((buffer[3]>>5)==0)
@@ -467,7 +468,6 @@ RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7m
 				MiLoStats.uplink_Link_quality = buffer[2];
 				TX_LQI = buffer[2];	
                  }
-				 //FrSkyX_RX_Frames[0].valid = false ;
 			   struct t_FrSkyX_RX_Frame *p ;			   
 			    uint8_t count ;
 				count = buffer[4] & 0x0F;
@@ -485,10 +485,6 @@ RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7m
 			 buffer[4] &= 0xF0; 	// Discard packet
 			 }
 			 p->valid = true;
-			}
-			else
-			{//Incorrect sequence		
-				buffer[4] &= 0xF0  ;			// Discard current packet and wait for retransmit
 			}
 	}
 	#endif
@@ -1064,16 +1060,24 @@ if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9
 					for (uint8_t i=0; i < count ; i++)
 						proces_sport_data(p->payload[i]) ;
 					p->valid = false ;	// Sent
-					#ifndef MILO_SX1280_INO
+					if(protocol != PROTO_MILO)//use only one sequence
 					FrSkyX_RX_NextFrame = ( FrSkyX_RX_NextFrame + 1 ) & 3 ;
-					#endif
+					
 				}
 				else
 					break ;
 			}
-			telemetry_link=0; 
+			telemetry_link=0;
+			if(protocol == PROTO_MILO)
+			miloSportTimer = micros();	//init timer
 			sportSendFrame();
 		}
+	if(protocol == PROTO_MILO &&(micros() - miloSportTimer)>=7000 && miloSportStart==true){
+	 sportSendFrame();
+	 miloSportTimer = micros();//reset timer
+	}
+	
+	
 	#endif // SPORT_TELEMETRY
 
 	#ifdef MULTI_TELEMETRY
