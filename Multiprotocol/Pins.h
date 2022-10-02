@@ -408,9 +408,8 @@
 	
 	#define SX1280_FAN_EN_pin      17
 	#define SX1280_ANTENNA_SELECT_pin  -1
-	#define SX1280_RCSIGNAL_RX_pin 13  //SPORT usart tx to 5-th pin of I/O connector
-	#define SX1280_RCSIGNAL_TX_pin 13
-	#define SX1280_RX_pin          25  //SERIAL CHANNELS 1-st pin of I/O connector
+   #define SX1280_RCSIGNAL_RX_pin 25  //SERIAL CHANNELS 1-st pin of I/O connector
+	#define SX1280_RCSIGNAL_TX_pin 13  //SPORT usart tx to 5-th pin of I/O connector
 	#ifdef SX1280_ENABLE_LOW_POWER
 		 #define UserPower -17//10mW for example can be defined whatever you need
     #endif	

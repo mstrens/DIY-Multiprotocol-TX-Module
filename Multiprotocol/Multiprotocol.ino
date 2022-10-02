@@ -1989,7 +1989,7 @@ void modules_reset()
 #ifdef ESP32_PLATFORM
 	void ICACHE_RAM_ATTR SerialChannelsInit(){
 	    portDISABLE_INTERRUPTS();
-        Serial_1.begin(100000, SERIAL_8E2, SX1280_RX_pin,-1,false, 500);
+        Serial_1.begin(100000, SERIAL_8E2, SX1280_RCSIGNAL_RX_pin,-1,false, 500);
         portENABLE_INTERRUPTS();
 	}
 	
@@ -2005,6 +2005,7 @@ void modules_reset()
 #ifdef ESP8266_PLATFORM
     void ICACHE_RAM_ATTR SerialChannelsInit()
     {
+	     pinMode(SX1280_RCSIGNAL_RX_pin,INPUT_PULLUP);
         Serial.flush(); 
         Serial.begin(100000, SERIAL_8E2); 
         USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal
