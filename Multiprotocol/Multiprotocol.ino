@@ -2680,7 +2680,6 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
                 #ifdef MULTI_SYNC
                     last_serial_input = micros()<<1;
                 #endif
-			chSerial_timer += 14000;//come again after 7ms		
             }                                  
        }         
     }
@@ -2710,7 +2709,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 
         uint8_t c = inByte;
         chSerial_timer = micros()<<1;
-        if ((chSerial_timer - prev_chSerial_timer) > 500)
+        if ((chSerial_timer - prev_chSerial_timer) > 2000)
             rx_idx = 0;	
         if(rx_idx == 0 )//received something
         {//sync
@@ -2726,9 +2725,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
         else
         {
             if (rx_idx && rx_idx <= RXBUFFER_SIZE){
-                rx_buff [rx_idx++] = c;				
-				//if(rx_idx == 26)
-				//callMicrosSerial();				
+                rx_buff [rx_idx++] = c;							
             }else
                 rx_idx = 0;
         } 
