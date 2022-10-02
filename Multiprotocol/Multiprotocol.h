@@ -687,8 +687,8 @@ enum MultiPacketTypes
 	#define debug(msg, ...)  { sprintf(debug_buf, msg, ##__VA_ARGS__); Serial.write(debug_buf);}
 	#define debugln(msg, ...)  { sprintf(debug_buf, msg "\r\n", ##__VA_ARGS__); Serial.write(debug_buf);}
 	#if defined( ESP32_PLATFORM)
-		#define debug_time(msg)  { uint32_t debug_time_TCNT1 = timerRead(timer); debug_time=debug_time_TCNT1-debug_time; debug(msg "%u", debug_time>>1); debug_time=debug_time_TCNT1; }
-		#define debugln_time(msg)  { uint32_t debug_time_TCNT1 = timerRead(timer); debug_time=debug_time_TCNT1-debug_time; debug(msg "%u\r\n", debug_time>>1); debug_time=debug_time_TCNT1; }
+		#define debug_time(msg)  { uint32_t debug_time_TCNT1 = micros()<<1; debug_time=debug_time_TCNT1-debug_time; debug(msg "%u", debug_time>>1); debug_time=debug_time_TCNT1; }
+		#define debugln_time(msg)  { uint32_t debug_time_TCNT1 = micros()<<1; debug_time=debug_time_TCNT1-debug_time; debug(msg "%u\r\n", debug_time>>1); debug_time=debug_time_TCNT1; }
 		#else
 		#define debug_time(msg)  { uint16_t debug_time_TCNT1=TCNT1; debug_time=debug_time_TCNT1-debug_time; debug(msg "%u", debug_time>>1); debug_time=debug_time_TCNT1; }
 		#define debugln_time(msg)  { uint16_t debug_time_TCNT1=TCNT1; debug_time=debug_time_TCNT1-debug_time; debug(msg "%u\r\n", debug_time>>1); debug_time=debug_time_TCNT1; }

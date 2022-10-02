@@ -427,7 +427,7 @@
 
 /** Telemetry **/
 //Send simple FrSkyX telemetry using the FrSkyD telemetry format
-#define TELEMETRY_FRSKYX_TO_FRSKYD
+//#define TELEMETRY_FRSKYX_TO_FRSKYD
 
 /** Rotary Switch Protocol Selector Settings **/
 //The table below indicates which protocol to run when a specific position on the rotary switch has been selected.

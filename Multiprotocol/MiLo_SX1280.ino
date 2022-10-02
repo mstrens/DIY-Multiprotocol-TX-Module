@@ -25,7 +25,7 @@
 	#define RATE_100HZ 1 //100HZ
 	#define RATE_150HZ 0 //150HZ
 	#define RATE_MAX 3
-	
+	//#define MILO_USE_LBT
 	uint8_t TelemetryId;
 	uint8_t TelemetryExpectedId;
 	
@@ -43,6 +43,8 @@
 	uint8_t frameType = 0;
     extern bool LBTEnabled;
     bool LBTStarted = false;
+	uint32_t miloSportTimer = 0;
+	bool miloSportStart = false;
 	#ifdef SPORT_SEND
 		uint8_t idxOK;
 	#endif
@@ -72,7 +74,9 @@
 		MiLo_UPLNK_TLM,
 		MiLo_DWLNK_TLM1,
 		MiLo_DWLNK_TLM2,
+		#ifdef MILO_USE_LBT
 	    MiLo_USE_LBT
+		#endif
 	};
 	
 	enum{
@@ -213,7 +217,7 @@
 		packet[3] =  (packet_count == 2) ? RX_num | 0x80 : RX_num & 0x3F ;//max 64 values
 		if(packet_count != 2){
 			if (sub_protocol == WIFI_RX)
-			packet[3] = RX_num & 0x7F;//trigger WiFi updating firmware for RX
+			packet[3] = RX_num | 0x40;//trigger WiFi updating firmware for RX
 		}
 		
 		uint16_t (*ch) (uint8_t) = &convert_channel_ppm;
@@ -319,12 +323,14 @@
 				//MiLo_SetRFLinkRate(RATE_100HZ);
 				//else 
 				MiLo_SetRFLinkRate(RATE_150HZ);
+				#ifdef MILO_USE_LBT
 			    if(sub_protocol == MEU_16 || sub_protocol == MEU_8)
 				{		
 					state = MiLo_USE_LBT;
 					LBTEnabled = true;
 				}
 				else 
+				#endif
 				state = MiLo_DATA1;
 				MiLo_telem_init();
 			}
@@ -357,14 +363,17 @@
 			is_in_binding = false;
 			MiLo_SetRFLinkRate(RATE_150HZ);
 			BIND_DONE;
+			#ifdef MILO_USE_LBT
 			if(sub_protocol == MEU_16 || sub_protocol == MEU_8)
 			{		
 				state = MiLo_USE_LBT;
 				LBTEnabled = true;
 			}
 			else
+			#endif
 			state = MiLo_DATA1;
 		    break;
+			#ifdef MILO_USE_LBT
 			case MiLo_USE_LBT:
 			packet_count = (packet_count + 1)%3;
 			SX1280_SetOutputPower(MaxPower);
@@ -379,11 +388,12 @@
 			else	
 			state = MiLo_DATA1;
 			return SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
+			#endif
 			case MiLo_DATA1:
 			#ifdef ESP_COMMON
 			static uint32_t Now = millis();
 		    if(sub_protocol == WIFI_TX){
-		    if(startWifi == false ){
+		    if(startWifi == false){
 			SX1280_SetOutputPower(MinPower);
 		    SX1280_SetTxRxMode(TXRX_OFF);//stop PA/LNA to reduce current before starting WiFi
 		    SX1280_SetMode(SX1280_MODE_SLEEP);//start sleep mode to reduce SX120 current before starting WiFi					
@@ -391,7 +401,7 @@
 			Now = millis();
 			startWifi = true;
 			}
-			else{ 
+			else{
 			WIFI_event();
 			 if (millis() - Now >= 50) {
 		     Now = millis();
@@ -403,12 +413,14 @@
 			break;
 			}
 			#endif
+			#ifdef MILO_USE_LBT
 			if (LBTEnabled){
 				if(!ChannelIsClear())
 				SX1280_SetOutputPower(MinPower);
 		        MiLo_data_frame();		
 			}
 			else
+			#endif	
 			{	
 			    SX1280_SetOutputPower(MaxPower);
 				packet_count = (packet_count + 1)%3;
@@ -425,26 +437,31 @@
 			}
 			else{
 				if(SportHead != SportTail && upTLMcounter == 2){//next frame in uplink telemetry
+				#ifdef MILO_USE_LBT
 					if(LBTEnabled)
 					{		
 						state = MiLo_USE_LBT;
 						LBTStarted = true;
 					}
 					else
+				#endif		
 					state = MiLo_UPLNK_TLM;
 					
 					upTLMcounter  = 0;//reset uplink telemetry counter
 					break;
 				}		
 			}
+			#ifdef MILO_USE_LBT
 			if(LBTEnabled)
 			{		
 				state = MiLo_USE_LBT;
 			}
 			else
+			#endif	
 			state = MiLo_DATA1;	
 			break;		
 			case MiLo_UPLNK_TLM:	//Uplink telemetry
+			#ifdef MILO_USE_LBT
 			if (LBTEnabled)
 			{
 				if(!ChannelIsClear())
@@ -452,6 +469,7 @@
 				MiLo_Telemetry_frame();		
 			}
 			else
+			#endif
 			{	
 				packet_count = (packet_count + 1)%3;	
 				MiLo_Telemetry_frame();
@@ -487,13 +505,17 @@
 					frsky_process_telemetry(packet_in, PayloadLength);//check if valid telemetry packets
 					memset(&packet_in[0], 0, PayloadLength );				
 					frameReceived = false;
-				}
+				}				
 			}
+			else
+				miloSportStart = false;
+			#ifdef MILO_USE_LBT
 			if(LBTEnabled)
 			{		
 				state = MiLo_USE_LBT;
 			}
-			else	
+			else
+			#endif
 			state = MiLo_DATA1;
 			return 1000;		
 		}		
@@ -506,7 +528,7 @@
 		uint16_t irqStatus = SX1280_GetIrqStatus();
 		
 		SX1280_ClearIrqStatus(SX1280_IRQ_RADIO_ALL);
-		#ifdef TEST_CH
+		#ifdef DEBUG_ESP_COMMON
 		//callMicrosSerial();
 		#endif
 		if (irqStatus & SX1280_IRQ_TX_DONE)
@@ -531,7 +553,9 @@
 			if (fail == SX1280_RX_OK)
 			{
 				frameReceived = true;
-			}	
+			}
+			else
+			miloSportStart = false;
 		}
 	}
 #endif
