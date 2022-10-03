@@ -45,6 +45,12 @@
     bool LBTStarted = false;
 	uint32_t miloSportTimer = 0;
 	bool miloSportStart = false;
+	uint8_t ThisPacketDropped ;
+   uint8_t DropHistory[100] ;
+   uint8_t DropHistoryIndex ;
+   uint8_t DropHistoryPercent ;
+   uint8_t DropHistorySend ;
+	
 	#ifdef SPORT_SEND
 		uint8_t idxOK;
 	#endif
@@ -503,12 +509,15 @@
 				{	
 					SX1280_GetLastPacketStats();
 					frsky_process_telemetry(packet_in, PayloadLength);//check if valid telemetry packets
+					LQICalc();
 					memset(&packet_in[0], 0, PayloadLength );				
 					frameReceived = false;
 				}				
 			}
-			else
+			else{
 				miloSportStart = false;
+				ThisPacketDropped = 1;
+			}
 			#ifdef MILO_USE_LBT
 			if(LBTEnabled)
 			{		
@@ -554,9 +563,25 @@
 			{
 				frameReceived = true;
 			}
-			else
-			miloSportStart = false;
 		}
+	}
+	
+	void LQICalc(){
+	        uint8_t oldDropBit = DropHistory[DropHistoryIndex];
+            DropHistory[DropHistoryIndex] = ThisPacketDropped ;
+            if ( ++DropHistoryIndex >= 100 )
+            {
+                DropHistoryIndex = 0 ;
+            }
+            DropHistoryPercent += ThisPacketDropped ;
+            DropHistoryPercent -= oldDropBit ;
+            ThisPacketDropped = 0 ;
+            if ( ++DropHistorySend >= 30 )
+            {
+                if (DropHistoryPercent < 100)
+                    MiLoStats.downlink_Link_quality = (100 - DropHistoryPercent ) ;
+                DropHistorySend = 0 ;
+            }	
 	}
 #endif
 
