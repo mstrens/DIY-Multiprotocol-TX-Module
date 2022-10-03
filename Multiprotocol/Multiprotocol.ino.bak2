@@ -98,16 +98,11 @@ bool ICACHE_RAM_ATTR Update_All(void);
 #if defined  ESP_COMMON
     #include <SPI.h>
     #include <EEPROM.h>
+    //#include "onDemandNonBlocking.h"
 	#include "devWIFI_elegantOTA.h"
-    //#define DEBUG_ESP8266
-	//#define DEBUG_ESP32
-	#ifdef DEBUG_ESP8266
-	#define SIM_HANDSET_DATA
-	#endif
-	#if defined DEBUG_ESP8266 || defined DEBUG_ESP32
-		#define DEBUG_ESP_COMMON
-	#endif
-    //#define DEBUG_WIFI
+    #define TEST
+    //#define TEST_WIFI
+	//#define TEST_CH
     #ifdef ESP32_PLATFORM
         #include <HardwareSerial.h>
         #include "driver/uart.h"
@@ -117,29 +112,40 @@ bool ICACHE_RAM_ATTR Update_All(void);
         #include "soc/uart_reg.h"
         HardwareSerial Serial_2(1);
 		HardwareSerial Serial_1(2);
+        static hw_timer_t  *timer = NULL; 
+       // static intr_handle_t handle_console;
+       //void ICACHE_RAM_ATTR uart_intr_handle(void *arg);
     #endif
     #ifdef ESP8266_PLATFORM
+	    #include "uart_register.h"
+        //#define HWTIMER() ESP.getCycleCount()
+        #define timerRead(timer) micros()*2;
+		//#define timerRead(timer) (2*ESP.getCycleCount())/clockCyclesPerMicrosecond()
+        #define getEfuseMac() getChipId()&0XFFFFFF
         #define Serial_2  Serial
+        #ifdef TEST//only one serial
+            #ifdef DEBUG_ESP_PORT
+                #define debugln(...) DEBUG_ESP_PORT.printf( __VA_ARGS__ )
+            #endif
+        #endif
     #endif
-	void ICACHE_RAM_ATTR callSerialChannels(void);
+    void ICACHE_RAM_ATTR callSerialChannels(void);
     void ICACHE_RAM_ATTR processIncomingByte (const byte inByte);
     void initSPI(void);
     void ICACHE_RAM_ATTR processSerialChannels();
     void ICACHE_RAM_ATTR SerialChannelsInit(void);
     void ICACHE_RAM_ATTR SportSerialInit(void);
+    uint32_t OCR1A = 0;
     uint32_t TCNT1 = 0 ;
-    uint32_t chSerial_timer = 0;
+    volatile uint32_t chSerial_timer = 0;
     uint32_t prev_chSerial_timer = 0;
 	bool startWifi = false;
-   #ifdef SIM_HANDSET_DATA
-   #define BIND_BUTTON_SIM_pin 10
+    #ifdef TEST
 	uint32_t test_time;
 	uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
 	                                     0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
 	                                     0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
 		                                 0x9C,0x19,0x81};
-                                        #endif
-	 #ifdef DEBUG_ESP_COMMON								 
         void callMicrosSerial(){
         static uint32_t tim = 0 ;
         static uint32_t timt = 0 ;  
@@ -359,6 +365,16 @@ uint8_t multi_protocols_index=0xFF;
 // Init
 void setup()
 {
+    #ifdef TEST
+        #ifdef ESP8266_PLATFORM
+		#ifndef TEST_WIFI
+           //Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
+		 #endif
+        #else
+            Serial.begin(115200,SERIAL_8N1);
+        #endif
+    #endif
+	
     // Setup diagnostic uart before anything else
     #ifdef DEBUG_SERIAL
         Serial.begin(115200,SERIAL_8N1);
@@ -526,9 +542,7 @@ void setup()
         }
     #elif defined ESP_COMMON
         EEPROM.begin(EEPROM_SIZE);
-		if(BIND_pin != -1)
-        pinMode(BIND_pin, INPUT_PULLUP);
-	    if(LED_pin != -1)
+        pinMode(BIND_pin, INPUT);
         pinMode(LED_pin, OUTPUT);
         pinMode(SX1280_RST_pin , OUTPUT);
 		if(SX1280_BUSY_pin != -1)
@@ -544,10 +558,17 @@ void setup()
         pinMode(SX1280_RXEN_pin ,OUTPUT);  // here is the issue with wifi
 	     SX1280_RXEN_off;
 		}
+		#ifdef ESP8266_PLATFORM
 		if(SX1280_ANTENNA_SELECT_pin != -1){
 	    pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
         SX1280_ANTENNA_SELECT_on;
 		}	
+		#endif
+        //timer
+        #ifdef ESP32_PLATFORM
+            timer = timerBegin(0, (APB_CLK_FREQ / 2000000), true); // timer1, prescaler = 12.5ns*40 = 0.5us, count
+            timerWrite(timer,7000); 
+        #endif
     #else
         //ATMEGA328p
         // all inputs
@@ -821,35 +842,6 @@ void setup()
 // Main
 // Protocol scheduler
 void loop()
-#ifdef ESP_COMMON
-{
-	uint16_t next_callback;
-    while(1)
-    {
-        while(remote_callback==0 || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off)
-        {
-		       Update_All();
-               TCNT1 = micros();                           // Disable global int due to RW of 16 bits registers                                               							
-        }		
-	        next_callback = remote_callback();
-	        TCNT1 = micros();     
-	while(!((micros() - TCNT1)>next_callback))
-	{
-	if((micros()-TCNT1)>900){
-	 Update_All();
-	 if(remote_callback==0)
-      break;
-	}
-	else{// need running serial when diff is less than 900
-    callSerialChannels();
-	processSerialChannels();
-	yield();
-	}	
-	}	
-}
-}
-
-#else
 { 
     uint16_t next_callback, diff;
     uint8_t count = 0;  
@@ -857,49 +849,72 @@ void loop()
     {
         while(remote_callback==0 || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off)
         {
+
+            #ifdef ESP_COMMON
+                callSerialChannels();
+            #endif
             if(!Update_All())
             {
-                cli();  // Disable global int due to RW of 16 bits registers
+                cli();
+                #ifdef ESP_COMMON
+                    processSerialChannels();
+				TCNT1 = (uint32_t)timerRead(timer);
+                #endif                                 // Disable global int due to RW of 16 bits registers
                 OCR1A = TCNT1;                      // Callback should already have been called... Use "now" as new sync point.
                 sei();          // Enable global int                                                
             }
 						
         }		
+        #ifdef ESP_COMMON
+            callSerialChannels();
+        #endif
         TX_MAIN_PAUSE_on;
         tx_pause();
-        next_callback = remote_callback()<<1;
+        //next_callback = remote_callback()<<1;
+		next_callback  = 7000;
         TX_MAIN_PAUSE_off;
         tx_resume();       
         cli();                                      // Disable global int due to RW of 16 bits registers
-        OCR1A += next_callback;                     // Calc when next_callback should happen
+	     OCR1A += (uint32_t)next_callback;                     // Calc when next_callback should happen
         #if defined AVR_COMMON
             TIFR1 = OCF1A_bm;                           // Clear compare A = callback flag
         #elif defined STM32_BOARD
             TIMER2_BASE->SR = 0x1E5F & ~TIMER_SR_CC1IF; // Clear Timer2/Comp1 interrupt flag
         #endif
-        diff = OCR1A - TCNT1;// Calc the time difference 
-        sei();      // Enable global int
-        if((diff & 0x8000) && !(next_callback & 0x8000))
+        
+        #ifdef ESP_COMMON   
+        TCNT1 = timerRead(timer);       
+        #endif
+        diff = OCR1A - TCNT1;// Calc the time difference
+        #ifdef ESP_COMMON
+        processSerialChannels();
+        #endif
+        sei();      // Enable global int   		
+        //Serial.println(diff);
+        if((diff & 0x8000) && !(next_callback & 0x8000))//32768
         { // Negative result = callback should already have been called... 
             debugln("Short CB:%d",next_callback);
         }
         else
         {
             if(IS_RX_FLAG_on || IS_PPM_FLAG_on)
-            { // Serial or PPM is waiting...	
+            { // Serial or PPM is waiting...
                 if(++count>10)
                 { //The protocol does not leave enough time for an update so forcing it
                     count = 0;
                     debugln("Force update");
                     Update_All();
                 }
-            }         
+            }
+            
             #if defined AVR_COMMON
                 while((TIFR1 & OCF1A_bm) == 0)
             #elif defined STM32_BOARD
                 while((TIMER2_BASE->SR & TIMER_SR_CC1IF )==0)
-			#endif
-            {				
+            #elif defined ESP_COMMON
+                while(diff > (900*2))
+            #endif
+            {
                 if(diff > (900*2))
                 {   //If at least 1ms is available update values 
                     if((diff & 0x8000) && !(next_callback & 0x8000))
@@ -909,21 +924,24 @@ void loop()
                     }
                     count = 0;
                     Update_All();
-                    #if defined  DEBUG_SERIAL
+                    #if defined  DEBUG_SERIAL && not defined ESP32_PLATFORM
                         if(TIMER2_BASE->SR & TIMER_SR_CC1IF )
                             debugln("Long update");
                     #endif
                     if(remote_callback==0)
                         break;
                     cli();
+                    #ifdef ESP_COMMON       
+                        TCNT1 = timerRead(timer) ; 
+                    #endif  // Disable global int due to RW of 16 bits registers
                     diff = OCR1A - TCNT1;               // Calc the time difference
                     sei();                          // Enable global int
-                } 
+                }
             }
         }   
     }
 }
-#endif
+
 
 
 
@@ -960,20 +978,13 @@ bool  ICACHE_RAM_ATTR Update_All()
                 pollBoot() ;
             else
         #endif
-	        #ifdef ESP_COMMON	
-                callSerialChannels();
-				processSerialChannels();
-        #endif
-	
-        #ifdef SIM_HANDSET_DATA
-		if((micros()- test_time) >= 7000){
+        #ifdef TEST_CH
+		if((micros()- test_time)>= 7000){
 		test_time = micros();
 		rx_len = 27;
 		memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
-		rx_ok_buff[26] |= 0x81;//protocol 128
-		pinMode(BIND_BUTTON_SIM_pin,INPUT_PULLUP);
-		if(digitalRead(BIND_BUTTON_SIM_pin)==LOW)
-		rx_ok_buff[1] |= 0x80; //binding
+		//rx_ok_buff[26] |= 0x81;//protocol 128
+		//rx_ok_buff[1] |= 0x80; //binding
         RX_FLAG_on;
 		}
         #endif  
@@ -1382,11 +1393,11 @@ static void protocol_init()
         #ifdef SEND_CPPM
             release_trainer_ppm();
         #endif
-
+        
         //Set global ID and rx_tx_addr
-        MProtocol_id = MProtocol_id_master + RX_num ; 	
+        MProtocol_id = MProtocol_id_master + RX_num ;       
         set_rx_tx_addr(MProtocol_id);
-
+        
         #ifdef FAILSAFE_ENABLE
             FAILSAFE_VALUES_off;
         #endif
@@ -1394,18 +1405,15 @@ static void protocol_init()
         
         SUB_PROTO_INVALID;
         option_override = 0xFF;
-		
-        blink = millis();                            			
+        
+        blink = millis();
+        
         debugln("Protocol selected: %d, sub proto %d, rxnum %d, option %d", protocol, sub_protocol, RX_num, option);
         if(protocol)
         {
             //Reset all modules
-            modules_reset();
-			#ifdef ESP_COMMON
-			#ifndef DEBUG_ESP8266
-            SerialChannelsInit();
-			#endif
-			#endif
+            modules_reset();                
+            
             uint8_t index=0;
             #if defined(FRSKYX_CC2500_INO) && defined(EU_MODULE)
                 if( ! ( (protocol == PROTO_FRSKYX || protocol == PROTO_FRSKYX2) && sub_protocol < 2 ) )
@@ -1429,7 +1437,8 @@ static void protocol_init()
                         multi_protocols[index].Init();      // Init could invalidate the sub proto in case it is not suuported
                         if(IS_SUB_PROTO_VALID)
                             remote_callback = multi_protocols[index].CallBack;  //Save call back function address
-                    }					
+                        
+                    }
                     #ifdef DEBUG_SERIAL
                         debug("Proto=%s", multi_protocols[index].ProtoString);
                         debug(", nbr_sub=%d, Sub=", multi_protocols[index].nbrSubProto);
@@ -1471,12 +1480,14 @@ static void protocol_init()
     #endif
     WAIT_BIND_off;
     CHANGE_PROTOCOL_FLAG_off;
-      #if defined AVR_COMMON || defined STM32_BOARD
+    
     if(protocol)
     {
-       
         //Wait 5ms after protocol init
         cli();                                      // disable global int
+        #ifdef ESP_COMMON           
+            TCNT1 = timerRead(timer);
+        #endif
         OCR1A = TCNT1 + 5000*2;                     // set compare A for callback
         #if defined AVR_COMMON
             TIFR1 = OCF1A_bm ;                      // clear compare A flag
@@ -1484,10 +1495,9 @@ static void protocol_init()
             TIMER2_BASE->SR = 0x1E5F & ~TIMER_SR_CC1IF; // Clear Timer2/Comp1 interrupt flag
         #endif
 
-        sei();                                      // enable global int		
+        sei();                                      // enable global int
         BIND_BUTTON_FLAG_off;                       // do not bind/reset id anymore even if protocol change
     }
-	#endif
 }
 
 void ICACHE_RAM_ATTR update_serial_data()
@@ -1503,6 +1513,7 @@ void ICACHE_RAM_ATTR update_serial_data()
    
     RX_DONOTUPDATE_on;
     RX_FLAG_off;                                //data is being processed
+    
     #ifdef SAMSON   // Extremely dangerous, do not enable this unless you know what you are doing...
         if( rx_ok_buff[0]==0x55 && (rx_ok_buff[1]&0x1F)==PROTO_FRSKYD && rx_ok_buff[2]==0x7F && rx_ok_buff[24]==217 && rx_ok_buff[25]==202 )
         {//proto==FRSKYD+sub==7+rx_num==7+CH15==73%+CH16==73%
@@ -1672,7 +1683,6 @@ void ICACHE_RAM_ATTR update_serial_data()
     //store current protocol values
     for(uint8_t i=0;i<3;i++)
         cur_protocol[i] =  rx_ok_buff[i];
-
     //disable channel mapping
     if(multi_protocols[multi_protocols_index].chMap == 0)
         DISABLE_CH_MAP_off;                     //not a protocol supporting ch map to be disabled
@@ -1814,7 +1824,7 @@ void ICACHE_RAM_ATTR update_serial_data()
         #endif
     #endif
     if(IS_RX_MISSED_BUFF_on)                    // If the buffer is still valid
-   {   
+    {   
         if(rx_idx >= 26 && rx_idx < RXBUFFER_SIZE)
         {
             rx_len = rx_idx;
@@ -1822,7 +1832,7 @@ void ICACHE_RAM_ATTR update_serial_data()
             RX_FLAG_on;                         // Data to be processed next time...
         }
         RX_MISSED_BUFF_off;
-   }
+    }
     #if defined  AVR_COMMON || defined STM32_BOARD
         #ifdef ORANGE_TX
             sei();
@@ -1850,7 +1860,7 @@ void modules_reset()
         SX1276_Reset();
     #endif
     #ifdef  SX1280_INSTALLED
-      SX1280_Reset();
+        //SX1280_Reset();//it is on SX1280.begin()
     #endif
     //Wait for every component to reset
     delayMilliseconds(100);
@@ -1906,15 +1916,8 @@ void modules_reset()
         USART2_BASE->CR1 &= ~ USART_CR1_TE;     //disable transmit
         usart3_begin(100000,SERIAL_8E2);        
     #elif defined ESP_COMMON
-        #ifdef DEBUG_ESP8266
-           Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);   
-	   #else
         SerialChannelsInit();
         SportSerialInit();//only transmitting ,inverted
-		#endif
-		#ifdef DEBUG_ESP32
-				Serial.begin(115200,SERIAL_8N1); 
-	   #endif	   		
     #else
         //ATMEGA328p
         #include <util/setbaud.h>   
@@ -1990,12 +1993,32 @@ void modules_reset()
 #endif
 
 #ifdef ESP32_PLATFORM
-	void ICACHE_RAM_ATTR SerialChannelsInit(){
+	/*
+    void ICACHE_RAM_ATTR SerialChannelsInit()
+    {
+        // Setup UART
+        uart_config_t uart_config = {
+            .baud_rate = 100000,
+            .data_bits = UART_DATA_8_BITS,
+            .parity = UART_PARITY_EVEN,
+            .stop_bits = UART_STOP_BITS_2,
+            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+        };
+        ESP_ERROR_CHECK(uart_param_config(UART_NUM_2 , &uart_config));
+        ESP_ERROR_CHECK(uart_set_pin(UART_NUM_2 , -1, 25, -1, -1));   // Set UART pins (using UART0 default pins ie no changes.)
+        //Tx, Rx, RTS, and CTS signals
+        // ESP_ERROR_CHECK(uart_driver_install(UART_NUM_2 , RXBUFFER_SIZE * 2, 0, 0, NULL, 0));                    
+        ESP_ERROR_CHECK(uart_driver_install(UART_NUM_2 , 1024, 0, 0, NULL, 0)); // Install UART driver, and get the queue.
+        ESP_ERROR_CHECK(uart_isr_free(UART_NUM_2 ));                                                                  // Release the pre registered UART handler/subroutine
+        ESP_ERROR_CHECK(uart_isr_register(UART_NUM_2,uart_intr_handle, NULL, ESP_INTR_FLAG_IRAM, &handle_console));
+        ESP_ERROR_CHECK(uart_enable_rx_intr(UART_NUM_2 ));
+    }
+	*/
+    void ICACHE_RAM_ATTR SerialChannelsInit(){
 	    portDISABLE_INTERRUPTS();
-        Serial_1.begin(100000, SERIAL_8E2, SX1280_RCSIGNAL_RX_pin,-1,false, 500);
+        Serial_1.begin(100000, SERIAL_8E2, SX1280_RX_pin, -1,false, 500);//only rx enabled and normal signal
         portENABLE_INTERRUPTS();
 	}
-	
     void ICACHE_RAM_ATTR SportSerialInit()
     { 
         portDISABLE_INTERRUPTS();
@@ -2008,7 +2031,6 @@ void modules_reset()
 #ifdef ESP8266_PLATFORM
     void ICACHE_RAM_ATTR SerialChannelsInit()
     {
-	     pinMode(SX1280_RCSIGNAL_RX_pin,INPUT_PULLUP);
         Serial.flush(); 
         Serial.begin(100000, SERIAL_8E2); 
         USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal
@@ -2144,15 +2166,11 @@ static uint32_t random_id(uint16_t address, uint8_t create_new)
                 debugln("Generated ID from STM32 UUID");
             }
         #elif defined ESP_COMMON
-		  #ifdef ESP32_PLATFORM
             for(int i = 0; i< 17; i= i+8)
             {
                 id |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
                 debugln("Generated ID from ESP32 MAC");
             }
-			#else
-			id = ESP.getChipId()&0XFFFFFFFF;
-			#endif
         #endif
         if(create_new)
             id = random(0xfefefefe) + ((uint32_t)random(0xfefefefe) << 16);
@@ -2635,7 +2653,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
     void ICACHE_RAM_ATTR uart_intr_handle(void *arg) {
         // rx_len = UART0.status.rxfifo_cnt;  // Read number of bytes in UART buffer
         uint8_t c = UART2.fifo.rw_byte; //read first byte
-                chSerial_timer = micros();
+                chSerial_timer = timerRead(timer);
         if ( (chSerial_timer - prev_chSerial_timer) > 500) 
         {
             rx_idx = 0;
@@ -2668,11 +2686,13 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 */
 #endif
 
+
 #ifdef ESP_COMMON
     
     void ICACHE_RAM_ATTR processSerialChannels()
     { 
-        int32_t  t_chSerial_timer =  micros();
+        uint32_t  t_chSerial_timer =  timerRead(timer);
+		
         if(( t_chSerial_timer -  chSerial_timer) >= 500)//process only when full serial frame is received
         {
             if(rx_idx >= 26)// A full frame has been received
@@ -2682,39 +2702,38 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
                 rx_idx = 0;      // reset buffer for next time
                 RX_FLAG_on; // Flag for main to process data           
                 #ifdef MULTI_SYNC
-                    last_serial_input = micros();
-                #endif
-            }                                  
-       }         
+                    last_serial_input = timerRead(timer);
+                #endif			
+				callMicrosSerial();
+            }
+		     chSerial_timer += 14000;//come again after 7ms 
+       }
+           
     }
-	
- #endif
- 
- #ifdef ESP_COMMON
+
     void ICACHE_RAM_ATTR callSerialChannels()
-    {
+    {	
 	#ifdef ESP32_PLATFORM
-	        while (Serial_1.available())
+	     while (Serial_1.available())
         {
             processIncomingByte(Serial_1.read());
         }
-	
 	#else
         while (Serial.available())
         {
             processIncomingByte(Serial.read());
         }
-	#endif
+	#endif		
     }
 
 
     void ICACHE_RAM_ATTR processIncomingByte (const byte inByte)
     {
-
         uint8_t c = inByte;
-        chSerial_timer = micros();
-        if ((chSerial_timer - prev_chSerial_timer) > 2000)
-            rx_idx = 0;	
+        chSerial_timer = timerRead(timer);
+
+        if ( (chSerial_timer - prev_chSerial_timer) > 500)
+            rx_idx = 0;
         if(rx_idx == 0 )//received something
         {//sync
             RX_MISSED_BUFF_off;
@@ -2728,12 +2747,11 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
         }
         else
         {
-            if (rx_idx && rx_idx <= RXBUFFER_SIZE){
-                rx_buff [rx_idx++] = c;							
-            }else
+            if (rx_idx && rx_idx <= RXBUFFER_SIZE)
+                rx_buff [rx_idx++] = c; 
+            else
                 rx_idx = 0;
         } 
         prev_chSerial_timer = chSerial_timer;
-    }// end of processIncomingByte
-
+    }// end of processIncomingByte 
 #endif

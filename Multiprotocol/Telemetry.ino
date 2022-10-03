@@ -102,7 +102,7 @@ static void telemetry_set_input_sync(uint16_t refreshRate)
 	{
 		cli();										// Disable global int due to RW of 16 bits registers
 		#ifdef ESP_COMMON
-		TCNT1 = micros()<<1;
+		TCNT1 = micros();
 		#endif
 		inputDelay = TCNT1;
 		sei();										// Enable global int
