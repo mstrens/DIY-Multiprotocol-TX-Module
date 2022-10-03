@@ -132,7 +132,6 @@ bool ICACHE_RAM_ATTR Update_All(void);
     uint32_t prev_chSerial_timer = 0;
     bool startWifi = false;
    #ifdef SIM_HANDSET_DATA
-   #define BIND_BUTTON_SIM_pin 10
     uint32_t test_time;
     uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
                                          0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
@@ -823,35 +822,41 @@ void setup()
 void loop()
 #ifdef ESP_COMMON
 {
-    uint16_t callbackInterval; // interval to wait before next call to remote_callback()
+    static bool firstRun = true; 
+    static uint32_t expectedCallback;   // timestamp when callback should occur; in practice callback will be delayed
+    int32_t remainMicros;  // can be negative, never overflow; we have to substract the delay!! 
+    uint16_t callbackInterval; // min interval to wait before next call to remote_callback()
     uint32_t currentMicros, previousMicros;
-    int32_t remainMicros;  // can be negative, never overflow
-    while(1)
+    while(remote_callback==0 || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off)
     {
-        while(remote_callback==0 || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off)
-        {
+        Update_All();
+        expectedCallback = micros();
+    }       
+    if (firstRun){
+        firstRun = false;
+        expectedCallback = micros();
+    }
+    callbackInterval = remote_callback(); // interval to wait before next call to remote_callback()
+    currentMicros = micros();
+    remainMicros = callbackInterval - (currentMicros - expectedCallback);  // interval that remains before next call (value is updated in while())
+    expectedCallback += callbackInterval;
+
+    previousMicros = currentMicros ;
+    while( remainMicros > 0)
+    {
+        if ( remainMicros >900){
             Update_All();
-        }       
-        callbackInterval = remote_callback(); // interval to wait before next call to remote_callback()
-        currentMicros = micros();   
-        remainMicros = callbackInterval ;  // interval that remains before next call (value is updated in while())
-        previousMicros = currentMicros ;
-        while( remainMicros > 0)
-        {
-            if (( remainMicros )>900){
-                Update_All();
-                if(remote_callback==0)
-                    break;
-            }
-            else{// need running serial when diff is less than 900
-                callSerialChannels();
-                processSerialChannels();
-                yield();
-            }
-            currentMicros = micros();
-            remainMicros -= (currentMicros - previousMicros);
-            previousMicros = currentMicros ; 
-        }   
+            if(remote_callback==0)
+                break;
+        }
+        else if ( remainMicros >100) {// need running serial when diff is less than 900
+            callSerialChannels();
+            processSerialChannels();
+            yield();
+        }
+        currentMicros = micros();
+        remainMicros -= (currentMicros - previousMicros);
+        previousMicros = currentMicros ; 
     }
 }
 
@@ -977,9 +982,11 @@ bool  ICACHE_RAM_ATTR Update_All()
         rx_len = 27;
         memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
         rx_ok_buff[26] |= 0x81;//protocol 128
+		 #ifdef BIND_BUTTON_SIM_pin && BIND_BUTTON_SIM_pin != -1
         pinMode(BIND_BUTTON_SIM_pin,INPUT_PULLUP);
         if(digitalRead(BIND_BUTTON_SIM_pin)==LOW)
         rx_ok_buff[1] |= 0x80; //binding
+	     #endif
         RX_FLAG_on;
         }
         #endif  
@@ -2014,7 +2021,6 @@ void modules_reset()
 #ifdef ESP8266_PLATFORM
     void ICACHE_RAM_ATTR SerialChannelsInit()
     {
-         pinMode(SX1280_RCSIGNAL_RX_pin,INPUT_PULLUP);
         Serial.flush(); 
         Serial.begin(100000, SERIAL_8E2); 
         USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal
