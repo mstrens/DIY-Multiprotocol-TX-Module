@@ -102,7 +102,7 @@ static void telemetry_set_input_sync(uint16_t refreshRate)
 	{
 		cli();										// Disable global int due to RW of 16 bits registers
 		#ifdef ESP_COMMON
-		TCNT1 = micros()<<1;
+		TCNT1 = micros();
 		#endif
 		inputDelay = TCNT1;
 		sei();										// Enable global int
@@ -452,21 +452,21 @@ RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7m
 				if((buffer[3]>>5)==0)
 				{
 			    MiLoStats.uplink_RSSI_1 = buffer[2];	
-				TX_RSSI = signal_quality_perc_quad(MiLoStats.uplink_RSSI_1,10,113);//RSSI% quadratic formula conversion	
+				RX_RSSI = signal_quality_perc_quad(MiLoStats.uplink_RSSI_1,10,113);//RSSI% quadratic formula conversion	
 				if(LastPacketRSSI < 0)
 				MiLoStats.downlink_RSSI = -LastPacketRSSI;
-			    RX_RSSI = signal_quality_perc_quad(MiLoStats.downlink_RSSI,10,113);	
+			    TX_RSSI = signal_quality_perc_quad(MiLoStats.downlink_RSSI,10,113);	
 				}
 				else
 				if((buffer[3]>>5)==1){
 				MiLoStats.uplink_SNR = buffer[2];
-				TX_SNR = buffer[2];
-				RX_SNR = LastPacketSNR;
+				RX_SNR = buffer[2];
+				TX_SNR = LastPacketSNR;
 				}
 				else
 				if((buffer[3]>>5)==2){
 				MiLoStats.uplink_Link_quality = buffer[2];
-				TX_LQI = buffer[2];	
+				RX_LQI = MiLoStats.uplink_Link_quality;	
                  }
 			   struct t_FrSkyX_RX_Frame *p ;			   
 			    uint8_t count ;
@@ -877,18 +877,29 @@ void sportSendFrame()
 	{
 		case 0:	
 		        if(protocol == PROTO_MILO){
-			static bool pass = false;
-			if( pass){
-			frame[2] = 0x07;
-			frame[3] = 0xf1;//sensor TX_SNR custom	
-			frame[4] = TX_SNR;
-			pass = 0;
-			}
-			else{
-			frame[2] = 0x08;
-			frame[3] = 0xf1;//sensor RX SNR custom			
-			frame[4] = RX_SNR;
+			static uint8_t pass = 0;
+			switch(pass){
+			case 0:
+			frame[0] = 0x1A;
+			frame[2] = 0xF0;
+			frame[3] = 0x52;//sensor TX_SNR custom	
+			frame[4] = RX_SNR;			
 			pass = 1;
+			break;
+			case 1:
+			frame[0] = 0x1A;
+		    frame[2] = 0xF1;
+			frame[3] = 0x52;//sensor RX SNR custom			
+			frame[4] = TX_SNR;
+			pass = 2;
+			break;	
+			case 2:
+			frame[0] = 0x1A;
+			frame[2] = 0xE0;
+			frame[3] = 0x52;//sensor RX SNR custom			
+			frame[4] = RX_LQI;
+			pass = 0;
+			break;
 			}
 		        }
 			else{
