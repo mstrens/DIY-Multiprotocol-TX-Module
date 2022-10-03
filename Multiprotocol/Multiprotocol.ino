@@ -31,10 +31,10 @@
     //#define HM_ES24TX //
 #endif
 #ifdef ESP8266_PLATFORM
-  #define BETA_FPV_RX_NANO //or clone
+    //#define BETA_FPV_RX_NANO //or clone
     //#define MATEK_RX_R24D
-   //#define DIY_RX //use RX as TX(diversity) no PA/LNA
-    //#define ESP8266_E28_2G4M20S
+    //#define DIY_RX //use RX as TX(diversity) no PA/LNA
+    #define ESP8266_E28_2G4M20S
 #endif
 #ifdef STM32_BOARD
     /* ICACHE_RAM_ATTR1 is always linked into RAM */
@@ -46,7 +46,7 @@
         #define ICACHE_RAM_ATTR2 __section(".ram_code")
     #endif
     #define ICACHE_RAM_ATTR //nothing//
-#else
+#else  
     #undef ICACHE_RAM_ATTR //fix to allow both esp32 and esp8266 to use ICACHE_RAM_ATTR for mapping to IRAM
     #define ICACHE_RAM_ATTR IRAM_ATTR
 #endif
@@ -127,7 +127,7 @@ bool ICACHE_RAM_ATTR Update_All(void);
     void ICACHE_RAM_ATTR processSerialChannels();
     void ICACHE_RAM_ATTR SerialChannelsInit(void);
     void ICACHE_RAM_ATTR SportSerialInit(void);
-    uint32_t TCNT1 = 0 ;
+    //uint32_t TCNT1 = 0 ;
     uint32_t chSerial_timer = 0;
     uint32_t prev_chSerial_timer = 0;
     bool startWifi = false;
@@ -2678,8 +2678,8 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
     
     void ICACHE_RAM_ATTR processSerialChannels()
     { 
-        int32_t  t_chSerial_timer =  micros();
-        if(( t_chSerial_timer -  chSerial_timer) >= 500)//process only when full serial frame is received
+        //int32_t  t_chSerial_timer =  micros();
+        if(( micros() -  chSerial_timer) >= 250)//process only when full serial frame is received
         {
             if(rx_idx >= 26)// A full frame has been received
             { 
@@ -2719,7 +2719,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 
         uint8_t c = inByte;
         chSerial_timer = micros();
-        if ((chSerial_timer - prev_chSerial_timer) > 2000)
+        if ((chSerial_timer - prev_chSerial_timer) > 1000)
             rx_idx = 0; 
         if(rx_idx == 0 )//received something
         {//sync
