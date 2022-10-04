@@ -468,6 +468,10 @@
 	#elif defined ESP8266_E28_2G4M20S
         #undef SX1280_BUSY_pin
         #define SX1280_BUSY_pin -1
+        #undef BIND_pin 
+        #define	BIND_pin		     -1
+        #undef 	LED_pin
+        #define	LED_pin		         -1
         #define SX1280_RXEN_pin -1
         #define SX1280_TXEN_pin  5
 		#define SX1280_ANTENNA_SELECT_pin  -1
@@ -519,11 +523,11 @@
 	#define SX1280_ANTENNA_SELECT_on  digitalWrite(SX1280_ANTENNA_SELECT_pin,HIGH)
     #define SX1280_ANTENNA_SELECT_off  digitalWrite(SX1280_ANTENNA_SELECT_pin,LOW)
 
-	#define	IS_LED_on		        ( digitalRead(LED_pin)==HIGH)
-	#define	LED_on			        digitalWrite(LED_pin,HIGH)
-	#define	LED_off			        digitalWrite(LED_pin,LOW)
-	#define	LED_toggle		        digitalWrite(LED_pin ,!digitalRead(LED_pin))
-	#define	LED_output		        pinMode(LED_pin,OUTPUT)
+	#define	IS_LED_on		        ( (LED_pin != -1 ) ?digitalRead(LED_pin)==HIGH?false)
+	#define	LED_on			        if (LED_pin != -1) digitalWrite(LED_pin,HIGH)
+	#define	LED_off			        if (LED_pin != -1) digitalWrite(LED_pin,LOW)
+	#define	LED_toggle		        if (LED_pin != -1) digitalWrite(LED_pin ,!digitalRead(LED_pin))
+	#define	LED_output		        if (LED_pin != -1) pinMode(LED_pin,OUTPUT)
 	
 	#define USE_SX1280_DCDC         // undefine if HW has no inductor to avoid instabilities
 	#define Regulatory_Domain_ISM_2400 1
