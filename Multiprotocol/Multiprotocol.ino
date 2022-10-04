@@ -24,7 +24,8 @@
 #include "Multiprotocol.h"
 
 //#define DEBUG_PIN     // Use pin TX for AVR and SPI_CS for STM32 => DEBUG_PIN_on, DEBUG_PIN_off, DEBUG_PIN_toggle
-//#define DEBUG_SERIAL  // Only for STM32_BOARD, compiled with Upload method "Serial"->usart1, "STM32duino bootloader"->USB serial
+//#define DEBUG_SERIAL  // Use for ESP_COMMON or for STM32_BOARD, 
+                              // for stm32 boad, compiled with Upload method "Serial"->usart1, "STM32duino bootloader"->USB serial
 
 #ifdef ESP32_PLATFORM
     #define BETAFPV_500 //if hacked this expresslrs Tx module
@@ -106,6 +107,7 @@ bool ICACHE_RAM_ATTR Update_All(void);
     #endif
     #if defined DEBUG_ESP8266 || defined DEBUG_ESP32
         #define DEBUG_ESP_COMMON
+        #define DEBUG_SERIAL
         void callMicrosSerial(){
             static uint32_t tim = 0 ;
             static uint32_t timt = 0 ;  
@@ -1680,7 +1682,7 @@ void ICACHE_RAM_ATTR update_serial_data()
         End_Bind();
     }
     
-    #ifdef TEST_WIFI
+    #ifdef DEBUG_WIFI
         sub_protocol = WIFI_TX;//WIFI test
     #endif
     
