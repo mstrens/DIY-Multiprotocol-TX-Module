@@ -20,7 +20,7 @@
 		uint16_t dio1Mask=SX1280_IRQ_RADIO_NONE,
 		uint16_t dio2Mask=SX1280_IRQ_RADIO_NONE,
 	uint16_t dio3Mask=SX1280_IRQ_RADIO_NONE);
-	
+		int8_t CurrentPower;
 	
 	void ICACHE_RAM_ATTR SX1280_WriteReg(uint16_t address, uint8_t data)
 	{
@@ -620,143 +620,8 @@
 		
 	}
 	
-	/*
-		void SX1280_IsrCallback()//can be on DIO1 interrupt;
-		{
-		uint16_t irqStatus = SX1280_GetIrqStatus();
-		SX1280_ClearIrqStatus(SX1280_IRQ_RADIO_ALL);
-		if (irqStatus & SX1280_IRQ_TX_DONE)
-		{
-		//TXRXdisable();
-		currOpmode = SX1280_MODE_FS; // radio goes to FS after TX
-		}
-		else if (irqStatus & (SX1280_IRQ_RX_DONE | SX1280_IRQ_CRC_ERROR | SX1280_IRQ_RX_TX_TIMEOUT))
-		SX1280_RXnbISR(irqStatus);		
-		}
-		
-		
-		
-		
-		
-		void TXnbISR()
-		{
-		currOpmode = SX1280_MODE_FS; // radio goes to FS after TX
-		}
-		
-		
-		void Sx1280_RXnbISR(uint16_t const irqStatus)
-		{
-		uint8_t const fail =
-		((irqStatus & SX1280_IRQ_CRC_ERROR) ? SX1280_RX_CRC_FAIL : SX1280_RX_OK) +
-		((irqStatus & SX1280_IRQ_RX_TX_TIMEOUT) ? SX1280_RX_TIMEOUT : SX1280_RX_OK);
-		// In continuous receive mode, the device stays in Rx mode
-		if (timeout != 0xFFFF)
-		{
-		// From table 11-28, pg 81 datasheet rev 3.2
-		// upon successsful receipt, when the timer is active or in single mode, it returns to STDBY_RC
-		// but because we have AUTO_FS enabled we automatically transition to state SX1280_MODE_FS
-		currOpmode = SX1280_MODE_FS;
-		}
-		if (fail == SX1280_RX_OK)
-		{
-		uint8_t const FIFOaddr = SX1280_GetRxBufferAddr();
-		//hal.ReadBuffer(FIFOaddr, RXdataBuffer, PayloadLength);
-		SX1280_ReadBuffer(FIFOaddr, RXdataBuffer, PayloadLength);		
-		SX1280_GetLastPacketStats();
-		}
-		RXdoneCallback(fail);
-		}
-		
-		
-		void  SX1280_TXnb()
-		{
-		if (currOpmode == SX1280_MODE_TX) //catch TX timeout
-		{
-		//DBGLN("Timeout!");
-		SX1280_SetMode(SX1280_MODE_FS);
-		currOpmode = SX1280_MODE_FS; // radio goes to FS after TX
-		return;
-		}                     
-		SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise
-		SX1280_WriteBuffer(0x00, TXdataBuffer, PayloadLength); //todo fix offset to equal fifo addr
-		SX1280_SetMode(SX1280_MODE_TX);
-		}
-	*/
-	
-	
-	/*
-		void SX1280_RXnb()
-		{
-		SX1280_SetTxRxMode(RX_EN);// do first to allow LNA stabilise
-		SX1280_SetMode(SX1280_MODE_RX);
-		}
-	*/
-	
-	
 	//////////////////// Output Power///////////////////////
 	
-	int8_t CurrentPower;
-	
-	//static int8_t powerCaliValues[PWR_COUNT] = {0};
-	//int8_t CurrentSX1280Power = 0;
-	/*
-	uint8_t getPowerIndBm()
-	{
-		switch (CurrentPower)
-		{
-			case PWR_10mW: return 10;
-			case PWR_25mW: return 14;
-			case PWR_50mW: return 17;
-			case PWR_100mW: return 20;
-			case PWR_250mW: return 24;
-			case PWR_500mW: return 27;
-			default:
-			return 0;
-		}
-	}
-
-
-	uint8_t  SX1280_decPower()
-	{
-		if (CurrentPower > MinPower)
-		{
-			SX1280_setPower((uint8_t)CurrentPower - 1);
-		}
-		return CurrentPower;
-	}
-	
-	uint8_t  SX1280_incPower()
-	{
-		if (CurrentPower < MaxPower)
-		{
-			SX1280_setPower((uint8_t)CurrentPower + 1);
-		}
-		return CurrentPower;
-	}
-	
-	void ICACHE_RAM_ATTR SX1280_setPower(uint8_t Power)
-	{
-		
-		if (Power == CurrentPower)
-		return;
-		
-		if (Power < MinPower)
-		{
-			Power = MinPower;
-		}
-		else if (Power > MaxPower)
-		{
-			Power = MaxPower;
-		}
-		#ifdef POWER_OUTPUT_FIXED
-			CurrentSX1280Power = Power;
-			#else
-			CurrentSX1280Power = powerValues[Power - MinPower];
-		#endif
-		SX1280_SetOutputPower(CurrentSX1280Power);
-		CurrentPower = Power;
-	}
-	*/
 		void  POWER_init()
 	{
 		CurrentPower = MinPower;
@@ -776,12 +641,12 @@
 	
      #endif
 	
-	
 		// The power value to send on SPI/UART is in the range [0..31] and the
 		// physical output power is in the range [-18..13]dBm
 		uint8_t buf[2];
 		if (power < -18) power = -18;
 		else if (13 < power) power = 13;
+		CurrentPower = power; // store the value to avoid updates with the same value  
 		buf[0] = power + 18;
 		buf[1] = (uint8_t)SX1280_RADIO_RAMP_04_US;
 		SX1280_WriteCommandMulti( SX1280_RADIO_SET_TXPARAMS, buf, 2,15 );
