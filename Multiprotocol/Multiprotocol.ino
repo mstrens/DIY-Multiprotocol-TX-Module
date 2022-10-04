@@ -99,13 +99,20 @@ bool ICACHE_RAM_ATTR Update_All(void);
     #include <SPI.h>
     #include <EEPROM.h>
     #include "devWIFI_elegantOTA.h"
-    //#define DEBUG_ESP8266
+    #define DEBUG_ESP8266
     //#define DEBUG_ESP32
     #ifdef DEBUG_ESP8266
-    #define SIM_HANDSET_DATA
+        #define SIM_HANDSET_DATA
     #endif
     #if defined DEBUG_ESP8266 || defined DEBUG_ESP32
         #define DEBUG_ESP_COMMON
+        void callMicrosSerial(){
+            static uint32_t tim = 0 ;
+            static uint32_t timt = 0 ;  
+            timt = micros();
+            Serial.println(timt - tim);
+            tim = micros();
+        }
     #endif
     //#define DEBUG_WIFI
     #ifdef ESP32_PLATFORM
@@ -131,22 +138,13 @@ bool ICACHE_RAM_ATTR Update_All(void);
     uint32_t chSerial_timer = 0;
     uint32_t prev_chSerial_timer = 0;
     bool startWifi = false;
-   #ifdef SIM_HANDSET_DATA
-   #define BIND_BUTTON_SIM_pin 10
-    uint32_t test_time;
-    uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
+    #ifdef SIM_HANDSET_DATA
+        //#define BIND_BUTTON_SIM_pin 10  // note: it should be better to move this to pins.h
+        uint32_t test_time;
+        uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
                                          0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
                                          0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
                                          0x9C,0x19,0x81};
-                                        #endif
-     #ifdef DEBUG_ESP_COMMON                                 
-        void callMicrosSerial(){
-            static uint32_t tim = 0 ;
-            static uint32_t timt = 0 ;  
-            timt = micros();
-            Serial.println(timt - tim);
-            tim = micros();
-        }
     #endif
     #undef CHECK_FOR_BOOTLOADER
     #define EEPROM_SIZE 256 
@@ -808,7 +806,7 @@ void setup()
         #ifdef CHECK_FOR_BOOTLOADER
             Mprotocol_serial_init(1);   // Configure serial and enable RX interrupt
         #else
-            Mprotocol_serial_init();    // Configure serial and enable RX interrupt
+            Mprotocol_serial_init();    // Configure serial and enable RX interrupt (no interrupt for ESP_COMMON)
         #endif
     #endif //ENABLE_SERIAL
     }
@@ -823,39 +821,44 @@ void setup()
 void loop()
 #ifdef ESP_COMMON
 {
-    uint16_t callbackInterval; // interval to wait before next call to remote_callback()
+    static bool firstRun = true; 
+    static uint32_t expectedCallback;   // timestamp when callback should occur; in practice callback will be delayed
+    int32_t remainMicros;  // can be negative, never overflow; we have to substract the delay!! 
+    uint16_t callbackInterval; // min interval to wait before next call to remote_callback()
     uint32_t currentMicros, previousMicros;
-    int32_t remainMicros;  // can be negative, never overflow
-    while(1)
+    while(remote_callback==0 || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off)
     {
-        while(remote_callback==0 || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off)
-        {
+        Update_All();
+        expectedCallback = micros();
+    }       
+    if (firstRun){
+        firstRun = false;
+        expectedCallback = micros();
+    }
+    callbackInterval = remote_callback(); // interval to wait before next call to remote_callback()
+    currentMicros = micros();
+    remainMicros = callbackInterval - (currentMicros - expectedCallback);  // interval that remains before next call (value is updated in while())
+    expectedCallback += callbackInterval;
+    previousMicros = currentMicros ;
+    while( remainMicros > 0)
+    {
+        if ( remainMicros >900){
             Update_All();
-        }       
-        callbackInterval = remote_callback(); // interval to wait before next call to remote_callback()
-        currentMicros = micros();   
-        remainMicros = callbackInterval ;  // interval that remains before next call (value is updated in while())
-        previousMicros = currentMicros ;
-        while( remainMicros > 0)
-        {
-            if (( remainMicros )>900){
-                Update_All();
-                if(remote_callback==0)
-                    break;
-            }
-            else{// need running serial when diff is less than 900
-                callSerialChannels();
-                processSerialChannels();
-                yield();
-            }
-            currentMicros = micros();
-            remainMicros -= (currentMicros - previousMicros);
-            previousMicros = currentMicros ; 
-        }   
+            if(remote_callback==0)
+                break;
+        }
+        else if ( remainMicros >100) {// need running serial when diff is less than 900
+            callSerialChannels();
+            processSerialChannels();
+            yield();
+        }
+        currentMicros = micros();
+        remainMicros -= (currentMicros - previousMicros);
+        previousMicros = currentMicros ; 
     }
 }
 
-#else
+#else  // not ESP_COMMON
 { 
     uint16_t next_callback, diff;
     uint8_t count = 0;  
@@ -929,7 +932,7 @@ void loop()
         }   
     }
 }
-#endif
+#endif // End setup()
 
 
 
@@ -967,29 +970,31 @@ bool  ICACHE_RAM_ATTR Update_All()
             else
         #endif
             #ifdef ESP_COMMON   
-                callSerialChannels();
-                processSerialChannels();
+                callSerialChannels();  // Read all bytes available in Serial buffer  and store them to Rx_buffer  
+                processSerialChannels(); // when a full frame has been received, copy Rx_buffer to rx_ok_buff 
         #endif
     
         #ifdef SIM_HANDSET_DATA
-        if((micros()- test_time) >= 7000){
-        test_time = micros();
-        rx_len = 27;
-        memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
-        rx_ok_buff[26] |= 0x81;//protocol 128
-        pinMode(BIND_BUTTON_SIM_pin,INPUT_PULLUP);
-        if(digitalRead(BIND_BUTTON_SIM_pin)==LOW)
-        rx_ok_buff[1] |= 0x80; //binding
-        RX_FLAG_on;
-        }
+            if((micros()- test_time) >= 7000){
+                test_time = micros();
+                rx_len = 27;
+                memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
+                rx_ok_buff[26] |= 0x81;//protocol 128
+                #ifdef BIND_BUTTON_SIM_pin && BIND_BUTTON_SIM_pin != -1
+                    pinMode(BIND_BUTTON_SIM_pin,INPUT_PULLUP);  // todo : define it in pins.h and let it be set on -1
+                    if(digitalRead(BIND_BUTTON_SIM_pin)==LOW)
+                        rx_ok_buff[1] |= 0x80; //binding
+                #endif
+                RX_FLAG_on;
+            }
         #endif  
             yield();//feed WDT important
         
-        if(mode_select==MODE_SERIAL && IS_RX_FLAG_on)       // Serial mode and something has been received
+        if(mode_select==MODE_SERIAL && IS_RX_FLAG_on)       // Serial mode and a full frame has been received
         {   
             update_serial_data();                           // Update protocol and data
-            update_channels_aux();
-            INPUT_SIGNAL_on;                                //valid signal received
+            update_channels_aux();                          // update channels
+            INPUT_SIGNAL_on;                                //valid signal received from handset
             last_signal=millis();
         }
     #endif //ENABLE_SERIAL
@@ -2587,6 +2592,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
             len-- ;
         }
     }
+
 #endif  
 
 /**************************/
@@ -2676,7 +2682,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 
 #ifdef ESP_COMMON
     
-    void ICACHE_RAM_ATTR processSerialChannels()
+    void ICACHE_RAM_ATTR processSerialChannels()    // fill Rx_ok_buff with a complete frame and set a flag for processing in Update_All()
     { 
         //int32_t  t_chSerial_timer =  micros();
         if(( micros() -  chSerial_timer) >= 250)//process only when full serial frame is received
@@ -2693,10 +2699,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
             }                                  
        }         
     }
-    
- #endif
- 
- #ifdef ESP_COMMON
+     
     void ICACHE_RAM_ATTR callSerialChannels()
     {
     #ifdef ESP32_PLATFORM
