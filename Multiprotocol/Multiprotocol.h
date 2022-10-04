@@ -571,7 +571,7 @@ enum MultiPacketTypes
 // Macros
 
 #ifndef ESP32
-#define NOP() __asm__ __volatile__("nop") //@todo check for which architecture this is required, if any
+    #define NOP() __asm__ __volatile__("nop") //@todo check for which architecture this is required, if any
 #endif
 
 //***************
@@ -681,19 +681,19 @@ enum MultiPacketTypes
 //********************
 //** Debug messages **
 //********************
-#if (defined (STM32_BOARD)||defined( ESP32_PLATFORM)) && (defined (DEBUG_SERIAL) || defined (ARDUINO_MULTI_DEBUG))
+#if (defined (STM32_BOARD)||defined( ESP32_COMMON)) && (defined (DEBUG_SERIAL) || defined (ARDUINO_MULTI_DEBUG))
 	uint16_t debug_time=0;
 	char debug_buf[64];
 	#define debug(msg, ...)  { sprintf(debug_buf, msg, ##__VA_ARGS__); Serial.write(debug_buf);}
 	#define debugln(msg, ...)  { sprintf(debug_buf, msg "\r\n", ##__VA_ARGS__); Serial.write(debug_buf);}
-	#if defined( ESP32_PLATFORM)
+	#if defined( ESP32_COMMON)
 		#define debug_time(msg)  { uint32_t debug_time_TCNT1 = micros(); debug_time=debug_time_TCNT1-debug_time; debug(msg "%u", debug_time>>1); debug_time=debug_time_TCNT1; }
 		#define debugln_time(msg)  { uint32_t debug_time_TCNT1 = micros(); debug_time=debug_time_TCNT1-debug_time; debug(msg "%u\r\n", debug_time>>1); debug_time=debug_time_TCNT1; }
-		#else
+	#else
 		#define debug_time(msg)  { uint16_t debug_time_TCNT1=TCNT1; debug_time=debug_time_TCNT1-debug_time; debug(msg "%u", debug_time>>1); debug_time=debug_time_TCNT1; }
 		#define debugln_time(msg)  { uint16_t debug_time_TCNT1=TCNT1; debug_time=debug_time_TCNT1-debug_time; debug(msg "%u\r\n", debug_time>>1); debug_time=debug_time_TCNT1; }
 	#endif
-	#else	
+#else	
 	#define debug(...) { }
 	#define debugln(...) { }
 	#define debugln_time(...) { }
@@ -876,7 +876,7 @@ enum {
 #ifndef DISABLE_FLASH_SIZE_CHECK
 	#ifdef MCU_STM32F103C8
 		#define MCU_EXPECTED_FLASH_SIZE 64	// STM32F103C8 has 64KB of flash space
-		#else
+	#else
 		#define MCU_EXPECTED_FLASH_SIZE 128	// STM32F103CB has 128KB of flash space
 	#endif
 #endif
