@@ -236,7 +236,7 @@
     }
     
     static void __attribute__((unused)) FrSkyX_send_sport(uint8_t start, uint8_t end)
-    {
+    {  // fill part of uplink tlm frame with Sport data    
         for (uint8_t i = start;i <= end;i++)
             packet[i] = 0;
         
@@ -275,20 +275,21 @@
     
     static void ICACHE_RAM_ATTR MiLo_Telemetry_frame()
     {
-        FrSkyX_send_sport(3 , PayloadLength - 1);
-        packet[0] = (TLM_PACKET) |(telemetry_counter<<3);
+        FrSkyX_send_sport(3 , PayloadLength - 1); // fill the sport data
+         packet[0] = (TLM_PACKET) |(telemetry_counter<<3); //fill other byte
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];  
     }
     
     void MILO_init()
     {
-        Fhss_Init();
-        Fhss_generate(MProtocol_id);
+        Fhss_Init();  // prepare full list of all freq
+        Fhss_generate(MProtocol_id); // create a list that depends on the ID of the TX
         currFreq = GetInitialFreq(); //set frequency first or an error will occur!!!
         currOpmode = SX1280_MODE_SLEEP;     
         bool init_success = SX1280_Begin();
         if (!init_success) {           
+            debugln("Init of SX1280 failed");
             return ;        
         } 
         else {
@@ -315,17 +316,17 @@
                     else 
                 #endif
                     state = MiLo_DATA1;
-                MiLo_telem_init();
+                MiLo_telem_init(); // initialise variables (flags) used by telemetry depending of SPORT_SEND and TELEMETRY
             }
             //SX1280_SetTxRxMode(TXRX_OFF);
-            POWER_init();
+            POWER_init();  // set power on min value.
             PayloadLength = MiLo_currAirRate_Modparams->PayloadLength;
         }   
     }
     
     uint16_t ICACHE_RAM_ATTR MILO_callback()
-    {
-        static uint16_t interval = MiLo_currAirRate_Modparams->interval;
+    {   // this function is called at regular interval by main loop and manage all time slots for sending and receiving RF on SX1280
+        uint16_t interval = MiLo_currAirRate_Modparams->interval;
         static uint32_t upTLMcounter = 2;
         switch(state)
         {   
@@ -368,7 +369,8 @@
                 }
                 else    
                     state = MiLo_DATA1;
-                return SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
+                interval = SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
+                break;
             #endif
             case MiLo_DATA1:
                 #ifdef ESP_COMMON
@@ -415,7 +417,8 @@
                 SX1280_SetMode(SX1280_MODE_TX);         
                 if (packet_count == 2){// next frame is RX downlink temetry
                     state = MiLo_DWLNK_TLM1;
-                    return 5400;
+                    interval = 5400;
+                    break;
                 }
                 else{
                     if(SportHead != SportTail && upTLMcounter == 2){//next frame in uplink telemetry
@@ -457,7 +460,8 @@
                 SX1280_WriteBuffer(0x00, packet, PayloadLength); 
                 SX1280_SetMode(SX1280_MODE_TX); 
                 state = MiLo_DWLNK_TLM1;// next frame is RX downlink temetry
-                return 5400;//      
+                interval = 5400;//
+                break;      
             case MiLo_DWLNK_TLM1://downlink telemetry
                 nextChannel(1);
                 SX1280_SetFrequencyReg(GetCurrFreq());
@@ -469,7 +473,8 @@
                 else
                     upTLMcounter = 0;//reset counter
                 state = MiLo_DWLNK_TLM2;
-                return 7600;
+                interval = 7600;
+                break;
             case MiLo_DWLNK_TLM2:
                 if(frameReceived)
                 {
@@ -493,8 +498,9 @@
                     else
                 #endif
                     state = MiLo_DATA1;
-                return 1000;        
+                interval = 1000;        
         }       
+        debugln("case %d", state);
         return interval;        
     }
     
