@@ -446,6 +446,7 @@
 
     #define SX1280_RCSIGNAL_RX_pin  3  //SERIAL CHANNELS 1-st pin of I/O connector
     #define SX1280_RCSIGNAL_TX_pin  1  //SPORT SERIAL Tx to 5-th pin of I/O connector
+	 #define BIND_BUTTON_SIM_pin -1
     #ifdef MATEK_RX_R24D
         #define SX1280_TXEN_pin           10
 		#define SX1280_RXEN_pin          -1

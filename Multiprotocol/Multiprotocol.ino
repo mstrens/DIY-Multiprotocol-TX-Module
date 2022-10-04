@@ -31,10 +31,10 @@
     //#define HM_ES24TX //
 #endif
 #ifdef ESP8266_PLATFORM
-    //#define BETA_FPV_RX_NANO //or clone
+    #define BETA_FPV_RX_NANO //or clone
     //#define MATEK_RX_R24D
     //#define DIY_RX //use RX as TX(diversity) no PA/LNA
-    #define ESP8266_E28_2G4M20S
+    //#define ESP8266_E28_2G4M20S
 #endif
 #ifdef STM32_BOARD
     /* ICACHE_RAM_ATTR1 is always linked into RAM */
@@ -138,10 +138,16 @@ bool ICACHE_RAM_ATTR Update_All(void);
     uint32_t chSerial_timer = 0;
     uint32_t prev_chSerial_timer = 0;
     bool startWifi = false;
+<<<<<<< HEAD
     #ifdef SIM_HANDSET_DATA
         //#define BIND_BUTTON_SIM_pin 10  // note: it should be better to move this to pins.h
         uint32_t test_time;
         uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
+=======
+   #ifdef SIM_HANDSET_DATA
+    uint32_t test_time;
+    uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
+>>>>>>> d0e03f3f72b05ef7f475a9203346aedbee8c4d35
                                          0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
                                          0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
                                          0x9C,0x19,0x81};
@@ -839,6 +845,10 @@ void loop()
     currentMicros = micros();
     remainMicros = callbackInterval - (currentMicros - expectedCallback);  // interval that remains before next call (value is updated in while())
     expectedCallback += callbackInterval;
+<<<<<<< HEAD
+=======
+
+>>>>>>> d0e03f3f72b05ef7f475a9203346aedbee8c4d35
     previousMicros = currentMicros ;
     while( remainMicros > 0)
     {
@@ -975,6 +985,7 @@ bool  ICACHE_RAM_ATTR Update_All()
         #endif
     
         #ifdef SIM_HANDSET_DATA
+<<<<<<< HEAD
             if((micros()- test_time) >= 7000){
                 test_time = micros();
                 rx_len = 27;
@@ -987,6 +998,20 @@ bool  ICACHE_RAM_ATTR Update_All()
                 #endif
                 RX_FLAG_on;
             }
+=======
+        if((micros()- test_time) >= 7000){
+        test_time = micros();
+        rx_len = 27;
+        memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
+        rx_ok_buff[26] |= 0x81;//protocol 128
+		 #ifdef BIND_BUTTON_SIM_pin && BIND_BUTTON_SIM_pin != -1
+        pinMode(BIND_BUTTON_SIM_pin,INPUT_PULLUP);
+        if(digitalRead(BIND_BUTTON_SIM_pin)==LOW)
+        rx_ok_buff[1] |= 0x80; //binding
+	     #endif
+        RX_FLAG_on;
+        }
+>>>>>>> d0e03f3f72b05ef7f475a9203346aedbee8c4d35
         #endif  
             yield();//feed WDT important
         
@@ -2019,7 +2044,6 @@ void modules_reset()
 #ifdef ESP8266_PLATFORM
     void ICACHE_RAM_ATTR SerialChannelsInit()
     {
-         pinMode(SX1280_RCSIGNAL_RX_pin,INPUT_PULLUP);
         Serial.flush(); 
         Serial.begin(100000, SERIAL_8E2); 
         USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal

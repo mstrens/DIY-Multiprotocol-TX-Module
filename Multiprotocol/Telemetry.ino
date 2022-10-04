@@ -466,7 +466,8 @@ RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7m
 				else
 				if((buffer[3]>>5)==2){
 				MiLoStats.uplink_Link_quality = buffer[2];
-				RX_LQI = MiLoStats.uplink_Link_quality;	
+				RX_LQI = MiLoStats.uplink_Link_quality;
+				TX_LQI = MiLoStats.downlink_Link_quality;
                  }
 			   struct t_FrSkyX_RX_Frame *p ;			   
 			    uint8_t count ;
@@ -898,8 +899,14 @@ void sportSendFrame()
 			frame[2] = 0xE0;
 			frame[3] = 0x52;//sensor RX SNR custom			
 			frame[4] = RX_LQI;
-			pass = 0;
+			pass = 3;
 			break;
+			case 3:
+			frame[0] = 0x1A;
+			frame[2] = 0xE1;
+			frame[3] = 0x52;//sensor RX SNR custom			
+			frame[4] = TX_LQI;
+			pass = 0;			
 			}
 		        }
 			else{
