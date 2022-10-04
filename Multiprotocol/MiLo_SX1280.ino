@@ -387,7 +387,8 @@
                             if (millis() - Now >= 50) {
                                 Now = millis();
                                 #ifndef BETAFPV_500
-                                    digitalWrite(LED_pin ,!digitalRead(LED_pin));
+                                    LED_toggle;
+                                    //digitalWrite(LED_pin ,!digitalRead(LED_pin));
                                 #endif
                             }
                         }

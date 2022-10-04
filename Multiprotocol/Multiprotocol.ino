@@ -372,7 +372,8 @@ void setup()
         // Wait up to 30s for a serial connection; double-blink the LED while we wait
         unsigned long currMillis = millis();
         unsigned long initMillis = currMillis;
-        pinMode(LED_pin,OUTPUT);
+        LED_output;
+        //pinMode(LED_pin,OUTPUT);
         LED_off;
         while (!Serial && (currMillis - initMillis) <= 30000) {
             LED_on;
@@ -533,9 +534,10 @@ void setup()
     #elif defined ESP_COMMON
         EEPROM.begin(EEPROM_SIZE);
         if(BIND_pin != -1)
-        pinMode(BIND_pin, INPUT_PULLUP);
-        if(LED_pin != -1)
-        pinMode(LED_pin, OUTPUT);
+            pinMode(BIND_pin, INPUT_PULLUP);
+        LED_output;
+        //if(LED_pin != -1)
+        //    pinMode(LED_pin, OUTPUT);
         pinMode(SX1280_RST_pin , OUTPUT);
         if(SX1280_BUSY_pin != -1)
             pinMode(SX1280_BUSY_pin ,INPUT);   
@@ -551,8 +553,8 @@ void setup()
             SX1280_RXEN_off;
         }
         if(SX1280_ANTENNA_SELECT_pin != -1){
-        pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
-        SX1280_ANTENNA_SELECT_on;
+            pinMode(SX1280_ANTENNA_SELECT_pin,OUTPUT);
+            SX1280_ANTENNA_SELECT_on;
         }   
     #else
         //ATMEGA328p
