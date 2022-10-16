@@ -143,7 +143,7 @@
     MiLo_rf_pref_params_s MiLo_AirRateRFperf[RATE_MAX] = {
         {0, RATE_LORA_150HZ,  -108,  5060, 3500, 2500},
         {1, RATE_LORA_100HZ,  -112,  7605, 3500, 2500}};
-    
+    // index , frame rate, sensitivity, time over the air , disconnect time out, Rx loxk time out)
     
     void  MiLo_SetRFLinkRate(uint8_t index) // Set speed of RF link (hz) index values
     {
@@ -289,10 +289,11 @@
         currOpmode = SX1280_MODE_SLEEP;     
         bool init_success = SX1280_Begin();
         if (!init_success) {           
-            debugln("Init of SX1280 failed");
-            return ;        
+            debugln("Init of SX1280 failed"); 
+            //return ;  // commented by mstrens       
         } 
-        else {
+        //else { //mstrens
+        {
             if(IS_BIND_IN_PROGRESS) {
                 while(!chanskip)
                     chanskip = random(0xfefefefe)%68;
@@ -321,12 +322,14 @@
             //SX1280_SetTxRxMode(TXRX_OFF);
             POWER_init();  // set power on min value.
             PayloadLength = MiLo_currAirRate_Modparams->PayloadLength;
+            debugln("end of milo_init; case= %d",state);
         }   
     }
-    
-    uint16_t ICACHE_RAM_ATTR MILO_callback()
+
+    uint16_t MILO_callback()
     {   // this function is called at regular interval by main loop and manage all time slots for sending and receiving RF on SX1280
-        uint16_t interval = MiLo_currAirRate_Modparams->interval;
+        uint16_t intervalMiloCallback;
+        intervalMiloCallback = MiLo_currAirRate_Modparams->interval;  
         static uint32_t upTLMcounter = 2;
         switch(state)
         {   
@@ -369,7 +372,7 @@
                 }
                 else    
                     state = MiLo_DATA1;
-                interval = SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
+                intervalMiloCallback = SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
                 break;
             #endif
             case MiLo_DATA1:
@@ -414,10 +417,11 @@
                     }
                 SX1280_WriteBuffer(0x00, packet,PayloadLength); //
                 SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise
-                SX1280_SetMode(SX1280_MODE_TX);         
+                SX1280_SetMode(SX1280_MODE_TX);
+                //debugln("start sending packet %d", packet_count);         
                 if (packet_count == 2){// next frame is RX downlink temetry
                     state = MiLo_DWLNK_TLM1;
-                    interval = 5400;
+                    intervalMiloCallback = 5400;
                     break;
                 }
                 else{
@@ -460,20 +464,21 @@
                 SX1280_WriteBuffer(0x00, packet, PayloadLength); 
                 SX1280_SetMode(SX1280_MODE_TX); 
                 state = MiLo_DWLNK_TLM1;// next frame is RX downlink temetry
-                interval = 5400;//
+                intervalMiloCallback = 5400;//
                 break;      
             case MiLo_DWLNK_TLM1://downlink telemetry
                 nextChannel(1);
                 SX1280_SetFrequencyReg(GetCurrFreq());
                 SX1280_SetTxRxMode(RX_EN);// do first to enable LNA
                 SX1280_SetMode(SX1280_MODE_RX);
+                //debugln("start receiving"); // mstrens
                 packet_count = (packet_count + 1)%3;
                 if(SportHead != SportTail)
                     upTLMcounter++; //increment using downlink TLM clock
                 else
                     upTLMcounter = 0;//reset counter
                 state = MiLo_DWLNK_TLM2;
-                interval = 7600;
+                intervalMiloCallback = 7600;
                 break;
             case MiLo_DWLNK_TLM2:
                 if(frameReceived)
@@ -486,11 +491,13 @@
                         LQICalc();
                         memset(&packet_in[0], 0, PayloadLength );               
                         frameReceived = false;
-                    }               
+                    }
+                    //debugln(" a frame has been received"); // mstrens
                 }
                 else{
                     miloSportStart = false;
                     ThisPacketDropped = 1;
+                    //debugln("no frame received within timeout");
                 }
                 #ifdef MILO_USE_LBT
                     if(LBTEnabled)        
@@ -498,10 +505,10 @@
                     else
                 #endif
                     state = MiLo_DATA1;
-                interval = 1000;        
+                intervalMiloCallback = 1000;        
         }       
-        debugln("case %d", state);
-        return interval;        
+        //debugln("   next state %d  at interval %d " , state , intervalMiloCallback );  // mstrens
+        return intervalMiloCallback;        
     }
     
     void ICACHE_RAM_ATTR dioISR()
@@ -674,6 +681,3 @@
 15- downlink telemetry
 
 */
-
-
-

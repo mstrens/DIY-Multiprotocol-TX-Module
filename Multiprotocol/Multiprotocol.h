@@ -496,7 +496,7 @@ enum MILO
 	MCH_8	        = 1,
 	MEU_16          = 2,
 	MEU_8           = 3,
-        WIFI_TX         = 4,
+    WIFI_TX         = 4,
 	WIFI_RX         = 5,
 };
 
@@ -681,12 +681,16 @@ enum MultiPacketTypes
 //********************
 //** Debug messages **
 //********************
-#if (defined (STM32_BOARD)||defined( ESP32_COMMON)) && (defined (DEBUG_SERIAL) || defined (ARDUINO_MULTI_DEBUG))
-	uint16_t debug_time=0;
+#if ( defined( ESP_COMMON) && ( defined (DEBUG_ESP8266) || defined (DEBUG_ESP32) )  )
+    #define DEBUG_ESP_COMMON
+#endif  
+#if (defined (STM32_BOARD) && (defined (DEBUG_SERIAL) || defined (ARDUINO_MULTI_DEBUG) ) ) || defined(DEBUG_ESP_COMMON) 
+  uint16_t debug_time=0;
 	char debug_buf[64];
 	#define debug(msg, ...)  { sprintf(debug_buf, msg, ##__VA_ARGS__); Serial.write(debug_buf);}
 	#define debugln(msg, ...)  { sprintf(debug_buf, msg "\r\n", ##__VA_ARGS__); Serial.write(debug_buf);}
-	#if defined( ESP32_COMMON)
+	#define debugDELAY(millisSec) {delay(millisSec);}
+	#if defined( DEBUG_ESP_COMMON)
 		#define debug_time(msg)  { uint32_t debug_time_TCNT1 = micros(); debug_time=debug_time_TCNT1-debug_time; debug(msg "%u", debug_time>>1); debug_time=debug_time_TCNT1; }
 		#define debugln_time(msg)  { uint32_t debug_time_TCNT1 = micros(); debug_time=debug_time_TCNT1-debug_time; debug(msg "%u\r\n", debug_time>>1); debug_time=debug_time_TCNT1; }
 	#else
@@ -698,6 +702,7 @@ enum MultiPacketTypes
 	#define debugln(...) { }
 	#define debugln_time(...) { }
 	#undef DEBUG_SERIAL
+    #define debugDELAY(...) { }
 #endif
 
 //********************
