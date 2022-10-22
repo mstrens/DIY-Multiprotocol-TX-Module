@@ -395,7 +395,7 @@ void setup()
             delay(500);
             currMillis = millis();
         }
-        debugDELAY(3000); // mstrens - increase delay in order to get all messages in IDE terminal
+        debugDELAY(2000); // mstrens - increase delay in order to get all messages in IDE terminal
         delay(250);  // Brief delay for FTDI debugging
         debugln("Multiprotocol version: %d.%d.%d.%d", VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_PATCH_LEVEL);
     #endif
@@ -694,7 +694,6 @@ void setup()
     LED_output;
     //Init RF modules
     modules_reset();
-    
     #if defined STM32_BOARD || defined  ESP_COMMON
         uint32_t seed=0;
         for(uint8_t i=0;i<4;i++)
@@ -715,7 +714,9 @@ void setup()
     MProtocol_id_master=random_id(EEPROM_ID_OFFSET,false);
 
     debugln("Module Id: %lx", MProtocol_id_master);
-
+    //Serial.println("Module ID:"); delay(100); // mstrens added because %lx did not works
+    //Serial.println(MProtocol_id_master); delay(100); // mstrens added because %lx did not works
+    //Serial.println("after mp id master"); delay(100); // mstrens added because %lx did not works
     #ifdef ENABLE_PPM
         //Protocol and interrupts initialization
         if(mode_select != MODE_SERIAL)
@@ -1681,7 +1682,7 @@ void ICACHE_RAM_ATTR update_serial_data()
         CHANGE_PROTOCOL_FLAG_on;                //change protocol
         WAIT_BIND_off;
         if((rx_ok_buff[1]&0x80)!=0 || IS_AUTOBIND_FLAG_on){
-            BIND_IN_PROGRESS;                   //launch bind right away if in autobind mode or bind is set
+            BIND_IN_PROGRESS;                   //launch bind right away if in autobind mode or bind is set 
         }    
         else
             BIND_DONE;
