@@ -1,8 +1,8 @@
 #ifdef MILO_SX1280_INO
     #pragma once
     
-    //#define DEBUG_FHSS
-    #define DEBUG_WITH_FIXED_FHSS
+    #define DEBUG_FHSS
+    //#define DEBUG_WITH_FIXED_FHSS
     
     //from mLRS
     //https://github.com/olliw42/mLRS/
@@ -267,7 +267,7 @@ void  Fhss_generate(uint32_t seed)//
         }
         */
         // we got a new ch, so register it
-        ch_list[k] = ch;//ch index
+        ch_list[k] = ch;
         fhss_list[k] = fhss_freq_list[ch];
         used_flag[ch] = true;
         used_synchro_flag[ch] = true;
@@ -277,9 +277,10 @@ void  Fhss_generate(uint32_t seed)//
             used_synchro_flag[sectionStartAt + i] = true;
         }
         // we mark the 7 adjacent channels as used to avoid having 2 synchro channels to close from each other
-        for ( uint8_t i = 0 ; i< 7; i++){}
-        if (ch > i) { used_synchro_flag[ch-i-1] = true;}
-        if (ch < (freq_list_len-i)) { used_synchro_flag[ch+i] = true;}
+        for ( uint8_t i = 0 ; i< 7; i++){
+            if (ch > i) { used_synchro_flag[ch-i-1] = true;}
+            if (ch < (freq_list_len-i)) { used_synchro_flag[ch+i] = true;}
+        }
         // count number of channels used in used_syncro_flag
         used_synchro_count = 0;
         for ( uint8_t i = 0 ; i < freq_list_len ; i++){

@@ -210,7 +210,7 @@
         }
         packet[0] |= (telemetry_counter<< 4); // 4 MSB are the next downlink tlm counter
         if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) {
-            packet[0] |=  0X04; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
+            packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
         }   
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];
@@ -279,7 +279,7 @@
         FrSkyX_send_sport(3 , PayloadLength - 1); // fill the sport data
         packet[0] = (telemetry_counter<<4) | (TLM_PACKET) ;
         if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) {
-            packet[0] |=  0X04; // add synchro flag (bit 3) when channel index is lower than the number of synchro channels
+            packet[0] |=  0X08; // add synchro flag (bit 3) when channel index is lower than the number of synchro channels
         }
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];  
