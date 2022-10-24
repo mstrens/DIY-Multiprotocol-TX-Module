@@ -369,6 +369,9 @@ void  Fhss_generate(uint32_t seed)//
     void ICACHE_RAM_ATTR nextChannel(uint8_t skip )  // note: !!!! this version is different from Milo Rx
     {
         curr_i  = (curr_i + skip)%cnt;
+        if ( curr_i < FHSS_SYNCHRO_CHANNELS_NUM) { // when the channel is one of the Syncro channels set flag on
+            digitalWrite(3,HIGH);delayMicroseconds(2); digitalWrite(3,LOW);//G3PULSE(2); // mstrens to see the synchro
+        }     
     }
 
 

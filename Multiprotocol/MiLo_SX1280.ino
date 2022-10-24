@@ -26,6 +26,22 @@
     #define RATE_150HZ 0 //150HZ
     #define RATE_MAX 3
     //#define MILO_USE_LBT
+
+
+    #ifdef DEBUG_ON_GPIO3
+        #define G3ON digitalWrite(3,HIGH)
+        #define G3OFF digitalWrite(3,LOW)
+        #define G3TOGGLE digitalWrite(3,!digitalRead(3))
+        #define G3PULSE(usec) digitalWrite(3,HIGH);delayMicroseconds(usec); digitalWrite(3,LOW)
+    #else
+        #define G3ON 
+        #define G3OFF 
+        #define G3TOGGLE 
+        #define G3PULSE(usec) 
+    #endif
+
+
+
     uint8_t TelemetryId;
     uint8_t TelemetryExpectedId;
     
@@ -209,9 +225,12 @@
             pass = ! pass;
         }
         packet[0] |= (telemetry_counter<< 4); // 4 MSB are the next downlink tlm counter
-        if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) {
+        if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) { // when the channel is one of the Syncro channels set flag on
             packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
-        }   
+            //G3ON;  // in debug on pulse mode on ES8266 set level HIGH for a synchro channel
+        } else {
+            //G3OFF;    // in debug, other reset to LOW
+        }  
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];
         packet[3] =  RX_num & 0x3F ;//max 64 values
@@ -278,9 +297,12 @@
     {
         FrSkyX_send_sport(3 , PayloadLength - 1); // fill the sport data
         packet[0] = (telemetry_counter<<4) | (TLM_PACKET) ;
-        if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) {
-            packet[0] |=  0X08; // add synchro flag (bit 3) when channel index is lower than the number of synchro channels
-        }
+        if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) { // when the channel is one of the Syncro channels set flag on
+            packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
+            //G3ON;  // in debug on pulse mode on ES8266 set level HIGH for a synchro channel
+        } else {
+            //G3OFF;    // in debug, other reset to LOW
+        } 
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];  
     }

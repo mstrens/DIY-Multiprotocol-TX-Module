@@ -108,6 +108,9 @@ static uint32_t random_id(uint16_t address, uint8_t create_new);
     #ifdef DEBUG_ESP8266
         #define SIM_HANDSET_DATA  // ESP8266 has only one UART. If UART Tx it is used for debuging, then UART Rx can't be used for reading handet; so we force simu mode
     #endif
+    #if defined( SIM_HANDSET_DATA ) && defined (DEBUG_ESP8266)
+        #define DEBUG_ON_GPIO3
+    #endif
     #if defined DEBUG_ESP_COMMON
         void callMicrosSerial(){
             static uint32_t tim = 0 ;
@@ -1951,7 +1954,11 @@ void modules_reset()
         usart3_begin(100000,SERIAL_8E2);        
     #elif defined (ESP_COMMON)
         #ifdef DEBUG_ESP8266
-           Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);   
+           Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
+           #ifdef DEBUG_ON_GPIO3
+               pinMode(3,OUTPUT);
+               digitalWrite(3, LOW);
+           #endif   
         #else
             SerialChannelsInit();
             SportSerialInit();//only transmitting ,inverted
