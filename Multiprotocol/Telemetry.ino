@@ -141,7 +141,6 @@ static void telemetry_set_input_sync(uint16_t refreshRate)
 static void multi_send_status()  //provide Multiprotocol status to handset (on regular basis-500ms)
 {
     if(protocol == 0) return;
-    Serial.println("MP3456789012345678901234");return; // mstrens test to see if sending 24 bytes changes the interval in loop(): result is that increase is very limitted 5 usec?
     multi_send_header(MULTI_TELEMETRY_STATUS, 24);
 
     // Build flags

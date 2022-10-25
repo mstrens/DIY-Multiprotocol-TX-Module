@@ -229,7 +229,7 @@
             packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
             //G3ON;  // in debug on pulse mode on ES8266 set level HIGH for a synchro channel
         } else {
-            //G3OFF;    // in debug, other reset to LOW
+            G3OFF;    // in debug, other reset to LOW
         }  
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];
@@ -316,9 +316,8 @@
         bool init_success = SX1280_Begin();
         if (!init_success) {           
             debugln("Init of SX1280 failed"); delay(100); 
-            while(1) {} //return ;  // return commented by mstrens and replaced by a while       
+            while(1) {} // This line can be commented when we want to test without a SX1280        
         } 
-        //else { //mstrens
         {
             if(IS_BIND_IN_PROGRESS) {
                 while(!chanskip)
@@ -327,7 +326,6 @@
                 is_in_binding = true;
                 MiLo_SetRFLinkRate(RATE_BINDING);
                 state = MiLo_BIND;
-                debugln("State = Milo_BIND"); // mstrens to debug simu bind button - normaly we do not go here
             }
             else {
                 packet_count = 0;
@@ -349,7 +347,7 @@
             //SX1280_SetTxRxMode(TXRX_OFF);
             POWER_init();  // set power on min value.
             PayloadLength = MiLo_currAirRate_Modparams->PayloadLength;
-            debugln("end of milo_init; case= %d",state); // mstrens to debug simu bind button
+            debugln("end of milo_init; case= %d",state); 
         }   
     }
 
@@ -495,11 +493,8 @@
                 intervalMiloCallback = 5400;//
                 break;      
             case MiLo_DWLNK_TLM1://downlink telemetry
-                nextChannel(1);
-                SX1280_SetFrequencyReg(GetCurrFreq());
                 SX1280_SetTxRxMode(RX_EN);// do first to enable LNA
                 SX1280_SetMode(SX1280_MODE_RX);
-                //debugln("start receiving"); // mstrens
                 packet_count = (packet_count + 1)%3;
                 if(SportHead != SportTail)
                     upTLMcounter++; //increment using downlink TLM clock
@@ -520,12 +515,10 @@
                         memset(&packet_in[0], 0, PayloadLength );               
                         frameReceived = false;
                     }
-                    //debugln(" a frame has been received"); // mstrens
                 }
                 else{
                     miloSportStart = false;
                     ThisPacketDropped = 1;
-                    //debugln("no frame received within timeout");
                 }
                 #ifdef MILO_USE_LBT
                     if(LBTEnabled)        
@@ -535,7 +528,6 @@
                     state = MiLo_DATA1;
                 intervalMiloCallback = 1000;        
         }       
-        //debugln("   next state %d  at interval %d " , state , intervalMiloCallback );  // mstrens
         return intervalMiloCallback;        
     }
     

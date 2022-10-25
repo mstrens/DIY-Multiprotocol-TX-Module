@@ -398,8 +398,7 @@ void setup()
             delay(500);
             currMillis = millis();
         }
-        debugDELAY(2000); // mstrens - increase delay in order to get all messages in IDE terminal
-        delay(250);  // Brief delay for FTDI debugging
+        debugDELAY(2000); // delay in order to get all messages in IDE terminal
         debugln("Multiprotocol version: %d.%d.%d.%d", VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_PATCH_LEVEL);
     #endif
 
@@ -717,9 +716,7 @@ void setup()
     MProtocol_id_master=random_id(EEPROM_ID_OFFSET,false);
 
     debugln("Module Id: %lx", MProtocol_id_master);
-    //Serial.println("Module ID:"); delay(100); // mstrens added because %lx did not works
-    //Serial.println(MProtocol_id_master); delay(100); // mstrens added because %lx did not works
-    //Serial.println("after mp id master"); delay(100); // mstrens added because %lx did not works
+    //Serial.print("Module ID:"); Serial.println(MProtocol_id_master); // mstrens added because %lx did not works
     #ifdef ENABLE_PPM
         //Protocol and interrupts initialization
         if(mode_select != MODE_SERIAL)
@@ -1015,18 +1012,14 @@ bool  ICACHE_RAM_ATTR Update_All()
                 RX_FLAG_on;
             }
         #endif  
-            //debugStartMicros(4); // mstrens used to debug the time in update_all
             yield();//feed WDT important
-            //if (debugIntervalSinceStart(4) > 50) { Serial.print("Y");Serial.println(debugIntervalSinceStart(4));} //mstrens mesure the time in update_all
             
         if(mode_select==MODE_SERIAL && IS_RX_FLAG_on)       // Serial mode and a full frame has been received
         {   
-            //debugStartMicros(3); // mstrens used to debug the time in update_all
             update_serial_data();                           // Update protocol and data
             update_channels_aux();                          // update channels
             INPUT_SIGNAL_on;                                //valid signal received from handset
             last_signal=millis();
-            //if (debugIntervalSinceStart(3) > 50) { Serial.print("U");Serial.println(debugIntervalSinceStart(3));} //mstrens mesure the time in update_all
         }
     #endif //ENABLE_SERIAL
     #ifdef ENABLE_PPM
@@ -1106,9 +1099,7 @@ bool  ICACHE_RAM_ATTR Update_All()
         }
         else
     #endif
-    //debugStartMicros(1); // mstrens used to debug the time in update_all
     Update_Telem();
-    //if (debugIntervalSinceStart(1) > 100) { Serial.print("T");Serial.println(debugIntervalSinceStart(1));} //mstrens mesure the time in update_all
     
     #ifdef ENABLE_BIND_CH
         if(IS_AUTOBIND_FLAG_on && IS_BIND_CH_PREV_off && Channel_data[BIND_CH-1]>CHANNEL_MAX_COMMAND)
