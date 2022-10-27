@@ -447,6 +447,20 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process data coming
         telemetry_lost = 0;
         //FrSkyX_RX_Frames[0].valid = false ;
         TelemetryId = (buffer[3])&0X0F ;//telemetry uplink counter is in the 4 LSB bits    
+        #define DEBUG_DOWNLINK 
+        #ifdef DEBUG_DOWNLINK
+            digitalWrite(3,HIGH); delayMicroseconds(5); digitalWrite(3,LOW);  
+            debug("Dwnlnk rec %d   exp %d  : ",  (buffer[3] >> 4) & 0x0F , telemetry_counter & 0x0F ) ;
+            Serial.print( buffer[0], HEX) ; Serial.print(";");
+            Serial.print( buffer[1], HEX) ; Serial.print(";");
+            Serial.print( buffer[2], HEX) ; Serial.print(";");
+            Serial.print( buffer[3], HEX) ; Serial.print(";");
+            Serial.print( buffer[4], HEX) ; Serial.print(";");
+            for (uint8_t i= 0; i < (buffer[0] >> 4);  i++){
+               Serial.print( buffer[5+i], HEX) ; Serial.print(";"); 
+            }
+            Serial.println(" ");
+        #endif
         if (( (buffer[3] >> 4) & 0x0F ) == (telemetry_counter & 0x0F))//Check downlink telemetry sequence
         {//Sequence is ok
             miloSportStart = true;
