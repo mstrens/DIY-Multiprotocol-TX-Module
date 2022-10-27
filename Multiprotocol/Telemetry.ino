@@ -443,14 +443,14 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process data coming
     14.Sport data byte10; 15 bytes payload;10 bytes sport telemetry
 */
     if (protocol == PROTO_MILO)
-    {   // here we process a frame downlink tlm frame being received 
+    {   // here we process a downlink tlm frame being received 
         telemetry_lost = 0;
         //FrSkyX_RX_Frames[0].valid = false ;
         TelemetryId = (buffer[3])&0X0F ;//telemetry uplink counter is in the 4 LSB bits    
-        if (( (buffer[3] >> 4) & 0x0F ) == (telemetry_counter & 0x1F))//Check downlink telemetry sequence
+        if (( (buffer[3] >> 4) & 0x0F ) == (telemetry_counter & 0x0F))//Check downlink telemetry sequence
         {//Sequence is ok
             miloSportStart = true;
-            telemetry_counter =  (telemetry_counter+1)&0x1F ;
+            telemetry_counter =  (telemetry_counter+1)&0x0F ;
             uint8_t linkDataType = buffer[0] & 0x03 ; 
             if(linkDataType == TLM_DATA_TYPE_RSSI)
             {
