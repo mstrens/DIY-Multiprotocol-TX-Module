@@ -40,7 +40,9 @@
         #define G3PULSE(usec) 
     #endif
 
-
+    #define DEBUG_UNUSED_TX_SLOTS // when activated, it is possible to skip some consecutive channels (e.g. to test synchro TX-RX)
+    #define DEBUG_SKIP_TX_FROM_CHANNEL 10 // lower index 
+    #define DEBUG_SKIP_TX_UPTO_CHANNEL 20 // upper index
 
     uint8_t TelemetryId;
     uint8_t TelemetryExpectedId;
@@ -418,10 +420,17 @@
                         if(!ChannelIsClear()) SX1280_SetOutputPower(MinPower);
                     }
                 #endif  
+                #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
+                    if ( (getCurrentChannelIdx() <  DEBUG_SKIP_TX_FROM_CHANNEL) && (getCurrentChannelIdx() >  DEBUG_SKIP_TX_FROM_CHANNEL) ) {
+                #endif
                 MiLo_data_frame();
                 SX1280_WriteBuffer(0x00, packet,PayloadLength); //
                 SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise
                 SX1280_SetMode(SX1280_MODE_TX);
+                #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
+                    }
+                #endif
+                
                 //debugln("start sending packet %d", packet_count);         
                 if (packet_count == 2){// next frame is RX downlink temetry
                     state = MiLo_DWLNK_TLM1;
@@ -448,9 +457,15 @@
                         if(!ChannelIsClear()) SX1280_SetOutputPower(MinPower);
                     }
                 #endif
+                #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
+                    if ( (getCurrentChannelIdx() <  DEBUG_SKIP_TX_FROM_CHANNEL) && (getCurrentChannelIdx() >  DEBUG_SKIP_TX_FROM_CHANNEL) ) {
+                #endif
                 MiLo_Telemetry_frame();
                 SX1280_WriteBuffer(0x00, packet, PayloadLength); 
                 SX1280_SetMode(SX1280_MODE_TX); 
+                #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
+                    }
+                #endif
                 state = MiLo_DWLNK_TLM1;// next frame is RX downlink temetry
                 intervalMiloCallback = 5400;//
                 break;      
