@@ -120,7 +120,6 @@
         TLM_RATIO_1_4 = 4,
     };
     
-    
     //RF PARAMETRS
     typedef struct MiLo_mod_settings_s
     {
@@ -235,7 +234,7 @@
         packet[2] = rx_tx_addr[2];
         packet[3] =  RX_num & 0x3F ;//max 64 values
         if ( packet_count == 2) packet[3] |=  0x80 ; //when next packet will be a downlink, then mark it
-        if (sub_protocol == WIFI_RX) packet[3] | 0x40;//trigger WiFi updating firmware for RX
+        if (sub_protocol == WIFI_RX) packet[3] |= 0x40;//trigger WiFi updating firmware for RX
         uint16_t (*ch) (uint8_t) = &convert_channel_ppm;
         packet[4] = (*ch)(0+j)&0XFF ;
         packet[5] = (*ch)(0+j)>>8 | ((*ch)(1+j)&0xFF)<<3;
@@ -509,8 +508,9 @@
                     uint8_t const FIFOaddr = SX1280_GetRxBufferAddr();
                     SX1280_ReadBuffer(FIFOaddr, packet_in, PayloadLength);
                     if((packet_in[1] == rx_tx_addr[3])&&packet_in[2] == rx_tx_addr[2]){   // check it is a frame for the right handset 
-                        SX1280_GetLastPacketStats();
-                        frsky_process_telemetry(packet_in, PayloadLength);//check if valid telemetry packets
+                        SX1280_GetLastPacketStats();     // read SX1280 to get LastPacketRSSI and LastPacketSNR
+                        telemetry_link|=1;               // Telemetry data is available
+                        frsky_process_telemetry(packet_in, PayloadLength); //check if valid telemetry packets
                         LQICalc();
                         memset(&packet_in[0], 0, PayloadLength );               
                         frameReceived = false;
@@ -575,9 +575,6 @@
         }   
     }
 #endif
-
-
-
 /*
     Protocol description:
     2.4Ghz LORA modulation
