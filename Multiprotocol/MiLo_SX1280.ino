@@ -57,8 +57,9 @@
     uint8_t chanskip = 0;
     bool frameReceived = false;
     uint8_t frameType = 0;
-    extern bool LBTEnabled;
+    bool LBTEnabled = false;
     bool LBTStarted = false;
+  	uint8_t LBTdelay = 0;
     uint32_t miloSportTimer = 0;
     bool miloSportStart = false;
     uint8_t ThisPacketDropped ;
@@ -96,9 +97,6 @@
         MiLo_UPLNK_TLM,
         MiLo_DWLNK_TLM1,
         MiLo_DWLNK_TLM2,
-        #ifdef MILO_USE_LBT
-            MiLo_USE_LBT
-        #endif
     };
     
     enum{
@@ -335,12 +333,10 @@
                 MiLo_SetRFLinkRate(RATE_150HZ);
                 #ifdef MILO_USE_LBT
                     if(sub_protocol == MEU_16 || sub_protocol == MEU_8){       
-                        state = MiLo_USE_LBT;
                         LBTEnabled = true;
-                    }
-                    else 
+                    } 
                 #endif
-                    state = MiLo_DATA1;
+                state = MiLo_DATA1;
                 MiLo_telem_init(); // initialise variables (flags) used by telemetry depending of SPORT_SEND and TELEMETRY
             }
             //SX1280_SetTxRxMode(TXRX_OFF);
@@ -354,6 +350,9 @@
     {   // this function is called at regular interval by main loop and manage all time slots for sending and receiving RF on SX1280
         uint16_t intervalMiloCallback;
         intervalMiloCallback = MiLo_currAirRate_Modparams->interval;  
+   		#ifdef MILO_USE_LBT
+          	LBTdelay = SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
+        #endif
         static uint32_t upTLMcounter = 2;
         switch(state)
         {   
@@ -376,29 +375,11 @@
                 BIND_DONE;
                 #ifdef MILO_USE_LBT
                     if(sub_protocol == MEU_16 || sub_protocol == MEU_8) {       
-                        state = MiLo_USE_LBT;
                         LBTEnabled = true;
                     }
-                    else
                 #endif
-                    state = MiLo_DATA1;
+                state = MiLo_DATA1;
                 break;
-            #ifdef MILO_USE_LBT
-            case MiLo_USE_LBT:
-                packet_count = (packet_count + 1)%3;
-                SX1280_SetOutputPower(MaxPower);
-                nextChannel(1);
-                SX1280_SetFrequencyReg(GetCurrFreq());
-                BeginClearChannelAssessment();
-                if(LBTStarted) {
-                    LBTStarted = false;
-                    state = MiLo_UPLNK_TLM;
-                }
-                else    
-                    state = MiLo_DATA1;
-                intervalMiloCallback = SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
-                break;
-            #endif
             case MiLo_DATA1:
                 #ifdef ESP_COMMON
                     static uint32_t Now = millis();
@@ -424,22 +405,20 @@
                         break;
                     }
                 #endif
+                packet_count = (packet_count + 1)%3;
+                nextChannel(1);
+                SX1280_SetFrequencyReg(GetCurrFreq());    
+                SX1280_SetOutputPower(MaxPower);
                 #ifdef MILO_USE_LBT
-                    if (LBTEnabled){
-                        if(!ChannelIsClear())
-                            SX1280_SetOutputPower(MinPower);
-                        MiLo_data_frame();      
+                    if (LBTEnabled)
+                    { 
+                        SX1280_SetTxRxMode(RX_EN);// LBTmode - BeginClearChannelAssessment
+                        SX1280_SetMode(SX1280_MODE_RX);//start RX mode in order to get RSSI 				
+                        delayMicroseconds(LBTdelay);		
+                        if(!ChannelIsClear()) SX1280_SetOutputPower(MinPower);
                     }
-                    else
                 #endif  
-                    {   
-                        SX1280_SetOutputPower(MaxPower);
-                        packet_count = (packet_count + 1)%3;
-                        nextChannel(1);
-                        SX1280_SetFrequencyReg(GetCurrFreq());
-                        MiLo_data_frame();
-                        
-                    }
+                MiLo_data_frame();
                 SX1280_WriteBuffer(0x00, packet,PayloadLength); //
                 SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise
                 SX1280_SetMode(SX1280_MODE_TX);
@@ -449,43 +428,27 @@
                     intervalMiloCallback = 5400;
                     break;
                 }
-                else{
-                    if(SportHead != SportTail && upTLMcounter == 2){//next frame in uplink telemetry
-                        #ifdef MILO_USE_LBT
-                            if(LBTEnabled)
-                            {       
-                                state = MiLo_USE_LBT;
-                                LBTStarted = true;
-                            }
-                            else
-                        #endif      
-                            state = MiLo_UPLNK_TLM;
-                        upTLMcounter  = 0;//reset uplink telemetry counter
-                        break;
-                    }       
-                }
-                #ifdef MILO_USE_LBT
-                    if(LBTEnabled)       
-                        state = MiLo_USE_LBT;
-                    else
-                #endif  
-                        state = MiLo_DATA1; 
+                else if(SportHead != SportTail && upTLMcounter == 2){//next frame is uplink telemetry
+                    state = MiLo_UPLNK_TLM;
+                    upTLMcounter  = 0;//reset uplink telemetry counter
+                    break;
+                }       
+                state = MiLo_DATA1; 
                 break;      
             case MiLo_UPLNK_TLM:    //Uplink telemetry
+                packet_count = (packet_count + 1)%3;
+                nextChannel(1);
+                SX1280_SetFrequencyReg(GetCurrFreq());    
+                SX1280_SetOutputPower(MaxPower);
                 #ifdef MILO_USE_LBT
                     if (LBTEnabled) {
-                        if(!ChannelIsClear())
-                            SX1280_SetOutputPower(MinPower);
-                        MiLo_Telemetry_frame();     
+                        SX1280_SetTxRxMode(RX_EN);// LBTmode - BeginClearChannelAssessment
+                        SX1280_SetMode(SX1280_MODE_RX);//start RX mode in order to get RSSI 				
+                        delayMicroseconds(LBTdelay);		
+                        if(!ChannelIsClear()) SX1280_SetOutputPower(MinPower);
                     }
-                    else
                 #endif
-                    {   
-                        packet_count = (packet_count + 1)%3;    
-                        MiLo_Telemetry_frame();
-                        nextChannel(1);
-                        SX1280_SetFrequencyReg(GetCurrFreq());
-                    }
+                MiLo_Telemetry_frame();
                 SX1280_WriteBuffer(0x00, packet, PayloadLength); 
                 SX1280_SetMode(SX1280_MODE_TX); 
                 state = MiLo_DWLNK_TLM1;// next frame is RX downlink temetry
@@ -520,14 +483,10 @@
                     miloSportStart = false;
                     ThisPacketDropped = 1;
                 }
-                #ifdef MILO_USE_LBT
-                    if(LBTEnabled)        
-                        state = MiLo_USE_LBT;
-                    else
-                #endif
-                    state = MiLo_DATA1;
-                intervalMiloCallback = 1000;        
-        }       
+                state = MiLo_DATA1;
+                intervalMiloCallback = 1000;
+                break;        
+        } // end switch       
         return intervalMiloCallback;        
     }
     
@@ -574,7 +533,65 @@
             DropHistorySend = 0 ;
         }   
     }
+
+    uint32_t ICACHE_RAM_ATTR SpreadingFactorToRSSIvalidDelayUs(uint8_t SF)
+    {
+    // The necessary wait time from RX start to valid instant RSSI reading
+    // changes with the spreading factor setting.
+    // The worst case necessary wait time is TX->RX switch time + Lora symbol time
+    // This assumes the radio switches from either TX, RX or FS (Freq Synth mode)
+    // TX to RX switch time is 60us for sx1280
+    // Lora symbol time for the relevant spreading factors is:
+    // SF5: 39.4us
+    // SF6: 78.8us
+    // SF7: 157.6us
+    // SF9: 630.5us
+    // However, by measuring when the RSSI reading is stable and valid, it was found that
+    // actual necessary wait times are:
+    // SF5 ~100us (60us + SF5 symbol time)
+    // SF6 ~141us (60us + SF6 symbol time)
+    // SF7 ~218us (60us + SF7 symbol time)
+    // SF9 ~218us (Odd one out, measured to same as SF7 wait time)
+
+        switch(SF) {
+            case SX1280_LORA_SF5: return 100;
+            case SX1280_LORA_SF6: return 141;
+            case SX1280_LORA_SF7: return 218;
+            case SX1280_LORA_SF9: return 218;
+            default: return 218; // Values above 100mW are not relevant, default to 100mW threshold
+        }
+    }	
+        
+    bool ICACHE_RAM_ATTR ChannelIsClear(void)
+    {
+    // Calculated from EN 300 328, adjusted for 800kHz BW for sx1280
+    // TL = -70 dBm/MHz + 10*log10(0.8MHz) + 10 × log10 (100 mW / Pout) (Pout in mW e.i.r.p.)
+    // This threshold should be offset with a #define config for each HW that corrects for antenna gain,
+    // different RF frontends.
+    // TODO: Maybe individual adjustment offset for differences in
+    // rssi reading between bandwidth setting is also necessary when other BW than 0.8MHz are used.
+
+    // Read rssi after waiting the minimum RSSI valid delay.
+    // If this function is called long enough after RX enable,
+    // this will always be ok on first try as is the case for TX.
+
+    // TODO: Better way than busypolling this for RX?
+    // this loop should only run for RX, where listen before talk RX is started right after FHSS hop
+    // so there is no dead-time to run RX before telemetry TX is supposed to happen.
+    // if flipping the logic, so telemetry TX happens right before FHSS hop, then TX-side ends up with polling here instead?
+    // Maybe it could be skipped if there was only TX of telemetry happening when FHSShop does not happen.
+    // Then RX for LBT could stay enabled from last received packet, and RSSI would be valid instantly.
+    // But for now, FHSShops and telemetry rates does not divide evenly, so telemetry will some times happen
+    // right after FHSS and we need wait here.
+
+        int8_t rssiInst = SX1280_GetRssiInst(); 
+        SX1280_SetMode(SX1280_MODE_FS);//SX1280_SetTxIdleMode();
+        bool channelClear = rssiInst < -71;//// TL = -70 dBm/MHz + 10*log10(0.8MHz) + 10 × log10 (100 mW / Pout) (Pout in mW e.i.r.p.)
+        return channelClear;
+    }			
+
 #endif
+
 /*
     Protocol description:
     2.4Ghz LORA modulation
