@@ -21,7 +21,7 @@
     along with Multiprotocol.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define DEBUG_ESP8266  // must be defined before Multiprotocol.h in order to define debugln() etc...
+//#define DEBUG_ESP8266  // must be defined before Multiprotocol.h in order to define debugln() etc...
     //#define DEBUG_ESP32
 #include "Multiprotocol.h"
     
@@ -34,10 +34,10 @@
     //#define HM_ES24TX //
 #endif
 #ifdef ESP8266_PLATFORM
-    //#define BETA_FPV_RX_NANO //or clone
+    #define BETA_FPV_RX_NANO //or the Cycloon clone 
     //#define MATEK_RX_R24D
     //#define DIY_RX //use RX as TX(diversity) no PA/LNA
-    #define ESP8266_E28_2G4M20S
+    //#define ESP8266_E28_2G4M20S
 #endif
 #ifdef STM32_BOARD
     /* ICACHE_RAM_ATTR1 is always linked into RAM */
