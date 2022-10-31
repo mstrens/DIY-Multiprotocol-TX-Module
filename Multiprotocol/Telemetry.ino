@@ -386,132 +386,113 @@ void frskySendStuffed()  // send a Frsky frame to handset with first a start byt
     Serial_write(START_STOP);
 }
 
-#if defined(MILO_SX1280_INO)
-/*
-# RX downlink telemetry frame sent separate at a fixed rate of 1:3;frame rate 7ms.	
-    0. - bits 7...4 : No. of bytes in sport frame(4 bits)
-       - bits 3...2 : unused (2 bits) 
-       - bitss 1...0 : type of link data packet(RSSI/SNR /LQI) (2 bits= 3 values currently) 
-    1.txid1
-    2.txid2
-    3.  - bits 7...4 : current downlink tlm counter (4 bits); when received TX should send this counter + 1
-        - bits 3...0 : last uplink tlm counter received(4 bits)
-    4.RSSI/LQI/SNR alternate every ~80 ms update for each data
-    5.Sport data byte1
-    6.Sport data byte2
-    7.Sport data byte3
-    8.Sport data byte4
-    9.Sport data byte5
-    10.Sport data byte6
-    11.Sport data byte7;
-    12.Sport data byte8;
-    13.Sport data byte9
-    14.Sport data byte10; 15 bytes payload;10 bytes sport telemetry
-*/
+#define PHID_LINK_QUALITY 0X1E
+#define PHID_NO_DATA      0X1F
+    
+#define CRCBIT(x, index) (((x) >> index) & 0x01)
+uint8_t getPhid(uint8_t physicalId)
+{
+  uint8_t result = physicalId;
+  result += (CRCBIT(physicalId, 0) ^ CRCBIT(physicalId, 1) ^ CRCBIT(physicalId, 2)) << 5;
+  result += (CRCBIT(physicalId, 2) ^ CRCBIT(physicalId, 3) ^ CRCBIT(physicalId, 4)) << 6;
+  result += (CRCBIT(physicalId, 0) ^ CRCBIT(physicalId, 2) ^ CRCBIT(physicalId, 4)) << 7;
+  return result;
+}
 
-
-
-#endif
+uint8_t getPrim( uint8_t shortPrim ) {  // convert 2 bits (0=> 0X30, 1=>0X31, 2=>0X32, 3= 0X10)
+    if ( shortPrim <= 2) return shortPrim + 0X30;
+    return 0X10;
+}
 
 bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process data coming from the RF link
 {    
     #if defined(MILO_SX1280_INO)
         if(protocol == PROTO_MILO) { 
-            // process the incomming sport data (received in packet_in[0] + packet_in[5...14])
-            // a downlink tlm frame can have RSSI/LINKQ/SNR + max 10 of unstuffed data; so it can contains parts of 2 sets of data)
-            // One set of Sport data contains 8 bytes (no start, no stuffing, no CRC)
-            // The 8 bytes are PHID,PRIM,ID1,ID2,VAL1,VAL2,VAL3,VAL4    
-            uint8_t linkDataType = buffer[0] & 0x03 ;  // the 4 LSB identifies the type of link data (RSSI/SNR/LNKQ)
-            uint8_t caseSport = buffer[0] >> 4; // take the 4 MSB to identify how the sport payload is filled
-            uint8_t firstBytes = bytesToAddFirst[caseSport] ; // number of bytes in first (remaining) part of sport payload
-            uint8_t nextBytes = bytesToAddNext[caseSport] ; // number of bytes in second part of sport payload
+/*
+    # RX downlink telemetry frame sent separate at a fixed rate of 1:3;frame rate 7ms. Can contain 2 Sport frame 
+    0. - bits 7...2 : MSB of TXID1 (6 bits)
+       - bits 1...0 : current downlink tlm counter (2 bits); when received TX should send this counter + 1type of link data packet(RSSI/SNR /LQI) (2 bits= 3 values currently) 
+    1. - bits 7...2 : MSB of TXID2 (6 bits)
+       - bits 1...0 : last upllink tlm counter received (2 bits); 
+    2. - bit 7 : reserve
+         bits 6..5 : recodified PRIM from sport frame1 (0X30=>0, 0X31=>1,0X32=>2, 0X10=>0)
+         bits 4..0 : PHID from sport frame1 (5 bits using a mask 0X1F; 0X1F = no data; 0X1E = link quality data)
+    3. - bit 7 : reserve
+         bits 6..5 : recodified PRIM from sport frame2 (0X30=>0, 0X31=>1,0X32=>2, 0X10=>0)
+         bits 4..0 : PHID from sport frame2 (5 bits using a mask 0X1F; 0X1F = no data; 0X1E = link quality data)
+    4. field ID1 from sport frame1   (can be RSSI)
+    5. field ID2 from sport frame1   (can be SNR) 
+    6...9. Value from sport frame1 (4 bytes) (can be LINKQ + missingPacket) 
+    10. field ID1 from sport frame2
+    11. field ID2 from sport frame2
+    12...15. Value from sport frame2 (4 bytes)
+*/
+
+            // process the incomming sport data (received in packet_in[0...15])
+            // a downlink tlm frame can can contains parts of 2 sets of data (no stuffing, CRC, ...)
+            // for each data set we must "rebuid" 8 bytes: PHID,PRIM,ID1,ID2,VAL1,VAL2,VAL3,VAL4    
+            uint8_t idx; // position of first byte to write in pktx1[]
+            telemetry_link|=1;                              // Telemetry data is available
             telemetry_lost = 0;  // a tlm frame has been received
-            TelemetryId = buffer[3] & 0X0F ;// save telemetry uplink counter (is in the 4 LSB bits)    
+            uplnkTlmId = buffer[1] & 0X03 ;// save telemetry uplink counter (is in the 2 LSB bits)    
             #define DEBUG_DOWNLINK 
             #ifdef DEBUG_DOWNLINK
                 digitalWrite(3,HIGH); delayMicroseconds(5); digitalWrite(3,LOW);  
-                debug("Dwnlnk rec %d   exp %d  : ",  (buffer[3] >> 4) & 0x0F , telemetry_counter & 0x0F ) ;
-                Serial.print( buffer[0], HEX) ; Serial.print(";");
-                Serial.print( buffer[1], HEX) ; Serial.print(";");
-                Serial.print( buffer[2], HEX) ; Serial.print(";");
-                Serial.print( buffer[3], HEX) ; Serial.print(";");
-                Serial.print( buffer[4], HEX) ; Serial.print(";");
-                for (uint8_t i= 0; i < (buffer[0] >> 4);  i++){
-                    Serial.print( buffer[5+i], HEX) ; Serial.print(";"); 
+                debug("Dwnlnk rec %d   exp %d  : ",  buffer[0] & 0x03 , telemetry_counter & 0x03 ) ;
+                for (uint8_t i= 0; i < 16;  i++){
+                    Serial.print( buffer[i], HEX) ; Serial.print(";"); 
                 }
                 Serial.println(" ");
             #endif
-            if (( (buffer[3] >> 4) & 0x0F ) == (telemetry_counter & 0x0F))//Check downlink telemetry sequence
+            if ( (buffer[0]  & 0x03 ) == (telemetry_counter & 0x03))//Check downlink telemetry sequence
             {//Sequence is ok
                 miloSportStart = true;
-                telemetry_counter = (telemetry_counter+1) & 0x0F ;
-                if(linkDataType == TLM_DATA_TYPE_RSSI)
-                {
+                telemetry_counter = (telemetry_counter+1) & 0x03 ;
+                if ( ( buffer[2] & 0X1F ) == PHID_LINK_QUALITY ){
+                    // manage RSSI
                     MiLoStats.uplink_RSSI_1 = buffer[4];    
                     RX_RSSI = signal_quality_perc_quad(MiLoStats.uplink_RSSI_1,10,113);//RSSI% quadratic formula conversion 
                     if(LastPacketRSSI < 0)
                         MiLoStats.downlink_RSSI = -LastPacketRSSI;
                     TX_RSSI = signal_quality_perc_quad(MiLoStats.downlink_RSSI,10,113); 
-                }
-                else
-                if(linkDataType == TLM_DATA_TYPE_SNR)
-                {
-                    MiLoStats.uplink_SNR = buffer[4];
-                    RX_SNR = buffer[4];
+                    // manage SNR
+                    MiLoStats.uplink_SNR = buffer[5];
+                    RX_SNR = buffer[5];
                     TX_SNR = LastPacketSNR;
-                }
-                else
-                if(linkDataType == TLM_DATA_TYPE_LQ)
-                {
-                    MiLoStats.uplink_Link_quality = buffer[4];
+                    // manage link quality
+                    MiLoStats.uplink_Link_quality = buffer[6];
                     RX_LQI = MiLoStats.uplink_Link_quality;
                     TX_LQI = MiLoStats.downlink_Link_quality;
-                }
-                // process the sport payload (store full set of data into pktx1[] and update Sport_Data + remainning )  
-                if ( remainingBytes && (firstBytes == 8)) remainingBytes = 0 ; // discard remaining if first part concern a full set of data
-                if ( ( remainingBytes + firstBytes) == 8)
-                { // handle remaining part only if remaining + first part == 8 bytes
-                    memcpy( &remaining[remainingBytes] , &buffer[5],  firstBytes); // we get 8 byte in remaining
-                    if ( Sport_Data < FX_BUFFERS) 
-                    { // if there is still place
-                        memcpy( &pktx1[Sport_Data * FRSKY_SPORT_PACKET_SIZE ],  &remaining[0] , 8); // add remaining to pktx1[] which contains max 4 * 8 bytes
+                } else if ( ( buffer[2] & 0X1F ) < 0X1B ) { // first part is filled with sensor data 
+                    if ( Sport_Data < FX_BUFFERS) { // pktx1 is not full
+                        idx = Sport_Data * FRSKY_SPORT_PACKET_SIZE;
+                        pktx1[idx] = getPhid( buffer[3] & 0X1F);    // PHID
+                        pktx1[idx+1] = getPrim( (buffer[3] >> 5) & 0X03 ) ; // convert 2 bits (0=> 0X30, 1=>0X31, 2=>0X32, 3= 0X10)
+                        memcpy(&pktx1[idx+2] , &buffer[10], 6);  // ID1+ID2+4 bytes for values
                         Sport_Data++;
-                    }    
-                }
-                remainingBytes = nextBytes; 
-                if ( nextBytes)
-                {
-                    if ( nextBytes == 8) 
-                    { // special case where ce can add the 8 bytes immediately
-                        if ( Sport_Data < FX_BUFFERS) 
-                        {// if there is still place
-                            remainingBytes = 0; // reset because we add it immmediately
-                            memcpy( &pktx1[Sport_Data * FRSKY_SPORT_PACKET_SIZE ],  &buffer[5 + firstBytes] , nextBytes ); // add remaining to pktx1[] which contains max 4 * 8 bytes
-                            Sport_Data++;
-                        }    
-                    } else 
-                    { 
-                        memcpy( &remaining[0],  &buffer[5 + firstBytes] , nextBytes ); // add remaining to pktx1[] which contains max 4 * 8 bytes
                     }
-                }    
-            }
-            return true; 
+                }
+            }    
+        return true;
         }
-        
+         
     #endif // end of MILO_SX1280_INO
-    #if not defined MILO_SX1280_INO
-        if(protocol != PROTO_FRSKY_R9)
-        {
-            if(buffer[1] != rx_tx_addr[3] || buffer[2] != rx_tx_addr[2] || len != buffer[0] + 3 )
-                return false;                                       // Bad address or length...
-            // RSSI and LQI are the 2 last bytes
-            TX_RSSI = buffer[len-2];
-            if(TX_RSSI >=128)
-                TX_RSSI -= 128;
-            else
-                TX_RSSI += 128;
-        }
-    #endif
+    if ( (protocol != PROTO_FRSKY_R9) 
+        #ifdef MILO_SX1280_INO
+            && ( protocol != PROTO_MILO)
+        #endif
+        )
+    {
+        if(buffer[1] != rx_tx_addr[3] || buffer[2] != rx_tx_addr[2] || len != buffer[0] + 3 )
+            return false;                                       // Bad address or length...
+        // RSSI and LQI are the 2 last bytes
+        TX_RSSI = buffer[len-2];
+        if(TX_RSSI >=128)
+            TX_RSSI -= 128;
+        else
+            TX_RSSI += 128;
+    }
+    
     telemetry_link|=1;                              // Telemetry data is available
 
     #if defined FRSKYD_CC2500_INO
