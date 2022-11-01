@@ -40,9 +40,9 @@
         #define G3PULSE(usec) 
     #endif
 
-    #define DEBUG_UNUSED_TX_SLOTS // when activated, it is possible to skip some consecutive channels (e.g. to test synchro TX-RX)
-    #define DEBUG_SKIP_TX_FROM_CHANNEL 10 // lower index 
-    #define DEBUG_SKIP_TX_UPTO_CHANNEL 20 // upper index
+    //#define DEBUG_UNUSED_TX_SLOTS // when activated, it is possible to skip some consecutive channels (e.g. to test synchro TX-RX)
+    //#define DEBUG_SKIP_TX_FROM_CHANNEL 10 // lower index 
+    //#define DEBUG_SKIP_TX_UPTO_CHANNEL 20 // upper index
 
     #define NBR_BYTES_IN_PACKET 16 // number of bytes in a LORA packet
 
@@ -135,7 +135,7 @@
         uint32_t interval;          // interval in us seconds that corresponds to that frequency 
         uint8_t TLMinterval;        // every X packets is a response TLM packet
         uint8_t PreambleLen;         //12
-        uint8_t PayloadLength;      // Number of OTA bytes to be sent//15
+        uint8_t PayloadLength;      // Number of OTA bytes to be sent//16
     } MiLo_mod_settings_t;
     
     typedef struct MiLo_rf_pref_params_s
@@ -153,8 +153,10 @@
     MiLo_rf_pref_params_s *MiLo_currAirRate_RFperfParams;
     
     MiLo_mod_settings_s MiLo_AirRateConfig[RATE_MAX] = { 
-        {0, RADIO_TYPE_SX128x_LORA, RATE_LORA_150HZ,  SX1280_LORA_BW_0800,SX1280_LORA_SF6,  SX1280_LORA_CR_LI_4_7, 7000, TLM_RATIO_1_3,12, NBR_BYTES_IN_PACKET },
-        {1, RADIO_TYPE_SX128x_LORA, RATE_LORA_100HZ,  SX1280_LORA_BW_0800, SX1280_LORA_SF7,  SX1280_LORA_CR_LI_4_6, 9000, TLM_RATIO_1_3,12, NBR_BYTES_IN_PACKET}};
+        {0, RADIO_TYPE_SX128x_LORA, RATE_LORA_150HZ,  SX1280_LORA_BW_0800,SX1280_LORA_SF6,  SX1280_LORA_CR_LI_4_7, 7000,
+         TLM_RATIO_1_3,12, NBR_BYTES_IN_PACKET },
+        {1, RADIO_TYPE_SX128x_LORA, RATE_LORA_100HZ,  SX1280_LORA_BW_0800, SX1280_LORA_SF7,  SX1280_LORA_CR_LI_4_6, 9000,
+         TLM_RATIO_1_3,12, NBR_BYTES_IN_PACKET}};
     
     
     
@@ -226,7 +228,7 @@
             
             pass = ! pass;
         }
-        packet[0] |= ( (telemetry_counter<<4) & 0b00110000) ; // 2 bits (5..4) are the next downlink tlm counter
+        packet[0] |= ( (telemetry_counter<<4) & 0X30) ; // 2 bits (5..4) are the next downlink tlm counter
         if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) { // when the channel is one of the Syncro channels set flag on
             packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
             //G3ON;  // in debug on pulse mode on ES8266 set level HIGH for a synchro channel
@@ -262,8 +264,7 @@
         for (uint8_t i = start;i <= end;i++)
             packet[i] = 0;
         
-        #ifdef SPORT_SEND
-            
+        #ifdef SPORT_SEND    
             if(uplnkTlmId == TelemetryExpectedId)     
                 idxOK = SportHead;// update read pointer to last ack'ed packet
             else
@@ -297,8 +298,7 @@
     
     static void ICACHE_RAM_ATTR MiLo_Telemetry_frame()
     {
-        FrSkyX_send_sport(3 , PayloadLength - 1); // fill the sport data
-        packet[0] = ( (telemetry_counter<<4) & 0b00110000) | (TLM_PACKET) ;
+        packet[0] = ( (telemetry_counter<<4) & 0X30) | (TLM_PACKET) ;
         if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) { // when the channel is one of the Syncro channels set flag on
             packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
             //G3ON;  // in debug on pulse mode on ES8266 set level HIGH for a synchro channel
@@ -306,7 +306,8 @@
             //G3OFF;    // in debug, other reset to LOW
         } 
         packet[1] = rx_tx_addr[3];
-        packet[2] = rx_tx_addr[2];  
+        packet[2] = rx_tx_addr[2];
+        FrSkyX_send_sport(3 , PayloadLength - 1); // fill the sport data
     }
     
     void MILO_init()
@@ -424,7 +425,7 @@
                     }
                 #endif  
                 #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
-                    if ( (getCurrentChannelIdx() <  DEBUG_SKIP_TX_FROM_CHANNEL) && (getCurrentChannelIdx() >  DEBUG_SKIP_TX_FROM_CHANNEL) ) {
+                    if ( (getCurrentChannelIdx() <  DEBUG_SKIP_TX_FROM_CHANNEL) || (getCurrentChannelIdx() >  DEBUG_SKIP_TX_UPTO_CHANNEL) ) {
                 #endif
                 MiLo_data_frame();
                 SX1280_WriteBuffer(0x00, packet,PayloadLength); //
@@ -461,7 +462,7 @@
                     }
                 #endif
                 #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
-                    if ( (getCurrentChannelIdx() <  DEBUG_SKIP_TX_FROM_CHANNEL) && (getCurrentChannelIdx() >  DEBUG_SKIP_TX_FROM_CHANNEL) ) {
+                    if ( (getCurrentChannelIdx() <  DEBUG_SKIP_TX_FROM_CHANNEL) || (getCurrentChannelIdx() >  DEBUG_SKIP_TX_UPTO_CHANNEL) ) {
                 #endif
                 MiLo_Telemetry_frame();
                 SX1280_WriteBuffer(0x00, packet, PayloadLength); 
@@ -488,8 +489,8 @@
                 {
                     uint8_t const FIFOaddr = SX1280_GetRxBufferAddr();
                     SX1280_ReadBuffer(FIFOaddr, packet_in, PayloadLength);
-                    if( (packet_in[1] & 0xFC) == ( rx_tx_addr[3] & 0XFC) &&
-                        (packet_in[2] & 0xFC) == ( rx_tx_addr[2] & 0XFC) ){   // check it is a frame for the right handset (only on 6 bits MSB) 
+                    if( (packet_in[0] & 0xFC) == ( rx_tx_addr[3] & 0XFC) &&
+                        (packet_in[1] & 0xFC) == ( rx_tx_addr[2] & 0XFC) ){   // check it is a frame for the right handset (only on 6 bits MSB) 
                         SX1280_GetLastPacketStats();     // read SX1280 to get LastPacketRSSI and LastPacketSNR (data are not in the received packed)
                         telemetry_link|=1;               // Telemetry data is available
                         frsky_process_telemetry(packet_in, PayloadLength); //check if valid telemetry packets
