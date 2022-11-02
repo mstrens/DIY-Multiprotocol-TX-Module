@@ -173,7 +173,7 @@ static void multi_send_header(uint8_t type, uint8_t len)
         if(protocol == 0) return;
         #define DEBUG_AVOID_MULTI_STATUS
         #ifdef DEBUG_AVOID_MULTI_STATUS
-            Serial.println("MP status");return; // mstrens Avoid  non ascii status message when debugging so some Serial port. 
+            Serial.println("MP status");return; // mstrens Avoid  non ascii status message when debugging on some Serial port. 
         #endif
         multi_send_header(MULTI_TELEMETRY_STATUS, 24);
 
@@ -841,9 +841,14 @@ const uint8_t PROGMEM Indices[] = { 0x00, 0xA1, 0x22, 0x83, 0xE4, 0x45,
                                     0x98, 0x39, 0xBA, 0x1B } ;
 #endif
 
-#ifdef MULTI_TELEMETRY
-    void sportSend(uint8_t *p)     // send a frame to the handset in the Multiprotocol format (no stuffing)
-    {
+
+void sportSend(uint8_t *p)     // send a frame to the handset in the Multiprotocol format (no stuffing)
+{ // read 8 bytes and send a frame in the multi telemetry format or in original Sport format
+    #define DEBUG_AVOID_SENDING_TO_SPORT
+    #ifdef DEBUG_AVOID_SENDING_TO_SPORT 
+        return;
+    #endif
+    #ifdef MULTI_TELEMETRY
         multi_send_header(MULTI_TELEMETRY_SPORT, 9);
         uint16_t crc_s = 0;
         uint8_t x = p[0] ;
@@ -858,11 +863,8 @@ const uint8_t PROGMEM Indices[] = { 0x00, 0xA1, 0x22, 0x83, 0xE4, 0x45,
             crc_s &= 0x00ff;
         }
         Serial_write(0xff - crc_s);
-    }
-#else
-    void sportSend(uint8_t *p)    // read 8 bytes and send a frame in the original Sport format 
-                                  // Start/stop + 1 byte unstuffed + (7 bytes + 1 CRC)  stuffed)
-    {
+    #else // not MULTI_TELEMETRY
+      //sport original format is Start/stop + 1 byte unstuffed + (7 bytes + 1 CRC)  stuffed)
         uint16_t crc_s = 0;
         Serial_write(START_STOP);//+9
         Serial_write(p[0]) ;
@@ -883,11 +885,15 @@ const uint8_t PROGMEM Indices[] = { 0x00, 0xA1, 0x22, 0x83, 0xE4, 0x45,
             crc_s += crc_s >> 8; //0-100
             crc_s &= 0x00ff;
         }
-    }   
-#endif
+    #endif
+}   
 
 void sportIdle()
 {
+    #ifdef DEBUG_AVOID_SENDING_TO_SPORT 
+        return;
+    #endif
+    
     #if !defined MULTI_TELEMETRY  // for original sport, terminate with a 0x7E 
         Serial_write(START_STOP);
     #endif
@@ -901,7 +907,6 @@ void sportSendFrame()  // create a frame based on 8 first bytes from pktx1[32]
 {
     static uint8_t sport_counter=0;
     uint8_t i;
-
     sport_counter = (sport_counter + 1) %36;
     if(telemetry_lost)
     {
@@ -1133,15 +1138,14 @@ void TelemetryUpdate()
         if ((protocol == PROTO_MILO) && telemetry_link )
         {   
             telemetry_link=0;
-            if(protocol == PROTO_MILO)
-                miloSportTimer = micros();  //init timer
-            sportSendFrame();  // send the data frpm pktx1[] to handset   
+            sportSendFrame();  // send the data frpm pktx1[] to handset
+            miloSportTimer = micros();  //init timer
         }
         if(protocol == PROTO_MILO &&(micros() - miloSportTimer)>=7000 && miloSportStart==true){
             sportSendFrame();   // send one frame telemetry to handset once every 7000 usec
             miloSportTimer = micros();//reset timer
             // note: not sure this is correct because perhaps we send also old values from RSSI, LQI, SNR
-            // not sure if we have a flag that says if such a field (RSSI/LQI,SNR) has laready been sent 
+            // not sure if we have a flag that says if such a field (RSSI/LQI,SNR) has already been sent 
             // !!!!!!!!!!!!!!!!!!!!!!
         }
     #endif // SPORT_TELEMETRY
