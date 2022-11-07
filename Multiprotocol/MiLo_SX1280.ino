@@ -229,12 +229,11 @@
             pass = ! pass;
         }
         packet[0] |= ( (telemetry_counter<<4) & 0X30) ; // 2 bits (5..4) are the next downlink tlm counter
-        //if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) { // when the channel is one of the Syncro channels set flag on
-        //    packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
-        //    //G3ON;  // in debug on pulse mode on ES8266 set level HIGH for a synchro channel
-        //} else {
-        //    G3OFF;    // in debug, other reset to LOW
-        //}  
+        #ifdef DEBUG_ON_GPIO03
+            if (getCurrentChannelIdx() == 0) { // when the channel is the first one
+                G3PULSE(5);
+            }
+        #endif      
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];
         packet[3] =  RX_num & 0x3F ;//max 64 values
@@ -252,7 +251,7 @@
         packet[12] = (*ch)(5+j)>>9|((*ch)(6+j)&0xFF)<<2;
         packet[13] = (*ch)(6+j)>>6|((*ch)(7+j)&0xFF)<<5;
         packet[14] = ((*ch)(7+j)>>3)& 0x00FF;
-        
+        packet[15] = getCurrentChannelIdx() & 0x3F ; // channel index is max 37 and so coded on 5 bits 
         if(sub_protocol == MCH_8 || sub_protocol == MEU_8)// in M16/CH1-8 mode send only 8ch every interval us
             lpass = 0 ;
         else
@@ -307,7 +306,8 @@
         //} 
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];
-        FrSkyX_send_sport(3 , PayloadLength - 1); // fill the sport data
+        FrSkyX_send_sport(3 , PayloadLength - 2); // fill the sport data
+        packet[15] = getCurrentChannelIdx() & 0x3F ; // channel index is max 37 and so coded on 5 bits
     }
     
     void MILO_init()
