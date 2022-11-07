@@ -229,12 +229,12 @@
             pass = ! pass;
         }
         packet[0] |= ( (telemetry_counter<<4) & 0X30) ; // 2 bits (5..4) are the next downlink tlm counter
-        if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) { // when the channel is one of the Syncro channels set flag on
-            packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
-            //G3ON;  // in debug on pulse mode on ES8266 set level HIGH for a synchro channel
-        } else {
-            G3OFF;    // in debug, other reset to LOW
-        }  
+        //if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) { // when the channel is one of the Syncro channels set flag on
+        //    packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
+        //    //G3ON;  // in debug on pulse mode on ES8266 set level HIGH for a synchro channel
+        //} else {
+        //    G3OFF;    // in debug, other reset to LOW
+        //}  
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];
         packet[3] =  RX_num & 0x3F ;//max 64 values
@@ -299,12 +299,12 @@
     static void ICACHE_RAM_ATTR MiLo_Telemetry_frame()
     {
         packet[0] = ( (telemetry_counter<<4) & 0X30) | (TLM_PACKET) ;
-        if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) { // when the channel is one of the Syncro channels set flag on
-            packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
-            //G3ON;  // in debug on pulse mode on ES8266 set level HIGH for a synchro channel
-        } else {
-            //G3OFF;    // in debug, other reset to LOW
-        } 
+        //if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) { // when the channel is one of the Syncro channels set flag on
+        //    packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
+        //    //G3ON;  // in debug on pulse mode on ES8266 set level HIGH for a synchro channel
+        //} else {
+        //    //G3OFF;    // in debug, other reset to LOW
+        //} 
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];
         FrSkyX_send_sport(3 , PayloadLength - 1); // fill the sport data
@@ -314,7 +314,7 @@
     {
         Fhss_Init();  // prepare full list of all freq
         Fhss_generate(MProtocol_id); // create a list that depends on the ID of the TX
-        currFreq = GetInitialFreq(); //set frequency first or an error will occur!!!
+        currFreq = GetBindFreq(); //set frequency first or an error will occur!!!
         currOpmode = SX1280_MODE_SLEEP;     
         bool init_success = SX1280_Begin();
         if (!init_success) {           
@@ -626,7 +626,7 @@
     
     # Normal frame channels 1-8; frame rate 7ms.
     
-    0. reserve 2 bits (bits 7..6) | next expected telemetry down link frame counter(sequence) (bits 5..4 (2 bits=4 val)) | synchro channel (bit 3) | Frame type(bits 2..0 (3 lsb bits))
+    0. reserve 2 bits (bits 7..6) | next expected telemetry down link frame counter(sequence) (bits 5..4 (2 bits=4 val)) | reserve (bit 3) | Frame type(bits 2..0 (3 lsb bits))
     1. txid1 TXID on 16 bits
     2. txid2
     3. flag next frame must be dwn tlm frame (bit 7) | flag requesing starting WIFI (bit 6) | Model ID /Rx_Num(bits 5....0 = 6 bits) 
@@ -644,7 +644,7 @@
     15. reserve
 
     # Normal frame channels 9-16 separate; frame rate 7ms.
-    0. reserve 2 bits (bits 7..6) | next expected telemetry down link frame counter(sequence) (bits 5..4 (2 bits=4 val)) | synchro channel (bit 3) | Frame type(bits 2..0 (3 lsb bits))
+    0. reserve 2 bits (bits 7..6) | next expected telemetry down link frame counter(sequence) (bits 5..4 (2 bits=4 val)) | reserve (bit 3) | Frame type(bits 2..0 (3 lsb bits))
     1. txid1 TXID on 16 bits
     2. txid2
     3. flag next frame must be dwn tlm frame (bit 7) | flag requesing starting WIFI (bit 6) | Model ID /Rx_Num(bits 5....0 = 6 bits) 
