@@ -15,8 +15,9 @@
 //**************************
 // Telemetry serial code   *
 //**************************
-#define TELEMETRY
 #if defined TELEMETRY
+
+#define DEBUG_DOWNLINK 
 
 uint8_t RetrySequence ;
 
@@ -407,7 +408,7 @@ uint8_t getPrim( uint8_t shortPrim ) {  // convert 2 bits (0=> 0X30, 1=>0X31, 2=
     return 0X10;
 }
 
-bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process data coming from the RF link
+bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process downlink tlm data coming from the RF link
 {    
     #if defined(MILO_SX1280_INO)
         if(protocol == PROTO_MILO) { 
@@ -437,8 +438,16 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process data coming
             uint8_t idx; // position of first byte to write in pktx1[]
             telemetry_link|=1;                              // Telemetry data is available
             telemetry_lost = 0;  // a tlm frame has been received
-            uplnkTlmId = buffer[1] & 0X03 ;// save telemetry uplink counter (is in the 2 LSB bits)    
-            #define DEBUG_DOWNLINK 
+            uplinkTlmId = buffer[1] & 0X03 ;// save telemetry uplink counter (is in the 2 LSB bits)
+            // next tests are done here because it become easier to find when next packet may be an uplink tlm frame (just after preparing a RcData frame)
+            if(uplinkTlmId == expectedUplinkTlmId) { // when the RX confirms that it get the previous uplink tlm    
+                SportToAck = SportTail;// move the Ack pointer 
+                if (SportCount > 0) SportCount--; // remove one entry from the circular buffer
+            } else {
+            // when the uplink tlm ID does not match, we reset SportTail to SportToAck because we always fill the next frame from SportTail
+                SportTail = SportToAck; // roll back ; next uplink tlm is always filled from SportTail
+            }
+            
             #ifdef DEBUG_DOWNLINK
                 digitalWrite(3,HIGH); delayMicroseconds(5); digitalWrite(3,LOW);  
                 debug("Dwnlnk rec %d   exp %d  : ",  buffer[0] & 0x03 , telemetry_counter & 0x03 ) ;
@@ -904,6 +913,7 @@ void sportSendFrame()  // create a frame based on 8 first bytes from pktx1[32]
                         //             - multiprotocol (header,1 byte + 8 payload + CRC)
                         //             - or sport format (START+ Stuffing + CRC)
                         // it also look to send RSSI/LQI/SNR data
+                        // it concerns here sending a downlink tlm to handset 
 {
     static uint8_t sport_counter=0;
     uint8_t i;

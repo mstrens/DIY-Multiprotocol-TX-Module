@@ -345,6 +345,7 @@ uint8_t packet_in[TELEMETRY_BUFFER_SIZE];//telemetry receiving packets
         #define MAX_SPORT_BUFFER 64
         uint8_t SportData[MAX_SPORT_BUFFER];
         uint8_t SportHead=0, SportTail=0;
+        uint8_t SportCount = 0;  // SportCount is used only in Milo protocol in order to use all 64 bytes as 8 X 8 bytes
     #endif
     
     // Functions definition when required
@@ -1818,7 +1819,7 @@ void ICACHE_RAM_ATTR update_serial_data()
             }
         #endif
         #ifdef SPORT_SEND
-            if((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2 || protocol==PROTO_FRSKY_R9 ||protocol == PROTO_MILO) && rx_len==27+8)
+            if((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2 || protocol==PROTO_FRSKY_R9) && (rx_len==(27+8)) )
             {//Protocol waiting for 8 bytes
                 #define BYTE_STUFF  0x7D
                 #define STUFF_MASK  0x20
@@ -1860,6 +1861,34 @@ void ICACHE_RAM_ATTR update_serial_data()
                         Update_Telem();
                         debugln("Low buf=%d,h=%d,t=%d",used,SportHead,SportTail);
                     }
+                }
+            }
+            if(protocol == PROTO_MILO && (rx_len==(27+8)))
+            {//Protocol waiting for 8 bytes
+            // for MILO, we use also SportData to store up to 4 tlm set of 8 bytes.
+            // 
+                boolean sport_valid=false;
+                for(uint8_t i=28;i<28+7;i++)
+                    if(rx_ok_buff[i]!=0) sport_valid=true;  //Check that the payload is not full of 0
+                if((rx_ok_buff[27]&0x1F) > 0x1B)                //Check 1st byte validity
+                    sport_valid=false;
+                if(sport_valid)
+                {
+                    if (SportCount < 9) { // when the circular buffer is not full
+                        for (uint8_t i = 0 ; i < 8 ; i++){
+                            SportData[SportHead+i] = rx_ok_buff[27+i]  ;   // copy the 8 bytes
+                        }
+                        SportHead = (SportHead + 8) & 0x3F;   
+                        SportCount++; // increase number of set of data
+                        if (SportCount >=7) // buffer is nearly full
+                        {
+                            DATA_BUFFER_LOW_on; // will be used to set a flag in the MULTI_STATUS frame
+                            //Send Multi Status ASAP to inform the TX
+                            SEND_MULTI_STATUS_on;
+                            Update_Telem();  // will send multi_status asap to avoid getting new data.
+                            debugln("Low buf=%d,h=%d,t=%d",SportCount,SportHead,SportTail);
+                        }
+                    }    
                 }
             }
         #endif //SPORT_SEND

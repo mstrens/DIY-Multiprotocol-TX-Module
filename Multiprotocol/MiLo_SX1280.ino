@@ -47,8 +47,8 @@
     #define NBR_BYTES_IN_PACKET 16 // number of bytes in a LORA packet
 
 
-    uint8_t uplnkTlmId;
-    uint8_t TelemetryExpectedId;
+    uint8_t uplinkTlmId;
+    uint8_t expectedUplinkTlmId;
     
     uint16_t timeout = 0xFFFF;
     uint8_t currOpmode;
@@ -74,7 +74,7 @@
    uint8_t DropHistorySend ;
     
     #ifdef SPORT_SEND
-        uint8_t idxOK;
+        uint8_t SportToAck;
     #endif
     void ICACHE_RAM_ATTR dioISR(void);
     
@@ -186,14 +186,14 @@
     {
         #ifdef SPORT_SEND
             SportHead = SportTail=0;            // empty data buffer
-            idxOK = 0;  
+            SportToAck = 0;  
         #endif
         #ifdef TELEMETRY
             telemetry_lost = 1;
             telemetry_link = 0;                 //Stop sending telemetry
         #endif
-        uplnkTlmId = 0;
-        TelemetryExpectedId = 0;        
+        uplinkTlmId = 0;
+        expectedUplinkTlmId = 0;        
     }
     
     static void ICACHE_RAM_ATTR MiLo_build_bind_packet()
@@ -257,57 +257,24 @@
         else
             lpass += 1 ;
     }
-    
-    static void __attribute__((unused)) FrSkyX_send_sport(uint8_t start, uint8_t end)
-    {  // fill part of uplink tlm frame with Sport data    
-        for (uint8_t i = start;i <= end;i++)
-            packet[i] = 0;
-        
-        #ifdef SPORT_SEND    
-            if(uplnkTlmId == TelemetryExpectedId)     
-                idxOK = SportHead;// update read pointer to last ack'ed packet
-            else
-                SportHead = idxOK;
-            TelemetryExpectedId = (uplnkTlmId + 1) & 0x03;//2 bits             
-            uint8_t nbr_bytes = 0;
-            for (uint8_t i = start + 1;i <= end;i++)
-            {
-                if(SportHead == SportTail)
-                    break; //buffer empty
-                packet[i] = SportData[SportHead];
-                SportHead = (SportHead + 1) & (MAX_SPORT_BUFFER - 1);
-                nbr_bytes++;
-            }
-            packet[start] = (nbr_bytes << 4)| (uplnkTlmId &0x03); // 2bits
-            if(nbr_bytes)
-            {//Check the buffer status
-                uint8_t used = SportTail;
-                if ( SportHead > SportTail )
-                    used += MAX_SPORT_BUFFER - SportHead ;
-                else
-                    used -= SportHead ;
-                if ( used < (MAX_SPORT_BUFFER>>1) )
-                {
-                    //DATA_BUFFER_LOW_off;
-                    debugln("Ok buf:%d",used);
-                }
-            }
-        #endif
-    }
-    
-    static void ICACHE_RAM_ATTR MiLo_Telemetry_frame()
-    {
+
+    static void ICACHE_RAM_ATTR MiLo_Telemetry_frame() 
+    {   // fill an uplink tfm frame with 8 bytes from SportData only when an uplink must be send (checked just after preparing a RcData frame)
         packet[0] = ( (telemetry_counter<<4) & 0X30) | (TLM_PACKET) ;
-        //if (getCurrentChannelIdx() < FHSS_SYNCHRO_CHANNELS_NUM) { // when the channel is one of the Syncro channels set flag on
-        //    packet[0] |=  0X08; // fill synchro flag (bit 3) when channel index is lower than the number of synchro channels
-        //    //G3ON;  // in debug on pulse mode on ES8266 set level HIGH for a synchro channel
-        //} else {
-        //    //G3OFF;    // in debug, other reset to LOW
-        //} 
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];
-        FrSkyX_send_sport(3 , PayloadLength - 2); // fill the sport data
+        expectedUplinkTlmId = (expectedUplinkTlmId + 1) & 0x03;//2 bits ; increased each time we send an uplinlk tlm frame                      
+        packet[3] = ( (expectedUplinkTlmId & 0X03) << 6)  | RX_num & 0x3F ;//max 64 values
+        memcpy( &packet[4], &SportData[SportTail], 8 ) ; // copy 8 bytes 
+        SportTail = (SportTail + 8) & 0X3F; // update SportTail
+        // SportCount is not decreased here and SportToAck is not updated.
+        // they will be updated only when a donwlink frame confirms that the uplink has been received
+        // those updates occur while processing the downlink tlm frame   
+        packet[12] = 0XA7; // fill reserve with dummy data
+        packet[13] = packet[12];
+        packet[14] = packet[12];   
         packet[15] = getCurrentChannelIdx() & 0x3F ; // channel index is max 37 and so coded on 5 bits
+        if (SportCount < 6) DATA_BUFFER_LOW_off;  // This will say in Milo_status that handset can continue to send uplink data
     }
     
     void MILO_init()
@@ -434,19 +401,21 @@
                 #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
                     }
                 #endif
-                
                 //debugln("start sending packet %d", packet_count);         
+                
+                // after having prepare sending the RCData frame, we have to determine the type of the next frame 
                 if (packet_count == 2){// next frame is RX downlink temetry
                     state = MiLo_DWLNK_TLM1;
                     intervalMiloCallback = 5400;
                     break;
                 }
-                else if(SportHead != SportTail && upTLMcounter == 2){//next frame is uplink telemetry
+                else if( (upTLMcounter == 2) &&  (SportCount > 0) )
+                {// The slot can be used for uplink and there are date to send (or to resend)
                     state = MiLo_UPLNK_TLM;
                     upTLMcounter  = 0;//reset uplink telemetry counter
                     break;
                 }       
-                state = MiLo_DATA1; 
+                state = MiLo_DATA1; // ense continue with a RCData frame
                 break;      
             case MiLo_UPLNK_TLM:    //Uplink telemetry
                 packet_count = (packet_count + 1)%3;
@@ -495,7 +464,7 @@
                         telemetry_link|=1;               // Telemetry data is available
                         frsky_process_telemetry(packet_in, PayloadLength); //check if valid telemetry packets
                         LQICalc();
-                        memset(&packet_in[0], 0, PayloadLength );               
+                        memset(&packet_in[0], 0, PayloadLength ); // reset packet_in[]              
                         frameReceived = false;
                     }
                 }
@@ -612,142 +581,3 @@
 
 #endif
 
-/*
-    Protocol description:
-    2.4Ghz LORA modulation
-    - 142 Hz frame rate(7ms)
-    - Data Rate ~76kb/s(-108dBm)
-    - Bw-812; SF6 ; CR -LI -4/7 .
-    - Preamble length 12 symbols
-    - Fixed length packet format(implicit) -16 bytes
-    - Downlink telemetry rate(1:3)
-    - Uplink telemetry rate(1:6)
-    - Hardware CRC is ON.
-    
-    # Normal frame channels 1-8; frame rate 7ms.
-    
-    0. reserve 2 bits (bits 7..6) | next expected telemetry down link frame counter(sequence) (bits 5..4 (2 bits=4 val)) | reserve (bit 3) | Frame type(bits 2..0 (3 lsb bits))
-    1. txid1 TXID on 16 bits
-    2. txid2
-    3. flag next frame must be dwn tlm frame (bit 7) | flag requesing starting WIFI (bit 6) | Model ID /Rx_Num(bits 5....0 = 6 bits) 
-    4. channels 8 channels/frame ; 11bits/channel
-    5. channels total 11 bytes of channels data in the packet frame
-    6. channels
-    7. channels
-    8. channels
-    9. channels
-    10. channels
-    11. channels
-    12. channels
-    13. channels
-    14. channels
-    15. reserve
-
-    # Normal frame channels 9-16 separate; frame rate 7ms.
-    0. reserve 2 bits (bits 7..6) | next expected telemetry down link frame counter(sequence) (bits 5..4 (2 bits=4 val)) | reserve (bit 3) | Frame type(bits 2..0 (3 lsb bits))
-    1. txid1 TXID on 16 bits
-    2. txid2
-    3. flag next frame must be dwn tlm frame (bit 7) | flag requesing starting WIFI (bit 6) | Model ID /Rx_Num(bits 5....0 = 6 bits) 
-    4. channels 8 channels/frame ; 11bits/channel
-    5. channels total 11 bytes of channels data in the packet frame
-    6. channels
-    7. channels
-    8. channels
-    9. channels
-    10. channels
-    11. channels
-    12. channels
-    13. channels
-    14. channels
-    15. reserve
-    
-    # TX uplink telemetry frame can be sent separate ;frame rate 7ms;1:6 telemetry data rate.
-    0. reserve 2 bits (bits 7..6) | next expected telemetry down link frame counter(sequence) (bits 5..4 (2 bits=4 val)) | Frame type(bits 2..0 (3 lsb bits))
-    1. txid1 TXID on 16 bits
-    2. txid2
-    3. no. of bytes in sport frame(on max 4bits 7..4) | reserve (2bits 3..2) | telemetry uplink counter sequence(2 bits 1..0)
-    4.Sport data byte1
-    5.Sport data byte 2
-    6.Sport data byte 3
-    7.Sport data byte 4
-    8.SPort data byte 5
-    9.SPort data byte 6
-    10.SPort data byte 7
-    11.SPort data byte 8
-    12.SPort data byte 9
-    13.SPort data byte 10
-    14.SPort data byte 11 ; 
-    15.SPort data byte 12 ;  12 bytes sport telemetry
-
-    # RX downlink telemetry frame sent separate at a fixed rate of 1:3;frame rate 7ms. Can contain 2 Sport frame 
-    0. - bits 7...2 : MSB of TXID1 (6 bits)
-       - bits 1...0 : current downlink tlm counter (2 bits); when received TX should send this counter + 1type of link data packet(RSSI/SNR /LQI) (2 bits= 3 values currently) 
-    1. - bits 7...2 : MSB of TXID2 (6 bits)
-       - bits 1...0 : last upllink tlm counter received (2 bits); 
-    2. - bit 7 : reserve
-         bits 6..5 : recodified PRIM from sport frame1 (0X30=>0, 0X31=>1,0X32=>2, 0X10=>0)
-         bits 4..0 : PHID from sport frame1 (5 bits using a mask 0X1F; 0X1F = no data; 0X1E = link quality data)
-    3. - bit 7 : reserve
-         bits 6..5 : recodified PRIM from sport frame2 (0X30=>0, 0X31=>1,0X32=>2, 0X10=>0)
-         bits 4..0 : PHID from sport frame2 (5 bits using a mask 0X1F; 0X1F = no data; 0X1E = link quality data)
-    4. field ID1 from sport frame1
-    5. field ID2 from sport frame1
-    6...9. Value from sport frame1 (4 bytes)
-    10. field ID1 from sport frame2
-    11. field ID2 from sport frame2
-    12...15. Value from sport frame2 (4 bytes)
-    
-    
-    # bind packet
-    0. Frame type = BIND_PACKET = 0
-    1. rx_tx_addr[3];
-    2. rx_tx_addr[2];
-    3. rx_tx_addr[1];
-    4. rx_tx_addr[0];
-    5. RX_num;
-    6. chanskip;
-    7. up to 15.  0xA7
-
-
-    # Frame Sequence
-    0- downlink telemetry
-    1- RC channels 1_8_1 
-    2- RC channels 9_16
-    3- downlink telemetry
-    4- RC channels 1_8_2
-    5 -uplink telemetry                 
-    6- downlink telemetry
-    7- RC channels 9_16
-    8- RC channels 1_8_1
-    9- downlink telemetry
-    10- RC channels 9_16
-    11- uplink telemetry               
-    12- downlink telemetry
-    13- RC channels 1_8_2
-    14- RC channels 9_16
-    15- downlink telemetry
-    
-    
-    0 - downlink telemetry
-    1- RC channels 1_8_1         
-    2- RC channels 1_8_2      
-    3- downlink telemetry      
-    4- RC channels 1_8_1       
-    5 -uplink telemetry              
-    6- downlink telemetry      
-    7- RC channels 1_8_2         
-    8- RC channels 1_8_1          
-    9- downlink telemetry            
-    10- RC channels 1_8_2       
-    11- uplink telemetry           
-    12- downlink telemetry
-    13- RC channels 1_8_1            
-    14- RC channels 1_8_2              
-    15- downlink telemetry
-    16- RC channels 1_8_1            
-    17  uplink telemetry              
-    15- downlink telemetry
-    
-    
-
-*/
