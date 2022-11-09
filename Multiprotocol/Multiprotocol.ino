@@ -1874,7 +1874,7 @@ void ICACHE_RAM_ATTR update_serial_data()
                     sport_valid=false;
                 if(sport_valid)
                 {
-                    if (SportCount < 9) { // when the circular buffer is not full
+                    if (SportCount < 8) { // when the circular buffer is not full
                         for (uint8_t i = 0 ; i < 8 ; i++){
                             SportData[SportHead+i] = rx_ok_buff[27+i]  ;   // copy the 8 bytes
                         }
