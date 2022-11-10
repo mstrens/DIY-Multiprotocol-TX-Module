@@ -1779,12 +1779,9 @@ void ICACHE_RAM_ATTR update_serial_data()
     }
 
     // decode channel/failsafe values
-
     volatile uint8_t *p = rx_ok_buff+4;
-
     uint8_t inputbitsavailable = 0 ;
     uint32_t inputbits = 0 ;
-    
     for(uint8_t i=0;i<NUM_CHN;i++)
     {
         uint16_t temp;        
@@ -1793,7 +1790,6 @@ void ICACHE_RAM_ATTR update_serial_data()
             inputbits |= (uint32_t)*p++ << inputbitsavailable ;
             inputbitsavailable += 8 ;
         }
-
         temp = inputbits&0x7FF;
         inputbitsavailable -= 11 ;
         inputbits >>= 11 ;
@@ -1807,8 +1803,7 @@ void ICACHE_RAM_ATTR update_serial_data()
 
     #ifdef HOTT_FW_TELEMETRY
         HoTT_SerialRX=false;
-    #endif
-    
+    #endif    
 
     if(rx_len>27)
     { // Data available for the current protocol

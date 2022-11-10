@@ -235,16 +235,15 @@
         if ( miloFailsafePass == 1){
             packet[0] = FS1_8_PACKET;
         } else if ( miloFailsafePass == 2){
+            j=8;
             packet[0] = FS9_16_PACKET;
             miloFailsafePass = 0; // reset when 2 failsafe packet have been sent
             FAILSAFE_VALUES_off;  // avoid to send other failsafe values as long it is not requested by hanset
-        } else 
-        {   // this frame is not use for failsafe; for CH16 or EU16 sub protocol we alternate che channels
-        if ( lpass & 1 ){
-            j += 8 ;
+        } else {   // this frame is not use for failsafe; for CH16 or EU16 sub protocol we alternate che channels
+            if ( lpass & 1 ){
+                j += 8 ;
                 packet[0] = CH9_16_PACKET;
-        }
-        else{//lpass =0
+            } else{//lpass =0
                 packet[0] = CH1_8_PACKET;
             }
             if(sub_protocol == MCH_8 || sub_protocol == MEU_8) {
@@ -266,36 +265,32 @@
         if (sub_protocol == WIFI_RX) packet[3] |= 0x40;//trigger WiFi updating firmware for RX
         packet[15] = getCurrentChannelIdx() & 0x3F ; // channel index is max 37 and so coded on 5 bits 
         if ( ( ( packet[0] & 0X07) == CH1_8_PACKET ) || ( ( packet[0] & 0X07) == CH1_8_PACKET ) ) {
-        uint16_t (*ch) (uint8_t) = &convert_channel_ppm;
-        packet[4] = (*ch)(0+j)&0XFF ;
-        packet[5] = (*ch)(0+j)>>8 | ((*ch)(1+j)&0xFF)<<3;
-        packet[6] = (*ch)(1+j)>>5| (*ch)(2+j)<<6;
-        packet[7] = ((*ch)(2+j)>>2)& 0x00FF;
-        packet[8] = (*ch)(2+j)>>10|((*ch)(3+j)&0xFF)<<1;
-        packet[9] = (*ch)(3+j)>>7| ((*ch)(4+j)&0xFF)<<4;
-        packet[10] = (*ch)(4+j)>>4|((*ch)(5+j)&0xFF)<<7;
-        packet[11] = ((*ch)(5+j)>>1)& 0x00FF;
-        packet[12] = (*ch)(5+j)>>9|((*ch)(6+j)&0xFF)<<2;
-        packet[13] = (*ch)(6+j)>>6|((*ch)(7+j)&0xFF)<<5;
-        packet[14] = ((*ch)(7+j)>>3)& 0x00FF;
+            packet[4] = Channel_data[0+j]&0XFF ;
+            packet[5] = Channel_data[0+j]>>8 | (Channel_data[1+j]&0xFF)<<3;
+            packet[6] = Channel_data[1+j]>>5| Channel_data[2+j]<<6;
+            packet[7] = (Channel_data[2+j]>>2)& 0x00FF;
+            packet[8] = Channel_data[2+j]>>10|(Channel_data[3+j]&0xFF)<<1;
+            packet[9] = Channel_data[3+j]>>7| (Channel_data[4+j]&0xFF)<<4;
+            packet[10] = Channel_data[4+j]>>4|(Channel_data[5+j]&0xFF)<<7;
+            packet[11] = (Channel_data[5+j]>>1)& 0x00FF;
+            packet[12] = Channel_data[5+j]>>9|(Channel_data[6+j]&0xFF)<<2;
+            packet[13] = Channel_data[6+j]>>6|(Channel_data[7+j]&0xFF)<<5;
+            packet[14] = (Channel_data[7+j]>>3)& 0x00FF;
         } else {
             #ifdef FAILSAFE_ENABLE
-                // note : the failsafe_data have to be converted prior sending 
-                uint16_t failsafeTemp[8];
-                convert8FailsafeValuesToPpm(j, failsafeTemp); 
-                packet[4] = failsafeTemp[0]&0XFF ;
-                packet[5] = failsafeTemp[0]>>8 | (failsafeTemp[1]&0xFF)<<3;
-                packet[6] = failsafeTemp[1]>>5 | failsafeTemp[2]<<6;
-                packet[7] = (failsafeTemp[2]>>2) & 0x00FF;
-                packet[8] = failsafeTemp[2]>>10|(failsafeTemp[3]&0xFF)<<1;
-                packet[9] = failsafeTemp[3]>>7| (failsafeTemp[4]&0xFF)<<4;
-                packet[10] = failsafeTemp[4]>>4|(failsafeTemp[5]&0xFF)<<7;
-                packet[11] = (failsafeTemp[5]>>1) & 0x00FF;
-                packet[12] = failsafeTemp[5]>>9|(failsafeTemp[6]&0xFF)<<2;
-                packet[13] = failsafeTemp[6]>>6|(failsafeTemp[7]&0xFF)<<5;
-                packet[14] = (failsafeTemp[7]>>3) & 0x00FF;
+                packet[4] = Failsafe_data[0+j]&0XFF ;
+                packet[5] = Failsafe_data[0+j]>>8 | (Failsafe_data[1+j]&0xFF)<<3;
+                packet[6] = Failsafe_data[1+j]>>5| Failsafe_data[2+j]<<6;
+                packet[7] = (Failsafe_data[2+j]>>2)& 0x00FF;
+                packet[8] = Failsafe_data[2+j]>>10|(Failsafe_data[3+j]&0xFF)<<1;
+                packet[9] = Failsafe_data[3+j]>>7| (Failsafe_data[4+j]&0xFF)<<4;
+                packet[10] = Failsafe_data[4+j]>>4|(Failsafe_data[5+j]&0xFF)<<7;
+                packet[11] = (Failsafe_data[5+j]>>1)& 0x00FF;
+                packet[12] = Failsafe_data[5+j]>>9|(Failsafe_data[6+j]&0xFF)<<2;
+                packet[13] = Failsafe_data[6+j]>>6|(Failsafe_data[7+j]&0xFF)<<5;
+                packet[14] = (Failsafe_data[7+j]>>3)& 0x00FF;
             #endif    
-        }    
+        }     
     }
     
     static void ICACHE_RAM_ATTR MiLo_Telemetry_frame()
