@@ -1371,7 +1371,7 @@ inline void tx_resume()
     #endif
 }
 
-#if defined AVR_COMMON || defined STM32_BOARD
+#if defined AVR_COMMON || defined STM32_BOARD || defined ESP_COMMON
     void rf_switch(uint8_t comp)
     {
         PE1_off;
