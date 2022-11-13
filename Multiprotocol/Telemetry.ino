@@ -436,28 +436,22 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process downlink tl
             // a downlink tlm frame can can contains parts of 2 sets of data (no stuffing, CRC, ...)
             // for each data set we must "rebuid" 8 bytes: PHID,PRIM,ID1,ID2,VAL1,VAL2,VAL3,VAL4    
             uint8_t idx; // position of first byte to write in pktx1[]
+            G3PULSE(20);
             telemetry_link|=1;                              // Telemetry data is available
             telemetry_lost = 0;  // a tlm frame has been received
             uplinkTlmId = buffer[1] & 0X03 ;// save telemetry uplink counter (is in the 2 LSB bits)
-            // next tests are done here because it become easier to find when next packet may be an uplink tlm frame (just after preparing a RcData frame)
-            if(uplinkTlmId == expectedUplinkTlmId) { // when the RX confirms that it get the previous uplink tlm    
-                SportToAck = SportTail;// move the Ack pointer 
-                if (SportCount > 0) SportCount--; // remove one entry from the circular buffer
-            } else {
-            // when the uplink tlm ID does not match, we reset SportTail to SportToAck because we always fill the next frame from SportTail
-                SportTail = SportToAck; // roll back ; next uplink tlm is always filled from SportTail
-            }
-            
             #ifdef DEBUG_DOWNLINK
-                digitalWrite(3,HIGH); delayMicroseconds(5); digitalWrite(3,LOW);  
+                G3PULSE(5);  
                 debug("Dwnlnk rec %d   exp %d  : ",  buffer[0] & 0x03 , telemetry_counter & 0x03 ) ;
                 for (uint8_t i= 0; i < 16;  i++){
                     Serial.print( buffer[i], HEX) ; Serial.print(";"); 
                 }
                 Serial.println(" ");
             #endif
+            G3PULSE(1);
             if ( (buffer[0]  & 0x03 ) == (telemetry_counter & 0x03))//Check downlink telemetry sequence
             {//Sequence is ok
+                G3PULSE(2);G3PULSE(2);
                 miloSportStart = true;
                 telemetry_counter = (telemetry_counter+1) & 0x03 ;
                 if ( ( buffer[2] & 0X1F ) == PHID_LINK_QUALITY ){ // the first part conatains up to 6 bytes about link quality

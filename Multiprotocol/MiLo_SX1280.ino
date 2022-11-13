@@ -63,6 +63,7 @@
     int8_t LastPacketSNR = 0;
     uint32_t currFreq = 0;
     uint8_t chanskip = 0;
+    //volatile bool dioOccured = false ;     // true when a dio1 interrupt occurs
     bool frameReceived = false;
     uint8_t frameType = 0;
     bool LBTEnabled = false;
@@ -80,7 +81,8 @@
         uint8_t SportToAck;
     #endif
     void ICACHE_RAM_ATTR dioISR(void);
-    
+    void ICACHE_RAM_ATTR SX1280_SetTxRxMode(uint8_t mode);
+
     typedef struct 
     {
         uint8_t uplink_RSSI_1;
@@ -184,7 +186,7 @@
     }
     
     
-    static void ICACHE_RAM_ATTR MiLo_telem_init(void)
+    static void ICACHE_RAM_ATTR3 MiLo_telem_init(void)
     {
         #ifdef SPORT_SEND
             SportHead = SportTail=0;            // empty data buffer
@@ -198,7 +200,7 @@
         expectedUplinkTlmId = 0;        
     }
     
-    static void ICACHE_RAM_ATTR MiLo_build_bind_packet()
+    static void ICACHE_RAM_ATTR3 MiLo_build_bind_packet()
     {
         packet[0] = BIND_PACKET;
         packet[1] = rx_tx_addr[3];//ModelID(seed for Fhss channels)
@@ -228,7 +230,7 @@
         }
     }
     
-    static void ICACHE_RAM_ATTR MiLo_data_frame()
+    static void ICACHE_RAM_ATTR3 MiLo_data_frame()
     {   
         static uint8_t lpass = 0;
         uint8_t j = 0;
@@ -253,9 +255,9 @@
             }
         }
         packet[0] |= ( (telemetry_counter<<4) & 0X30) ; // 2 bits (5..4) are the next downlink tlm counter
-        #ifdef DEBUG_ON_GPIO03
+        #ifdef DEBUG_ON_GPIO3
             if (getCurrentChannelIdx() == 0) { // when the channel is the first one
-                G3PULSE(5);
+                //G3PULSE(5);
         }  
         #endif      
         packet[1] = rx_tx_addr[3];
@@ -293,15 +295,28 @@
         }     
     }
     
-    static void ICACHE_RAM_ATTR MiLo_Telemetry_frame()
+    static void ICACHE_RAM_ATTR3 MiLo_Telemetry_frame()
     {   // fill an uplink tfm frame with 8 bytes from SportData only when an uplink must be send (checked just after preparing a RcData frame)
         packet[0] = ( (telemetry_counter<<4) & 0X30) | (TLM_PACKET) ;
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];
+        packet[3] = ( (uplinkTlmId & 0X03) << 6)  | (RX_num & 0x3F) ;//max 64 values
+        if( (uplinkTlmId == expectedUplinkTlmId) &&  (SportToAck != SportTail)  ) 
+         { // when the RX confirms that it get the previous uplink tlm and there are uplink data to confirm   
+            SportToAck = SportTail;
+            if (SportCount > 0) {
+                SportCount--; // remove one entry from the circular buffer
+            } else {
+                debugln("??? SportCont == 0 when SportToAck != SportTail");
+            }
+        } else {
+            // when the uplink tlm ID does not match, we reset SportTail to SportToAck because we always fill the next frame from SportTail
+            SportTail = SportToAck; // roll back ; next uplink tlm is always filled from SportTail
+        }
+        memcpy( &packet[4], &SportData[SportToAck], 8 ) ; // copy 8 bytes 
+        SportTail = (SportToAck + 8) & 0X3F;  
         expectedUplinkTlmId = (expectedUplinkTlmId + 1) & 0x03;//2 bits ; increased each time we send an uplinlk tlm frame                      
-        packet[3] = ( (expectedUplinkTlmId & 0X03) << 6)  | RX_num & 0x3F ;//max 64 values
-        memcpy( &packet[4], &SportData[SportTail], 8 ) ; // copy 8 bytes 
-        SportTail = (SportTail + 8) & 0X3F; // update SportTail
+        debugln("c=%d,h=%d,t=%d",SportCount,SportHead,SportTail);
         // SportCount is not decreased here and SportToAck is not updated.
         // they will be updated only when a donwlink frame confirms that the uplink has been received
         // those updates occur while processing the downlink tlm frame   
@@ -361,7 +376,14 @@
    		#ifdef MILO_USE_LBT
           	LBTdelay = SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
         #endif
-        
+        #define DEBUG_PACKET_COUNT
+        #ifdef DEBUG_PACKET_COUNT
+            //static uint8_t prevPacketCount = 0; 
+            if (packet_count == 0) {G3PULSE(1);}
+            else if (packet_count == 1) {G3PULSE(1);G3PULSE(1);}
+            else if (packet_count == 2) {G3PULSE(1);G3PULSE(1);G3PULSE(1);}
+            else { G3PULSE(50);}
+        #endif
         switch(state)
         {   
             default :
@@ -430,6 +452,7 @@
                     if ( (getCurrentChannelIdx() <  DEBUG_SKIP_TX_FROM_CHANNEL) || (getCurrentChannelIdx() >  DEBUG_SKIP_TX_UPTO_CHANNEL) ) {
                 #endif
                 MiLo_data_frame();
+                //G3PULSE(1); 
                 SX1280_WriteBuffer(0x00, packet,PayloadLength); //
                 SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise
                 SX1280_SetMode(SX1280_MODE_TX);
@@ -448,11 +471,15 @@
                 {// The next slot can be used for uplink or for failsafe data
                 // packet_count==1 means that next slot is just before a downlink tlm
                 // upTLMcounter is incremented %2 each time a downlink tlm is send (in order to have max one uplink every 6 slot)
-                    if  (SportCount > 0) //there are date to send (or to resend)
+                    // There are data to send if 
+                    //     - SportCount >1 or
+                    //     - uplinkTlmId != ExpectedUplinkTlmId
+                    if( (SportCount > 1) && (uplinkTlmId != expectedUplinkTlmId )) //there are date to send (or to resend)
                     {
-                    state = MiLo_UPLNK_TLM;
-                    break;
-                }       
+                        debugln("SCount=%d  upTlmId=%d  expId= ", SportCount, uplinkTlmId, expectedUplinkTlmId);
+                        state = MiLo_UPLNK_TLM;
+                        break;
+                    }       
                     #ifdef FAILSAFE_ENABLE
                         if (IS_FAILSAFE_VALUES_on){
                             miloFailsafePass++; // miloFailsafePass is use when a Rcframe is generated; 
@@ -479,7 +506,9 @@
                     if ( (getCurrentChannelIdx() <  DEBUG_SKIP_TX_FROM_CHANNEL) || (getCurrentChannelIdx() >  DEBUG_SKIP_TX_UPTO_CHANNEL) ) {
                 #endif
                 MiLo_Telemetry_frame();
+                G3PULSE(10);
                 SX1280_WriteBuffer(0x00, packet, PayloadLength); 
+                SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise
                 SX1280_SetMode(SX1280_MODE_TX); 
                 #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
                     }
@@ -498,19 +527,23 @@
             case MiLo_DWLNK_TLM2:
                 if(frameReceived)
                 {
+                    G3PULSE(20);
+                    frameReceived = false;
                     uint8_t const FIFOaddr = SX1280_GetRxBufferAddr();
                     SX1280_ReadBuffer(FIFOaddr, packet_in, PayloadLength);
                     if( (packet_in[0] & 0xFC) == ( rx_tx_addr[3] & 0XFC) &&
                         (packet_in[1] & 0xFC) == ( rx_tx_addr[2] & 0XFC) ){   // check it is a frame for the right handset (only on 6 bits MSB) 
                         SX1280_GetLastPacketStats();     // read SX1280 to get LastPacketRSSI and LastPacketSNR (data are not in the received packed)
                         telemetry_link|=1;               // Telemetry data is available
+                        G3PULSE(10);
                         frsky_process_telemetry(packet_in, PayloadLength); //check if valid telemetry packets
+                        G3PULSE(10);
                         LQICalc();
                         memset(&packet_in[0], 0, PayloadLength ); // reset packet_in[]              
-                        frameReceived = false;
                     }
                 }
                 else{
+                    G3PULSE(30);
                     miloSportStart = false;
                     ThisPacketDropped = 1;
                 }
@@ -523,6 +556,7 @@
     
     void ICACHE_RAM_ATTR dioISR()
     {
+        //dioOccured = true ;
         uint16_t irqStatus = SX1280_GetIrqStatus();   
         SX1280_ClearIrqStatus(SX1280_IRQ_RADIO_ALL);
         #ifdef DEBUG_ESP_COMMON
@@ -565,7 +599,7 @@
         }   
     }
 
-    uint32_t ICACHE_RAM_ATTR SpreadingFactorToRSSIvalidDelayUs(uint8_t SF)
+    uint32_t ICACHE_RAM_ATTR3 SpreadingFactorToRSSIvalidDelayUs(uint8_t SF)
     {
     // The necessary wait time from RX start to valid instant RSSI reading
     // changes with the spreading factor setting.
@@ -593,7 +627,7 @@
         }
     }	
         
-    bool ICACHE_RAM_ATTR ChannelIsClear(void)
+    bool ICACHE_RAM_ATTR3 ChannelIsClear(void)
     {
     // Calculated from EN 300 328, adjusted for 800kHz BW for sx1280
     // TL = -70 dBm/MHz + 10*log10(0.8MHz) + 10 × log10 (100 mW / Pout) (Pout in mW e.i.r.p.)

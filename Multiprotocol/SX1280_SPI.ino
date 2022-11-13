@@ -22,14 +22,14 @@
 	uint16_t dio3Mask=SX1280_IRQ_RADIO_NONE);
 		int8_t CurrentPower;
 	
-	void ICACHE_RAM_ATTR SX1280_WriteReg(uint16_t address, uint8_t data)
+	void ICACHE_RAM_ATTR3 SX1280_WriteReg(uint16_t address, uint8_t data)
 	{
 		
 		SX1280_WriteRegisterMulti(address, &data, 1);
 	}
 	
 	
-	void ICACHE_RAM_ATTR SX1280_WriteRegisterMulti(uint16_t address, uint8_t *data, uint8_t size)
+	void ICACHE_RAM_ATTR3 SX1280_WriteRegisterMulti(uint16_t address, uint8_t *data, uint8_t size)
 	{
 		
 		uint8_t OutBuffer[size + 3];
@@ -46,14 +46,14 @@
 	}
 	
 	
-	uint8_t ICACHE_RAM_ATTR SX1280_ReadReg(uint16_t address)
+	uint8_t ICACHE_RAM_ATTR3 SX1280_ReadReg(uint16_t address)
 	{
 		uint8_t data;
 		SX1280_ReadRegisterMulti( address, &data, 1);
 		return data;
 	}
 	
-	void ICACHE_RAM_ATTR SX1280_ReadRegisterMulti(uint16_t address, uint8_t *data, uint8_t size)
+	void ICACHE_RAM_ATTR3 SX1280_ReadRegisterMulti(uint16_t address, uint8_t *data, uint8_t size)
 	{ 
 		
 		uint8_t OutBuffer[size + 4];
@@ -70,7 +70,7 @@
 		
 	}
 	
-	void ICACHE_RAM_ATTR SX1280_WriteBuffer(uint8_t offset, volatile uint8_t *buffer, uint8_t size)
+	void ICACHE_RAM_ATTR3 SX1280_WriteBuffer(uint8_t offset, volatile uint8_t *buffer, uint8_t size)
 	{
 		
 		uint8_t localbuf[size];
@@ -122,7 +122,7 @@
 		
 	}
 	
-	void ICACHE_RAM_ATTR SX1280_WriteCommand(uint8_t command, uint8_t val,uint32_t busyDelay){
+	void ICACHE_RAM_ATTR3 SX1280_WriteCommand(uint8_t command, uint8_t val,uint32_t busyDelay){
 		SX1280_WriteCommandMulti(command ,&val,1,busyDelay);//15ms
 	}
 	
@@ -141,14 +141,13 @@
 		BusyDelay(busyDelay);			
 	} 
 	
-	void ICACHE_RAM_ATTR SX1280_ReadCommand(uint8_t command, uint8_t data)
+	void ICACHE_RAM_ATTR3 SX1280_ReadCommand(uint8_t command, uint8_t data)
 	{
 		SX1280_ReadCommandMulti(command,&data,1); 
 	}
 	
 	void ICACHE_RAM_ATTR SX1280_ReadCommandMulti(uint8_t command, uint8_t *data, uint8_t size)
 	{
-		
 		uint8_t OutBuffer[size + 2];
 		#define RADIO_GET_STATUS_BUF_SIZEOF 3 // special case for command == SX1280_RADIO_GET_STATUS, fixed 3 bytes packet size
 		
@@ -171,14 +170,12 @@
 			SPI.transfer(OutBuffer, sizeof(OutBuffer));
 			memcpy(data, OutBuffer + 2, size);
 		}
-		SX1280_CSN_on;	
-		
+		SX1280_CSN_on;		
 	}
 	
 	
 	void SX1280_Reset()
-	{
-		
+	{	
 		pinMode(SX1280_RST_pin, OUTPUT);
 		delay(50);
 		SX1280_RST_off;
@@ -188,14 +185,13 @@
 	}
 	
 	
-	uint16_t ICACHE_RAM_ATTR SX1280_GetFirmwareVersion( void )
+	uint16_t ICACHE_RAM_ATTR3 SX1280_GetFirmwareVersion( void )
 	{
 		return( ( ( (uint16_t)SX1280_ReadReg( REG_LR_FIRMWARE_VERSION_MSB ) ) << 8 ) | ( SX1280_ReadReg( REG_LR_FIRMWARE_VERSION_MSB + 1 ) ) );
 	}
 	
-	void SX1280_SetTxRxMode(uint8_t mode)
+	void ICACHE_RAM_ATTR SX1280_SetTxRxMode(uint8_t mode)
 	{
-		
 		if(mode == RX_EN)
 		{
 	     if(SX1280_RXEN_pin != -1)
@@ -221,7 +217,7 @@
 		}
 	}
 	
-	void ICACHE_RAM_ATTR SX1280_SetFrequency(uint32_t frequency)
+	void ICACHE_RAM_ATTR3 SX1280_SetFrequency(uint32_t frequency)
 	{
 		uint32_t f = ( uint32_t )( ( double )frequency / ( double )FREQ_STEP );
 		uint8_t data[3];
@@ -232,7 +228,7 @@
 		SX1280_WriteCommandMulti(SX1280_RADIO_SET_RFFREQUENCY, data, 3,15);
 	}
 	
-	void ICACHE_RAM_ATTR SX1280_SetFrequencyReg(uint32_t frequency)
+	void ICACHE_RAM_ATTR3 SX1280_SetFrequencyReg(uint32_t frequency)
 	{
 		uint8_t data[3];
 		data[0] = frequency >> 16;
@@ -242,7 +238,7 @@
 		SX1280_WriteCommandMulti(SX1280_RADIO_SET_RFFREQUENCY, data, 3,15);
 	}
 	
-	void ICACHE_RAM_ATTR SX1280_SetFIFOaddr(uint8_t txBaseAddr, uint8_t rxBaseAddr)
+	void ICACHE_RAM_ATTR3 SX1280_SetFIFOaddr(uint8_t txBaseAddr, uint8_t rxBaseAddr)
 	{
 		uint8_t buf[2];
 		
@@ -251,7 +247,7 @@
 		SX1280_WriteCommandMulti(SX1280_RADIO_SET_BUFFERBASEADDRESS, buf, sizeof(buf),15);
 	}
 	
-	void ICACHE_RAM_ATTR SX1280_SetMode(uint8_t  OPmode)
+	void ICACHE_RAM_ATTR3 SX1280_SetMode(uint8_t  OPmode)
 	{
 		if (OPmode == currOpmode)
 		{
@@ -309,7 +305,7 @@
 		currOpmode = OPmode;
 	}
 	
-	void ICACHE_RAM_ATTR SX1280_ConfigModParamsLoRa(uint8_t bw, uint8_t sf, uint8_t cr)
+	void ICACHE_RAM_ATTR3 SX1280_ConfigModParamsLoRa(uint8_t bw, uint8_t sf, uint8_t cr)
 	{
 		// Care must therefore be taken to ensure that modulation parameters are set using the command
 		// SetModulationParam() only after defining the packet type SetPacketType() to be used
@@ -337,7 +333,7 @@
 	}
 	
 	
-	void ICACHE_RAM_ATTR SX1280_SetPacketParamsLoRa(uint8_t PreambleLength, uint8_t HeaderType,
+	void ICACHE_RAM_ATTR3 SX1280_SetPacketParamsLoRa(uint8_t PreambleLength, uint8_t HeaderType,
 		uint8_t PayloadLength, uint8_t crc,
 	uint8_t InvertIQ)
 	{
@@ -355,11 +351,11 @@
 	}
 	
 	
-	void ICACHE_RAM_ATTR SX1280_SetDioIrqParams( uint16_t irqMask, uint16_t dio1Mask, uint16_t dio2Mask, uint16_t dio3Mask )
+	void ICACHE_RAM_ATTR3 SX1280_SetDioIrqParams( uint16_t irqMask, uint16_t dio1Mask, uint16_t dio2Mask, uint16_t dio3Mask )
 	{
 		uint8_t buf[8];
 		
-		buf[0] = ( uint8_t )( ( irqMask >> 8 ) & 0x00FF );
+		buf[0] = ( uint8_t )( ( irqMask >> 8 ) & 0x00FF ); 
 		buf[1] = ( uint8_t )( irqMask & 0x00FF );
 		buf[2] = ( uint8_t )( ( dio1Mask >> 8 ) & 0x00FF );
 		buf[3] = ( uint8_t )( dio1Mask & 0x00FF );
@@ -389,14 +385,14 @@
 	}
 	
 	
-	uint8_t ICACHE_RAM_ATTR SX1280_GetRxBufferAddr()
+	uint8_t ICACHE_RAM_ATTR3 SX1280_GetRxBufferAddr()
 	{
 		uint8_t status[2] = {0};
 		SX1280_ReadCommandMulti(SX1280_RADIO_GET_RXBUFFERSTATUS, status, 2);
 		return status[1];
 	}
 	
-	uint8_t  ICACHE_RAM_ATTR SX1280_GetStatus()
+	uint8_t  ICACHE_RAM_ATTR3 SX1280_GetStatus()
 	{
 		uint8_t status = 0;
 		SX1280_ReadCommandMulti(SX1280_RADIO_GET_STATUS, (uint8_t *)&status, 1);
@@ -404,7 +400,7 @@
 	}
 	
 	
-	int8_t ICACHE_RAM_ATTR SX1280_GetRssiInst( void )
+	int8_t ICACHE_RAM_ATTR3 SX1280_GetRssiInst( void )
 	{
 		uint8_t raw = 0;
 		
@@ -413,7 +409,7 @@
 		return ( int8_t ) ( -raw / 2 );
 	}
 	
-	void ICACHE_RAM_ATTR SX1280_GetLastPacketStats()
+	void ICACHE_RAM_ATTR3 SX1280_GetLastPacketStats()
 	{
 		uint8_t status[2];
 		SX1280_ReadCommandMulti(SX1280_RADIO_GET_PACKETSTATUS, status, 2);
@@ -426,13 +422,13 @@
 		LastPacketRSSI += negOffset;
 	}
 	
-	uint8_t ICACHE_RAM_ATTR SX1280_GetPacketType(){
+	uint8_t ICACHE_RAM_ATTR3 SX1280_GetPacketType(){
 		uint8_t packetType = 0;
 		SX1280_ReadCommandMulti(SX1280_RADIO_GET_PACKETTYPE, (uint8_t *)&packetType, 1);
 		return packetType;
 	}
 	
-	bool ICACHE_RAM_ATTR WaitOnBusy()
+	bool ICACHE_RAM_ATTR3 WaitOnBusy()
 	{
 		
 		uint32_t wtimeoutUS = 1000U;
@@ -477,7 +473,7 @@
 		}
 	}
 	
-	/*	int32_t ICACHE_RAM_ATTR SX1280_complement2( const uint32_t num, const uint8_t bitCnt )
+	/*	int32_t ICACHE_RAM_ATTR3 SX1280_complement2( const uint32_t num, const uint8_t bitCnt )
 		{
 		int32_t retVal = ( int32_t )num;
 		if( num >= 2<<( bitCnt - 2 ) )
@@ -487,7 +483,7 @@
 		return retVal;
 		}
 	*/
-	int32_t ICACHE_RAM_ATTR SX1280_complement2( const uint32_t num, const uint8_t bitCnt ) // convert bitCnt bitlength number in 2-complement notation to int32_t
+	int32_t ICACHE_RAM_ATTR3 SX1280_complement2( const uint32_t num, const uint8_t bitCnt ) // convert bitCnt bitlength number in 2-complement notation to int32_t
     {
         int32_t retVal = ( int32_t )num; //cast bitCnt length number to int32
         if( retVal & (1<<(bitCnt-1)) ) // check for sign bit at position bitCnt, if not set return value as is, else...
@@ -497,7 +493,7 @@
         return retVal;
 	}
 	
-    int32_t ICACHE_RAM_ATTR SX1280_Fei() // return Frequency Error Indicator
+    int32_t ICACHE_RAM_ATTR3 SX1280_Fei() // return Frequency Error Indicator
     {
         uint32_t fei = 0;
         fei |= SX1280_ReadReg(0x0956);
@@ -507,7 +503,7 @@
         return retVal;
 	}
 	
-    int32_t ICACHE_RAM_ATTR SX1280_FeiHz(const int32_t fei, uint8_t bw)  // return Frequency Error Indicator in Hz, depending on Bandwith selected
+    int32_t ICACHE_RAM_ATTR3 SX1280_FeiHz(const int32_t fei, uint8_t bw)  // return Frequency Error Indicator in Hz, depending on Bandwith selected
     {
         int32_t retVal = 1.55*fei/(1600/bw);
         return retVal;
@@ -567,7 +563,7 @@
 	}
 	
 	
-	void ICACHE_RAM_ATTR SX1280_Config(uint8_t bw, uint8_t sf, uint8_t cr, uint32_t freq,
+	void ICACHE_RAM_ATTR3 SX1280_Config(uint8_t bw, uint8_t sf, uint8_t cr, uint32_t freq,
 	uint8_t PreambleLength, bool InvertIQ, uint8_t _PayloadLength)
 	{
 		uint8_t irqs = SX1280_IRQ_TX_DONE | SX1280_IRQ_RX_DONE;
@@ -587,7 +583,7 @@
 	}
 	
 	
-	void ICACHE_RAM_ATTR SX1280_SetRxTimeoutUs(uint32_t interval)
+	void ICACHE_RAM_ATTR3 SX1280_SetRxTimeoutUs(uint32_t interval)
 	{
 		if (interval)
 		{
@@ -599,7 +595,7 @@
 		}
 	}
 	
-	bool  ICACHE_RAM_ATTR SX1280_GetFrequencyErrorbool()
+	bool  ICACHE_RAM_ATTR3 SX1280_GetFrequencyErrorbool()
 	{
 		// Only need the highest bit of the 20-bit FEI to determine the direction
 		uint8_t feiMsb = SX1280_ReadReg(SX1280_REG_LR_ESTIMATED_FREQUENCY_ERROR_MSB);
@@ -610,7 +606,7 @@
 		return !IQinverted;
 	}
 	
-	void ICACHE_RAM_ATTR getRFlinkInfo()
+	void ICACHE_RAM_ATTR3 getRFlinkInfo()
 	{
 		int32_t rssiDBM = LastPacketRSSI;
 		
@@ -628,7 +624,7 @@
 		SX1280_SetOutputPower(MinPower);// set to minimum(10mW)		
 	}
 	
-	void ICACHE_RAM_ATTR SX1280_SetOutputPower( int8_t power )//default values 13 ->12.5dbm;no external PA
+	void ICACHE_RAM_ATTR3 SX1280_SetOutputPower( int8_t power )//default values 13 ->12.5dbm;no external PA
 	{
 	
 		if (power == CurrentPower)

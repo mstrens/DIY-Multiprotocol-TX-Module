@@ -74,8 +74,8 @@
 #if defined AVR_COMMON 
     #include <avr/eeprom.h>
 #endif
-void ICACHE_RAM_ATTR update_serial_data(void);
-bool ICACHE_RAM_ATTR Update_All(void);
+void ICACHE_RAM_ATTR3 update_serial_data(void);
+bool ICACHE_RAM_ATTR3 Update_All(void);
 void modules_reset();
 static uint32_t random_id(uint16_t address, uint8_t create_new);
 #ifdef STM32_BOARD  
@@ -154,15 +154,23 @@ static uint32_t random_id(uint16_t address, uint8_t create_new);
     #endif
     void ICACHE_RAM_ATTR processIncomingByte (const byte inByte);
     void initSPI(void);
-    void ICACHE_RAM_ATTR processSerialChannels();
-    void ICACHE_RAM_ATTR SerialChannelsInit(void);
-    void ICACHE_RAM_ATTR SportSerialInit(void);
+    void ICACHE_RAM_ATTR3 processSerialChannels();
+    void ICACHE_RAM_ATTR3 SerialChannelsInit(void);
+    void ICACHE_RAM_ATTR3 SportSerialInit(void);
     //uint32_t TCNT1 = 0 ;
     uint32_t chSerial_timer = 0;
     uint32_t prev_chSerial_timer = 0;
     bool startWifi = false;
     #ifdef SIM_HANDSET_DATA
         uint32_t test_time;
+        uint8_t byte4Min = 0X80;
+        uint8_t rx_testCount = 0;
+        uint8_t rx_testSubProtocol = MCH_16 << 4 ; //0X00 = MCH_16, 0X01 = MCH_8, 0X02 = MEU_16, 0X03 = MEU_8, 
+        uint8_t rx_testUplink[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
+                                            0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
+                                            0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
+                                            0x9C,0x19,0x81,
+                                            0X1B,0X10,0X20,0X30,0X40,0X50,0X60,0X70 }; 
         uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
                                             0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
                                             0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
@@ -988,7 +996,7 @@ void Update_Telem()
 }
 
 
-bool  ICACHE_RAM_ATTR Update_All()
+bool  ICACHE_RAM_ATTR3 Update_All()
 {
     #ifdef ENABLE_SERIAL
         #ifdef CHECK_FOR_BOOTLOADER
@@ -999,13 +1007,25 @@ bool  ICACHE_RAM_ATTR Update_All()
             #ifdef ESP_COMMON
                 processSerialChannels();         
         #endif
-    
+
+
+        
         #ifdef SIM_HANDSET_DATA
             if((micros()- test_time) >= 7000){
                 test_time = micros();
-                rx_len = 27;
-                memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
-                rx_ok_buff[26] |= 0x81;//protocol 128
+                rx_testCount++;
+                if ( (rx_testCount & 0X07) == 0){
+                    rx_len = 27+8;
+                    memcpy((void*)rx_ok_buff,(const void*)rx_testUplink,rx_len); 
+                    rx_ok_buff[31] = rx_testCount;  
+                } else {
+                    rx_len = 27;
+                    memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
+                }
+                rx_ok_buff[26] |= 0x81;   //protocol 128
+                rx_ok_buff[2] = rx_testSubProtocol;
+                rx_ok_buff[4] = byte4Min + ( rx_testCount & 0X0F); // channel 1
+                rx_ok_buff[15] = byte4Min + ( rx_testCount & 0X0F); // channel 9
                 #if defined (BIND_BUTTON_SIM_pin) && (BIND_BUTTON_SIM_pin != -1)
                     pinMode(BIND_BUTTON_SIM_pin,INPUT_PULLUP);
                     if(digitalRead(BIND_BUTTON_SIM_pin)==LOW)
@@ -1529,49 +1549,8 @@ static void protocol_init()
 }
 
 
-/*  Here some documentation about Multiprotocol format added by mstrens based on the code it self (so perhaps not 100% correct) 
-Content of Multiprotocol format
-0 bit 0 and 2 and 3 part of protocol num and rxnum ; bit 0 = protocol are 32 and above
-  bit 1 : 1 = packet contains failsafe values instead of channels
-1 bits 
-  bit 5 : 1 = check range
-  bit 6 : 1 = check autobind
-  bits 4...0 = 5 bits = protocol 0-31  (bit 0 from [0] is used to identify protocol above 31 so it is like a 6th MSB bit
-  
-2 bit 7 : 1 = 1,power is low ,0-power high
-  bits 1...6 : part of protocol or rx num ; 6..4 = 3 bits = subprotocol ; 3..0 = 4 bits = lower part of Rx_num
-  
-3 option ; option is also filled by some value depending on protocol (probably fto force some frequency tuning)
 
-4 and folowing = Rc channels
-
-optional
-26 bit 0 : 1= DISABLE_CH_MAP
-   bits 5..4 = 2 bits to be "or" to bits 3...0 (4 bits) from [2] in order to get Rx_num on 6 bits
-   bits 7..6 = 2 bits to be "or" to 1 bit (0 from [0]) and 5 bits (bits 4...0 from [2]) in order to get a protocol in 8 bits 
-
-27 uplink data 
-27 PHID =  id ot the device that must receive the message ; note: bits 4..0 (5 bits) must be <= 0X1B (max polling num
-27... = 7 bytes of not stuffed data(so probably PRIM + FIELDID1 + FIELDID2 + VAL1 + VAL2 + VAL3 + VAL4) 
-
-
-protocol = 8 bits = [26] bits 7..6 | [0] bit 0 | [1] bits 4...0
-subprotocol =  3 bits = [2] bits 6..4 >> 4
-Rx_num =   [26] bits 5..4 | [2] 3..0 = 4 bits 
-
-cur_protocol = 3 bytes to detect if model changed
-[0] = byte[0] but transormed during the process (must be checked in program)
-[1] = byte[1] du multiprotocol & 0X5F
-[2] = byte[2] du multiprotocol & 0X7F
-
-   bit 1 : 1 = disable telemetry
-   
-   bit 3 : 1 = invert telemetry (???) ; 0 = normal telemetry
-   bit 4..7 = additional protocol and Rx num
-
-*/
-
-void ICACHE_RAM_ATTR update_serial_data()
+void ICACHE_RAM_ATTR3 update_serial_data()
 {   
     static bool prev_ch_mapping=false;
     #if defined(TELEMETRY) && defined(INVERT_TELEMETRY_TX)
@@ -1778,7 +1757,7 @@ void ICACHE_RAM_ATTR update_serial_data()
         }
     }
 
-    // decode channel/failsafe values
+    // decode channel/failsafe values -------------------
     volatile uint8_t *p = rx_ok_buff+4;
     uint8_t inputbitsavailable = 0 ;
     uint32_t inputbits = 0 ;
@@ -2101,13 +2080,13 @@ void modules_reset()
 #endif
 
 #ifdef ESP32_PLATFORM
-    void ICACHE_RAM_ATTR SerialChannelsInit(){
+    void ICACHE_RAM_ATTR3 SerialChannelsInit(){
         portDISABLE_INTERRUPTS();
         Serial_1.begin(100000, SERIAL_8E2, SX1280_RCSIGNAL_RX_pin,-1,false, 500);
         portENABLE_INTERRUPTS();
     }
     
-    void ICACHE_RAM_ATTR SportSerialInit()
+    void ICACHE_RAM_ATTR3 SportSerialInit()
     { 
         portDISABLE_INTERRUPTS();
         Serial_2.begin(100000, SERIAL_8E2, -1, SX1280_RCSIGNAL_TX_pin,true, 500);//only tx enabled and inverted
@@ -2117,13 +2096,13 @@ void modules_reset()
 #endif
 
 #ifdef ESP8266_PLATFORM
-    void ICACHE_RAM_ATTR SerialChannelsInit()
+    void ICACHE_RAM_ATTR3 SerialChannelsInit()
     {
         Serial.flush(); 
         Serial.begin(100000, SERIAL_8E2); 
         USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal
     }
-    void ICACHE_RAM_ATTR SportSerialInit(void){LED_on;};
+    void ICACHE_RAM_ATTR3 SportSerialInit(void){LED_on;};
 #endif
 
 #ifdef CHECK_FOR_BOOTLOADER
@@ -2747,7 +2726,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 /**************************/
 #ifdef ESP_COMMON
     
-    void ICACHE_RAM_ATTR processSerialChannels()    
+    void ICACHE_RAM_ATTR3 processSerialChannels()    
     { // read Serial and fill Rx_ok_buff with a complete frame and set a flag for processing in Update_All() or loop()
         #ifdef ESP32_PLATFORM
             while (Serial_1.available()){
@@ -2774,7 +2753,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
     }
      
     
-    void ICACHE_RAM_ATTR processIncomingByte (const byte inByte)
+    void ICACHE_RAM_ATTR3 processIncomingByte (const byte inByte)
     {    // add byte to rx_buff if checks are OK ; save timestamp of last received byte in chSerial_timer
         uint8_t c = inByte;
         chSerial_timer = micros();

@@ -185,3 +185,45 @@ Main loop call Update_all()  which call update_serial_data() that manages the da
 The data in SportData[] will be processed by  MILO_callback() which call MiLo_Telemetry_frame() when a uplink tlm slot may be sent   
 
 */
+
+/*  Here some documentation about Multiprotocol format added by mstrens based on the code it self (so perhaps not 100% correct) 
+Content of Multiprotocol format
+0 bit 0 and 2 and 3 part of protocol num and rxnum ; bit 0 = protocol are 32 and above
+  bit 1 : 1 = packet contains failsafe values instead of channels
+1 bits 
+  bit 5 : 1 = check range
+  bit 6 : 1 = check autobind
+  bits 4...0 = 5 bits = protocol 0-31  (bit 0 from [0] is used to identify protocol above 31 so it is like a 6th MSB bit
+  
+2 bit 7 : 1 = 1,power is low ,0-power high
+  bits 1...6 : part of protocol or rx num ; 6..4 = 3 bits = subprotocol ; 3..0 = 4 bits = lower part of Rx_num
+  
+3 option ; option is also filled by some value depending on protocol (probably fto force some frequency tuning)
+
+4 and folowing = Rc channels
+
+optional
+26 bit 0 : 1= DISABLE_CH_MAP
+   bits 5..4 = 2 bits to be "or" to bits 3...0 (4 bits) from [2] in order to get Rx_num on 6 bits
+   bits 7..6 = 2 bits to be "or" to 1 bit (0 from [0]) and 5 bits (bits 4...0 from [2]) in order to get a protocol in 8 bits 
+
+27 uplink data 
+27 PHID =  id ot the device that must receive the message ; note: bits 4..0 (5 bits) must be <= 0X1B (max polling num
+27... = 7 bytes of not stuffed data(so probably PRIM + FIELDID1 + FIELDID2 + VAL1 + VAL2 + VAL3 + VAL4) 
+
+
+protocol = 8 bits = [26] bits 7..6 | [0] bit 0 | [1] bits 4...0
+subprotocol =  3 bits = [2] bits 6..4 >> 4
+Rx_num =   [26] bits 5..4 | [2] 3..0 = 4 bits 
+
+cur_protocol = 3 bytes to detect if model changed
+[0] = byte[0] but transormed during the process (must be checked in program)
+[1] = byte[1] du multiprotocol & 0X5F
+[2] = byte[2] du multiprotocol & 0X7F
+
+   bit 1 : 1 = disable telemetry
+   
+   bit 3 : 1 = invert telemetry (???) ; 0 = normal telemetry
+   bit 4..7 = additional protocol and Rx num
+
+*/
