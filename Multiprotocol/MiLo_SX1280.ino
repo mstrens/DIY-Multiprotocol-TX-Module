@@ -26,12 +26,36 @@
     #define RATE_150HZ 0 //150HZ
     #define RATE_MAX 3
     //#define MILO_USE_LBT
-    uint8_t TelemetryId;
-    uint8_t TelemetryExpectedId;
+
+
+    #ifdef DEBUG_ON_GPIO3
+        #define G3ON digitalWrite(3,HIGH)
+        #define G3OFF digitalWrite(3,LOW)
+        #define G3TOGGLE digitalWrite(3,!digitalRead(3))
+        #define G3PULSE(usec) digitalWrite(3,HIGH);delayMicroseconds(usec); digitalWrite(3,LOW)
+    #else
+        #define G3ON 
+        #define G3OFF 
+        #define G3TOGGLE 
+        #define G3PULSE(usec) 
+    #endif
+
+    //#define DEBUG_UNUSED_TX_SLOTS // when activated, it is possible to skip some consecutive channels (e.g. to test synchro TX-RX)
+    //#define DEBUG_SKIP_TX_FROM_CHANNEL 10 // lower index 
+    //#define DEBUG_SKIP_TX_UPTO_CHANNEL 20 // upper index
+
+    #define NBR_BYTES_IN_PACKET 16 // number of bytes in a LORA packet
+
+    uint8_t upTLMcounter = 0;
+    uint8_t miloFailsafePass = 0 ;    // miloFailsafePass is used when a Rcframe is generated; 
+                            // 0=no failsafe to send , 1= send failsafe 1_8 , 2 = send failsafe 9_16
+
+    uint8_t uplinkTlmId;
+    uint8_t expectedUplinkTlmId;
     
     uint16_t timeout = 0xFFFF;
     uint8_t currOpmode;
-    uint8_t PayloadLength = 15;
+    uint8_t PayloadLength = NBR_BYTES_IN_PACKET;
     bool IQinverted = 0;
     uint8_t packetLengthType;
     uint8_t uplinkLQ;
@@ -39,10 +63,12 @@
     int8_t LastPacketSNR = 0;
     uint32_t currFreq = 0;
     uint8_t chanskip = 0;
+    //volatile bool dioOccured = false ;     // true when a dio1 interrupt occurs
     bool frameReceived = false;
     uint8_t frameType = 0;
-    extern bool LBTEnabled;
+    bool LBTEnabled = false;
     bool LBTStarted = false;
+  	uint8_t LBTdelay = 0;
     uint32_t miloSportTimer = 0;
     bool miloSportStart = false;
     uint8_t ThisPacketDropped ;
@@ -52,10 +78,11 @@
    uint8_t DropHistorySend ;
     
     #ifdef SPORT_SEND
-        uint8_t idxOK;
+        uint8_t SportToAck;
     #endif
     void ICACHE_RAM_ATTR dioISR(void);
-    
+    void ICACHE_RAM_ATTR SX1280_SetTxRxMode(uint8_t mode);
+
     typedef struct 
     {
         uint8_t uplink_RSSI_1;
@@ -80,19 +107,15 @@
         MiLo_UPLNK_TLM,
         MiLo_DWLNK_TLM1,
         MiLo_DWLNK_TLM2,
-        #ifdef MILO_USE_LBT
-            MiLo_USE_LBT
-        #endif
     };
     
     enum{
         BIND_PACKET = 0,
-        CH1_8_PACKET1,
-        CH1_8_PACKET2,
-        CH1_16_PACKET,
+        CH1_8_PACKET, //  channels 1-8
+        CH9_16_PACKET, // channels 9-16
         TLM_PACKET,
-        FLSF_PACKET1,
-        FLSF_PACKET2
+        FS1_8_PACKET,  //  failsafe values for channels 1-8
+        FS9_16_PACKET, //  failsafe values for channels 9-16
     };
     
     enum
@@ -103,7 +126,6 @@
         TLM_RATIO_1_3 = 3,
         TLM_RATIO_1_4 = 4,
     };
-    
     
     //RF PARAMETRS
     typedef struct MiLo_mod_settings_s
@@ -117,7 +139,7 @@
         uint32_t interval;          // interval in us seconds that corresponds to that frequency 
         uint8_t TLMinterval;        // every X packets is a response TLM packet
         uint8_t PreambleLen;         //12
-        uint8_t PayloadLength;      // Number of OTA bytes to be sent//15
+        uint8_t PayloadLength;      // Number of OTA bytes to be sent//16
     } MiLo_mod_settings_t;
     
     typedef struct MiLo_rf_pref_params_s
@@ -135,8 +157,10 @@
     MiLo_rf_pref_params_s *MiLo_currAirRate_RFperfParams;
     
     MiLo_mod_settings_s MiLo_AirRateConfig[RATE_MAX] = { 
-        {0, RADIO_TYPE_SX128x_LORA, RATE_LORA_150HZ,  SX1280_LORA_BW_0800,SX1280_LORA_SF6,  SX1280_LORA_CR_LI_4_7, 7000, TLM_RATIO_1_3,12, 15 },
-        {1, RADIO_TYPE_SX128x_LORA, RATE_LORA_100HZ,  SX1280_LORA_BW_0800, SX1280_LORA_SF7,  SX1280_LORA_CR_LI_4_6, 9000, TLM_RATIO_1_3,12, 15}};
+        {0, RADIO_TYPE_SX128x_LORA, RATE_LORA_150HZ,  SX1280_LORA_BW_0800,SX1280_LORA_SF6,  SX1280_LORA_CR_LI_4_7, 7000,
+         TLM_RATIO_1_3,12, NBR_BYTES_IN_PACKET },
+        {1, RADIO_TYPE_SX128x_LORA, RATE_LORA_100HZ,  SX1280_LORA_BW_0800, SX1280_LORA_SF7,  SX1280_LORA_CR_LI_4_6, 9000,
+         TLM_RATIO_1_3,12, NBR_BYTES_IN_PACKET}};
     
     
     
@@ -162,21 +186,21 @@
     }
     
     
-    static void ICACHE_RAM_ATTR MiLo_telem_init(void)
+    static void ICACHE_RAM_ATTR3 MiLo_telem_init(void)
     {
         #ifdef SPORT_SEND
             SportHead = SportTail=0;            // empty data buffer
-            idxOK = 0;  
+            SportToAck = 0;  
         #endif
         #ifdef TELEMETRY
             telemetry_lost = 1;
             telemetry_link = 0;                 //Stop sending telemetry
         #endif
-        TelemetryId = 0;
-        TelemetryExpectedId = 0;        
+        uplinkTlmId = 0;
+        expectedUplinkTlmId = 0;        
     }
     
-    static void ICACHE_RAM_ATTR MiLo_build_bind_packet()
+    static void ICACHE_RAM_ATTR3 MiLo_build_bind_packet()
     {
         packet[0] = BIND_PACKET;
         packet[1] = rx_tx_addr[3];//ModelID(seed for Fhss channels)
@@ -191,108 +215,129 @@
     }   
     //0 240 184 107 0 0 15 167 167 167 167 167 167 167 167
     
-    static void ICACHE_RAM_ATTR MiLo_data_frame()
+    void convert8FailsafeValuesToPpm(uint8_t fromI, uint16_t failsafeTemp[])
+    { //convert value from handset like for PPM but keep original for no pulse and hold
+        uint16_t val;
+        for ( uint8_t i = 0; i<8; i++){
+            if(Failsafe_data[i+fromI]==FAILSAFE_CHANNEL_NOPULSES) {
+                failsafeTemp[i]=FAILSAFE_CHANNEL_NOPULSES;
+            } else if(Failsafe_data[i+fromI]==FAILSAFE_CHANNEL_HOLD) {
+                failsafeTemp[i]=FAILSAFE_CHANNEL_HOLD;
+            } else {
+                val = Failsafe_data[i+fromI];
+                failsafeTemp[i] = (((val<<2)+val)>>3)+860; //value range 860<->2140 -125%<->+125%
+            }    
+        }
+    }
+    
+    static void ICACHE_RAM_ATTR3 MiLo_data_frame()
     {   
         static uint8_t lpass = 0;
         uint8_t j = 0;
-        static bool pass = false;   
-        if ( lpass & 1 ){
-            j += 8 ;
-            packet[0] = CH1_16_PACKET;
+        if ( miloFailsafePass == 1){
+            packet[0] = FS1_8_PACKET;
+        } else if ( miloFailsafePass == 2){
+            j=8;
+            packet[0] = FS9_16_PACKET;
+            miloFailsafePass = 0; // reset when 2 failsafe packet have been sent
+            FAILSAFE_VALUES_off;  // avoid to send other failsafe values as long it is not requested by hanset
+        } else {   // this frame is not use for failsafe; for CH16 or EU16 sub protocol we alternate che channels
+            if ( lpass & 1 ){
+                j += 8 ;
+                packet[0] = CH9_16_PACKET;
+            } else{//lpass =0
+                packet[0] = CH1_8_PACKET;
+            }
+            if(sub_protocol == MCH_8 || sub_protocol == MEU_8) {
+                lpass = 0 ; // send always the first 8 channels
+            } else {
+                lpass += 1 ; // alternate the 2 groups of channels
+            }
         }
-        else{//lpass =0
-            if(!pass)
-            packet[0] = CH1_8_PACKET1;
-            else 
-            packet[0] = CH1_8_PACKET2 ;
-            
-            pass = ! pass;
-        }
-        packet[0] |= (telemetry_counter<< 3);   
+        packet[0] |= ( (telemetry_counter<<4) & 0X30) ; // 2 bits (5..4) are the next downlink tlm counter
+        #ifdef DEBUG_ON_GPIO3
+            if (getCurrentChannelIdx() == 0) { // when the channel is the first one
+                //G3PULSE(5);
+        }  
+        #endif      
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];
-        packet[3] =  (packet_count == 2) ? RX_num | 0x80 : RX_num & 0x3F ;//max 64 values
-        if(packet_count != 2){
-            if (sub_protocol == WIFI_RX)
-            packet[3] = RX_num | 0x40;//trigger WiFi updating firmware for RX
-        }
-        uint16_t (*ch) (uint8_t) = &convert_channel_ppm;
-        packet[4] = (*ch)(0+j)&0XFF ;
-        packet[5] = (*ch)(0+j)>>8 | ((*ch)(1+j)&0xFF)<<3;
-        packet[6] = (*ch)(1+j)>>5| (*ch)(2+j)<<6;
-        packet[7] = ((*ch)(2+j)>>2)& 0x00FF;
-        packet[8] = (*ch)(2+j)>>10|((*ch)(3+j)&0xFF)<<1;
-        packet[9] = (*ch)(3+j)>>7| ((*ch)(4+j)&0xFF)<<4;
-        packet[10] = (*ch)(4+j)>>4|((*ch)(5+j)&0xFF)<<7;
-        packet[11] = ((*ch)(5+j)>>1)& 0x00FF;
-        packet[12] = (*ch)(5+j)>>9|((*ch)(6+j)&0xFF)<<2;
-        packet[13] = (*ch)(6+j)>>6|((*ch)(7+j)&0xFF)<<5;
-        packet[14] = ((*ch)(7+j)>>3)& 0x00FF;
-        
-        if(sub_protocol == MCH_8 || sub_protocol == MEU_8)// in M16/CH1-8 mode send only 8ch every interval us
-            lpass = 0 ;
-        else
-            lpass += 1 ;
+        packet[3] =  RX_num & 0x3F ;//max 64 values
+        if ( packet_count == 2) packet[3] |=  0x80 ; //when next packet will be a downlink, then mark it
+        if (sub_protocol == WIFI_RX) packet[3] |= 0x40;//trigger WiFi updating firmware for RX
+        packet[15] = getCurrentChannelIdx() & 0x3F ; // channel index is max 37 and so coded on 5 bits 
+        if ( ( ( packet[0] & 0X07) == CH1_8_PACKET ) || ( ( packet[0] & 0X07) == CH1_8_PACKET ) ) {
+            packet[4] = Channel_data[0+j]&0XFF ;
+            packet[5] = Channel_data[0+j]>>8 | (Channel_data[1+j]&0xFF)<<3;
+            packet[6] = Channel_data[1+j]>>5| Channel_data[2+j]<<6;
+            packet[7] = (Channel_data[2+j]>>2)& 0x00FF;
+            packet[8] = Channel_data[2+j]>>10|(Channel_data[3+j]&0xFF)<<1;
+            packet[9] = Channel_data[3+j]>>7| (Channel_data[4+j]&0xFF)<<4;
+            packet[10] = Channel_data[4+j]>>4|(Channel_data[5+j]&0xFF)<<7;
+            packet[11] = (Channel_data[5+j]>>1)& 0x00FF;
+            packet[12] = Channel_data[5+j]>>9|(Channel_data[6+j]&0xFF)<<2;
+            packet[13] = Channel_data[6+j]>>6|(Channel_data[7+j]&0xFF)<<5;
+            packet[14] = (Channel_data[7+j]>>3)& 0x00FF;
+        } else {
+            #ifdef FAILSAFE_ENABLE
+                packet[4] = Failsafe_data[0+j]&0XFF ;
+                packet[5] = Failsafe_data[0+j]>>8 | (Failsafe_data[1+j]&0xFF)<<3;
+                packet[6] = Failsafe_data[1+j]>>5| Failsafe_data[2+j]<<6;
+                packet[7] = (Failsafe_data[2+j]>>2)& 0x00FF;
+                packet[8] = Failsafe_data[2+j]>>10|(Failsafe_data[3+j]&0xFF)<<1;
+                packet[9] = Failsafe_data[3+j]>>7| (Failsafe_data[4+j]&0xFF)<<4;
+                packet[10] = Failsafe_data[4+j]>>4|(Failsafe_data[5+j]&0xFF)<<7;
+                packet[11] = (Failsafe_data[5+j]>>1)& 0x00FF;
+                packet[12] = Failsafe_data[5+j]>>9|(Failsafe_data[6+j]&0xFF)<<2;
+                packet[13] = Failsafe_data[6+j]>>6|(Failsafe_data[7+j]&0xFF)<<5;
+                packet[14] = (Failsafe_data[7+j]>>3)& 0x00FF;
+            #endif    
+        }     
     }
     
-    static void __attribute__((unused)) FrSkyX_send_sport(uint8_t start, uint8_t end)
-    {  // fill part of uplink tlm frame with Sport data    
-        for (uint8_t i = start;i <= end;i++)
-            packet[i] = 0;
-        
-        #ifdef SPORT_SEND
-            
-            if(TelemetryId == TelemetryExpectedId)     
-                idxOK = SportHead;// update read pointer to last ack'ed packet
-            else
-                SportHead = idxOK;
-            TelemetryExpectedId = (TelemetryId + 1) & 0x0F;//4 bits             
-            uint8_t nbr_bytes = 0;
-            for (uint8_t i = start + 1;i <= end;i++)
-            {
-                if(SportHead == SportTail)
-                    break; //buffer empty
-                packet[i] = SportData[SportHead];
-                SportHead = (SportHead + 1) & (MAX_SPORT_BUFFER - 1);
-                nbr_bytes++;
-            }
-            packet[start] = nbr_bytes|((TelemetryId &0x0F)<<4);
-            if(nbr_bytes)
-            {//Check the buffer status
-                uint8_t used = SportTail;
-                if ( SportHead > SportTail )
-                    used += MAX_SPORT_BUFFER - SportHead ;
-                else
-                    used -= SportHead ;
-                if ( used < (MAX_SPORT_BUFFER>>1) )
-                {
-                    //DATA_BUFFER_LOW_off;
-                    debugln("Ok buf:%d",used);
-                }
-            }
-        #endif
-    }
-    
-    static void ICACHE_RAM_ATTR MiLo_Telemetry_frame()
-    {
-        FrSkyX_send_sport(3 , PayloadLength - 1); // fill the sport data
-         packet[0] = (TLM_PACKET) |(telemetry_counter<<3); //fill other byte
+    static void ICACHE_RAM_ATTR3 MiLo_Telemetry_frame()
+    {   // fill an uplink tfm frame with 8 bytes from SportData only when an uplink must be send (checked just after preparing a RcData frame)
+        packet[0] = ( (telemetry_counter<<4) & 0X30) | (TLM_PACKET) ;
         packet[1] = rx_tx_addr[3];
-        packet[2] = rx_tx_addr[2];  
+        packet[2] = rx_tx_addr[2];
+        packet[3] = ( (uplinkTlmId & 0X03) << 6)  | (RX_num & 0x3F) ;//max 64 values
+        if( (uplinkTlmId == expectedUplinkTlmId) &&  (SportToAck != SportTail)  ) 
+         { // when the RX confirms that it get the previous uplink tlm and there are uplink data to confirm   
+            SportToAck = SportTail;
+            if (SportCount > 0) {
+                SportCount--; // remove one entry from the circular buffer
+            } else {
+                debugln("??? SportCont == 0 when SportToAck != SportTail");
+            }
+        } else {
+            // when the uplink tlm ID does not match, we reset SportTail to SportToAck because we always fill the next frame from SportTail
+            SportTail = SportToAck; // roll back ; next uplink tlm is always filled from SportTail
+        }
+        memcpy( &packet[4], &SportData[SportToAck], 8 ) ; // copy 8 bytes 
+        SportTail = (SportToAck + 8) & 0X3F;  
+        expectedUplinkTlmId = (expectedUplinkTlmId + 1) & 0x03;//2 bits ; increased each time we send an uplinlk tlm frame                      
+        debugln("c=%d,h=%d,t=%d",SportCount,SportHead,SportTail);
+        // SportCount is not decreased here and SportToAck is not updated.
+        // they will be updated only when a donwlink frame confirms that the uplink has been received
+        // those updates occur while processing the downlink tlm frame   
+        packet[12] = 0XA7; // fill reserve with dummy data
+        packet[13] = packet[12];
+        packet[14] = packet[12];   
+        packet[15] = getCurrentChannelIdx() & 0x3F ; // channel index is max 37 and so coded on 5 bits
+        if (SportCount < 6) DATA_BUFFER_LOW_off;  // This will say in Milo_status that handset can continue to send uplink data
     }
     
     void MILO_init()
     {
         Fhss_Init();  // prepare full list of all freq
         Fhss_generate(MProtocol_id); // create a list that depends on the ID of the TX
-        currFreq = GetInitialFreq(); //set frequency first or an error will occur!!!
+        currFreq = GetBindFreq(); //set frequency first or an error will occur!!!
         currOpmode = SX1280_MODE_SLEEP;     
         bool init_success = SX1280_Begin();
         if (!init_success) {           
-            debugln("Init of SX1280 failed"); 
-            //return ;  // commented by mstrens       
+            debugln("Init of SX1280 failed"); delay(100); 
+            while(1) {} // This line can be commented when we want to test without a SX1280        
         } 
-        //else { //mstrens
         {
             if(IS_BIND_IN_PROGRESS) {
                 while(!chanskip)
@@ -311,18 +356,16 @@
                 MiLo_SetRFLinkRate(RATE_150HZ);
                 #ifdef MILO_USE_LBT
                     if(sub_protocol == MEU_16 || sub_protocol == MEU_8){       
-                        state = MiLo_USE_LBT;
                         LBTEnabled = true;
-                    }
-                    else 
+                    } 
                 #endif
-                    state = MiLo_DATA1;
+                state = MiLo_DATA1;
                 MiLo_telem_init(); // initialise variables (flags) used by telemetry depending of SPORT_SEND and TELEMETRY
             }
             //SX1280_SetTxRxMode(TXRX_OFF);
             POWER_init();  // set power on min value.
             PayloadLength = MiLo_currAirRate_Modparams->PayloadLength;
-            debugln("end of milo_init; case= %d",state);
+            debugln("end of milo_init; case= %d",state); 
         }   
     }
 
@@ -330,7 +373,17 @@
     {   // this function is called at regular interval by main loop and manage all time slots for sending and receiving RF on SX1280
         uint16_t intervalMiloCallback;
         intervalMiloCallback = MiLo_currAirRate_Modparams->interval;  
-        static uint32_t upTLMcounter = 2;
+   		#ifdef MILO_USE_LBT
+          	LBTdelay = SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
+        #endif
+        #define DEBUG_PACKET_COUNT
+        #ifdef DEBUG_PACKET_COUNT
+            //static uint8_t prevPacketCount = 0; 
+            if (packet_count == 0) {G3PULSE(1);}
+            else if (packet_count == 1) {G3PULSE(1);G3PULSE(1);}
+            else if (packet_count == 2) {G3PULSE(1);G3PULSE(1);G3PULSE(1);}
+            else { G3PULSE(50);}
+        #endif
         switch(state)
         {   
             default :
@@ -352,29 +405,11 @@
                 BIND_DONE;
                 #ifdef MILO_USE_LBT
                     if(sub_protocol == MEU_16 || sub_protocol == MEU_8) {       
-                        state = MiLo_USE_LBT;
                         LBTEnabled = true;
                     }
-                    else
                 #endif
-                    state = MiLo_DATA1;
+                state = MiLo_DATA1;
                 break;
-            #ifdef MILO_USE_LBT
-            case MiLo_USE_LBT:
-                packet_count = (packet_count + 1)%3;
-                SX1280_SetOutputPower(MaxPower);
-                nextChannel(1);
-                SX1280_SetFrequencyReg(GetCurrFreq());
-                BeginClearChannelAssessment();
-                if(LBTStarted) {
-                    LBTStarted = false;
-                    state = MiLo_UPLNK_TLM;
-                }
-                else    
-                    state = MiLo_DATA1;
-                intervalMiloCallback = SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
-                break;
-            #endif
             case MiLo_DATA1:
                 #ifdef ESP_COMMON
                     static uint32_t Now = millis();
@@ -400,119 +435,128 @@
                         break;
                     }
                 #endif
+                packet_count = (packet_count + 1)%3;
+                nextChannel(1);
+                SX1280_SetFrequencyReg(GetCurrFreq());    
+                SX1280_SetOutputPower(MaxPower);
                 #ifdef MILO_USE_LBT
-                    if (LBTEnabled){
-                        if(!ChannelIsClear())
-                            SX1280_SetOutputPower(MinPower);
-                        MiLo_data_frame();      
+                    if (LBTEnabled)
+                    { 
+                        SX1280_SetTxRxMode(RX_EN);// LBTmode - BeginClearChannelAssessment
+                        SX1280_SetMode(SX1280_MODE_RX);//start RX mode in order to get RSSI 				
+                        delayMicroseconds(LBTdelay);		
+                        if(!ChannelIsClear()) SX1280_SetOutputPower(MinPower);
                     }
-                    else
                 #endif  
-                    {   
-                        SX1280_SetOutputPower(MaxPower);
-                        packet_count = (packet_count + 1)%3;
-                        MiLo_data_frame();
-                        nextChannel(1);
-                        SX1280_SetFrequencyReg(GetCurrFreq());
-                    }
+                #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
+                    if ( (getCurrentChannelIdx() <  DEBUG_SKIP_TX_FROM_CHANNEL) || (getCurrentChannelIdx() >  DEBUG_SKIP_TX_UPTO_CHANNEL) ) {
+                #endif
+                MiLo_data_frame();
+                //G3PULSE(1); 
                 SX1280_WriteBuffer(0x00, packet,PayloadLength); //
                 SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise
                 SX1280_SetMode(SX1280_MODE_TX);
+                #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
+                    }
+                #endif
                 //debugln("start sending packet %d", packet_count);         
+                
+                // after having prepared sending the RCData frame, we have to determine the type of the next frame 
                 if (packet_count == 2){// next frame is RX downlink temetry
                     state = MiLo_DWLNK_TLM1;
                     intervalMiloCallback = 5400;
                     break;
                 }
-                else{
-                    if(SportHead != SportTail && upTLMcounter == 2){//next frame in uplink telemetry
-                        #ifdef MILO_USE_LBT
-                            if(LBTEnabled)
-                            {       
-                                state = MiLo_USE_LBT;
-                                LBTStarted = true;
-                            }
-                            else
-                        #endif      
-                            state = MiLo_UPLNK_TLM;
-                        upTLMcounter  = 0;//reset uplink telemetry counter
+                else if( (packet_count == 1) && (upTLMcounter == 1) ) 
+                {// The next slot can be used for uplink or for failsafe data
+                // packet_count==1 means that next slot is just before a downlink tlm
+                // upTLMcounter is incremented %2 each time a downlink tlm is send (in order to have max one uplink every 6 slot)
+                    // There are data to send if 
+                    //     - SportCount >1 or
+                    //     - uplinkTlmId != ExpectedUplinkTlmId
+                    if( (SportCount > 1) && (uplinkTlmId != expectedUplinkTlmId )) //there are date to send (or to resend)
+                    {
+                        debugln("SCount=%d  upTlmId=%d  expId= ", SportCount, uplinkTlmId, expectedUplinkTlmId);
+                        state = MiLo_UPLNK_TLM;
                         break;
                     }       
-                }
-                #ifdef MILO_USE_LBT
-                    if(LBTEnabled)       
-                        state = MiLo_USE_LBT;
-                    else
-                #endif  
-                        state = MiLo_DATA1; 
+                    #ifdef FAILSAFE_ENABLE
+                        if (IS_FAILSAFE_VALUES_on){
+                            miloFailsafePass++; // miloFailsafePass is use when a Rcframe is generated; 
+                                            // 0=no failsafe to send , 1= send failsafe 1_8 , 2 = send failsafe 9_16
+                        }
+                    #endif        
+                }       
+                state = MiLo_DATA1; // else continue with a RCData frame
                 break;      
             case MiLo_UPLNK_TLM:    //Uplink telemetry
+                packet_count = (packet_count + 1)%3;
+                nextChannel(1);
+                SX1280_SetFrequencyReg(GetCurrFreq());    
+                SX1280_SetOutputPower(MaxPower);
                 #ifdef MILO_USE_LBT
                     if (LBTEnabled) {
-                        if(!ChannelIsClear())
-                            SX1280_SetOutputPower(MinPower);
-                        MiLo_Telemetry_frame();     
+                        SX1280_SetTxRxMode(RX_EN);// LBTmode - BeginClearChannelAssessment
+                        SX1280_SetMode(SX1280_MODE_RX);//start RX mode in order to get RSSI 				
+                        delayMicroseconds(LBTdelay);		
+                        if(!ChannelIsClear()) SX1280_SetOutputPower(MinPower);
                     }
-                    else
                 #endif
-                    {   
-                        packet_count = (packet_count + 1)%3;    
-                        MiLo_Telemetry_frame();
-                        nextChannel(1);
-                        SX1280_SetFrequencyReg(GetCurrFreq());
-                    }
+                #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
+                    if ( (getCurrentChannelIdx() <  DEBUG_SKIP_TX_FROM_CHANNEL) || (getCurrentChannelIdx() >  DEBUG_SKIP_TX_UPTO_CHANNEL) ) {
+                #endif
+                MiLo_Telemetry_frame();
+                G3PULSE(10);
                 SX1280_WriteBuffer(0x00, packet, PayloadLength); 
+                SX1280_SetTxRxMode(TX_EN);// do first to allow PA stablise
                 SX1280_SetMode(SX1280_MODE_TX); 
+                #if defined (DEBUG_UNUSED_TX_SLOTS) && defined (DEBUG_SKIP_TX_FROM_CHANNEL) && defined (DEBUG_SKIP_TX_UPTO_CHANNEL)
+                    }
+                #endif
                 state = MiLo_DWLNK_TLM1;// next frame is RX downlink temetry
                 intervalMiloCallback = 5400;//
                 break;      
             case MiLo_DWLNK_TLM1://downlink telemetry
-                nextChannel(1);
-                SX1280_SetFrequencyReg(GetCurrFreq());
                 SX1280_SetTxRxMode(RX_EN);// do first to enable LNA
                 SX1280_SetMode(SX1280_MODE_RX);
-                //debugln("start receiving"); // mstrens
                 packet_count = (packet_count + 1)%3;
-                if(SportHead != SportTail)
-                    upTLMcounter++; //increment using downlink TLM clock
-                else
-                    upTLMcounter = 0;//reset counter
+                upTLMcounter = (upTLMcounter + 1) &0X01; //increment using downlink TLM clock in order to increment only once per 3 slots
                 state = MiLo_DWLNK_TLM2;
                 intervalMiloCallback = 7600;
                 break;
             case MiLo_DWLNK_TLM2:
                 if(frameReceived)
                 {
+                    G3PULSE(20);
+                    frameReceived = false;
                     uint8_t const FIFOaddr = SX1280_GetRxBufferAddr();
                     SX1280_ReadBuffer(FIFOaddr, packet_in, PayloadLength);
-                    if((packet_in[0] == rx_tx_addr[3])&&packet_in[1] == rx_tx_addr[2]){   
-                        SX1280_GetLastPacketStats();
-                        frsky_process_telemetry(packet_in, PayloadLength);//check if valid telemetry packets
+                    if( (packet_in[0] & 0xFC) == ( rx_tx_addr[3] & 0XFC) &&
+                        (packet_in[1] & 0xFC) == ( rx_tx_addr[2] & 0XFC) ){   // check it is a frame for the right handset (only on 6 bits MSB) 
+                        SX1280_GetLastPacketStats();     // read SX1280 to get LastPacketRSSI and LastPacketSNR (data are not in the received packed)
+                        telemetry_link|=1;               // Telemetry data is available
+                        G3PULSE(10);
+                        frsky_process_telemetry(packet_in, PayloadLength); //check if valid telemetry packets
+                        G3PULSE(10);
                         LQICalc();
-                        memset(&packet_in[0], 0, PayloadLength );               
-                        frameReceived = false;
+                        memset(&packet_in[0], 0, PayloadLength ); // reset packet_in[]              
                     }
-                    //debugln(" a frame has been received"); // mstrens
                 }
                 else{
+                    G3PULSE(30);
                     miloSportStart = false;
                     ThisPacketDropped = 1;
-                    //debugln("no frame received within timeout");
                 }
-                #ifdef MILO_USE_LBT
-                    if(LBTEnabled)        
-                        state = MiLo_USE_LBT;
-                    else
-                #endif
-                    state = MiLo_DATA1;
-                intervalMiloCallback = 1000;        
-        }       
-        //debugln("   next state %d  at interval %d " , state , intervalMiloCallback );  // mstrens
+                state = MiLo_DATA1;
+                intervalMiloCallback = 1000;
+                break;        
+        } // end switch       
         return intervalMiloCallback;        
     }
     
     void ICACHE_RAM_ATTR dioISR()
     {
+        //dioOccured = true ;
         uint16_t irqStatus = SX1280_GetIrqStatus();   
         SX1280_ClearIrqStatus(SX1280_IRQ_RADIO_ALL);
         #ifdef DEBUG_ESP_COMMON
@@ -554,130 +598,62 @@
             DropHistorySend = 0 ;
         }   
     }
+
+    uint32_t ICACHE_RAM_ATTR3 SpreadingFactorToRSSIvalidDelayUs(uint8_t SF)
+    {
+    // The necessary wait time from RX start to valid instant RSSI reading
+    // changes with the spreading factor setting.
+    // The worst case necessary wait time is TX->RX switch time + Lora symbol time
+    // This assumes the radio switches from either TX, RX or FS (Freq Synth mode)
+    // TX to RX switch time is 60us for sx1280
+    // Lora symbol time for the relevant spreading factors is:
+    // SF5: 39.4us
+    // SF6: 78.8us
+    // SF7: 157.6us
+    // SF9: 630.5us
+    // However, by measuring when the RSSI reading is stable and valid, it was found that
+    // actual necessary wait times are:
+    // SF5 ~100us (60us + SF5 symbol time)
+    // SF6 ~141us (60us + SF6 symbol time)
+    // SF7 ~218us (60us + SF7 symbol time)
+    // SF9 ~218us (Odd one out, measured to same as SF7 wait time)
+
+        switch(SF) {
+            case SX1280_LORA_SF5: return 100;
+            case SX1280_LORA_SF6: return 141;
+            case SX1280_LORA_SF7: return 218;
+            case SX1280_LORA_SF9: return 218;
+            default: return 218; // Values above 100mW are not relevant, default to 100mW threshold
+        }
+    }	
+        
+    bool ICACHE_RAM_ATTR3 ChannelIsClear(void)
+    {
+    // Calculated from EN 300 328, adjusted for 800kHz BW for sx1280
+    // TL = -70 dBm/MHz + 10*log10(0.8MHz) + 10 × log10 (100 mW / Pout) (Pout in mW e.i.r.p.)
+    // This threshold should be offset with a #define config for each HW that corrects for antenna gain,
+    // different RF frontends.
+    // TODO: Maybe individual adjustment offset for differences in
+    // rssi reading between bandwidth setting is also necessary when other BW than 0.8MHz are used.
+
+    // Read rssi after waiting the minimum RSSI valid delay.
+    // If this function is called long enough after RX enable,
+    // this will always be ok on first try as is the case for TX.
+
+    // TODO: Better way than busypolling this for RX?
+    // this loop should only run for RX, where listen before talk RX is started right after FHSS hop
+    // so there is no dead-time to run RX before telemetry TX is supposed to happen.
+    // if flipping the logic, so telemetry TX happens right before FHSS hop, then TX-side ends up with polling here instead?
+    // Maybe it could be skipped if there was only TX of telemetry happening when FHSShop does not happen.
+    // Then RX for LBT could stay enabled from last received packet, and RSSI would be valid instantly.
+    // But for now, FHSShops and telemetry rates does not divide evenly, so telemetry will some times happen
+    // right after FHSS and we need wait here.
+
+        int8_t rssiInst = SX1280_GetRssiInst(); 
+        SX1280_SetMode(SX1280_MODE_FS);//SX1280_SetTxIdleMode();
+        bool channelClear = rssiInst < -71;//// TL = -70 dBm/MHz + 10*log10(0.8MHz) + 10 × log10 (100 mW / Pout) (Pout in mW e.i.r.p.)
+        return channelClear;
+    }			
+
 #endif
 
-
-
-/*
-    Protocol description:
-    2.4Ghz LORA modulation
-    - 142 Hz frame rate(7ms)
-    - Data Rate ~76kb/s(-108dBm)
-    - Bw-812; SF6 ; CR -LI -4/7 .
-    - Preamble length 12 symbols
-    - Fixed length packet format(implicit) -15 bytes
-    - Downlink telemetry rate(1:3)
-    - Uplink telemetry rate(1:6)
-    - Hardware CRC is ON.
-    
-    - Normal frame channels 1-8; frame rate 7ms
-    0. Frame type(3bits) |telemetry down link frame counter(sequence) 5 bits(0-31)
-    1. txid1 TXID on 16 bits
-    2. txid2
-    3. Model ID /Rx_Num(6 bits) | 1 bit flag activate Rx wifi|1bit for sync telem frame
-    4. channels 8 channels/frame ; 11bits/channel
-    5. channels total 11 bytes of channels data in the packet frame
-    6. channels
-    7. channels
-    8. channels
-    9. channels
-    10. channels
-    11. channels
-    12. channels
-    13. channels
-    14. channels ;15 bytes payload frame
-    
-    - Normal frame channels 9-16 separate; frame rate 7ms
-    0. Frame type (3bits) | telemetry downlink frame counter(sequence) 5 bits(0-31)
-    1. txid1 TXID on 16 bits
-    2. txid2
-    3.Model ID /Rx_Num 6 bits|1 bit flag activate Rx wifi|1bit for sync telem frame
-    4. channels 8 channels/frame ; 11bits/channel
-    5. channels total 11 bytes of channels data in the packet frame
-    6. channels
-    7. channels
-    8. channels
-    9. channels
-    10. channels
-    11. channels
-    12. channels
-    13. channels
-    14. channels ;15 bytes payload frame
-    
-    - TX uplink telemetry frame can be sent separate ;frame rate 7ms;1:6 telemetry data rate
-    0. Frame type (3bits) | telemetry down link frame counter(sequence) 5 bits(0-31)
-1.txid1
-2.txid2
-3. no. of bytes in sport frame(on max 4bits) | telemetry uplink counter sequence(4 bits)
-4.Sport data byte1
-5.Sport data byte 2
-6.Sport data byte 3
-7.Sport data byte 4
-8.SPort data byte 5
-9.SPort data byte 6
-10.SPort data byte 7
-11.SPort data byte 8
-12.SPort data byte 9
-13.SPort data byte 10
-14.SPort data byte 11 ;15bytes payload/11 bytes sport telemetry
-
-- RX downlink telemetry frame sent separate at a fixed rate of 1:3;frame rate 7ms,
-
-0.txid1
-1.txid2
-2.RSSI/LQI/SNR/RXV alternate every ~80 ms update for each data
-3.telemetry frame counter(5bits)|3bits ID link data packet(RSSI/SNR /LQI)
-4.No. of bytes in sport frame(4 bits)|telemetry uplink counter sequence(4 bits)
-5.Sport data byte1
-6.Sport data byte2
-7.Sport data byte3
-8.Sport data byte4
-9.Sport data byte5
-10.Sport data byte6
-11.Sport data byte7;
-12.Sport data byte8;
-13.Sport data byte9
-14.Sport data byte10; 15 bytes payload;10 bytes sport telemetry
-
-- Frame Sequence
-
-1- RC channels 1_8_1 
-2- RC channels 9_16
-3- downlink telemetry
-4- RC channels 1_8_1
-5 -uplink telemetry                 
-6- downlink telemetry
-7- RC channels 9_16
-8- RC channels 1_8_1
-9- downlink telemetry
-10- RC channels 9_16
-11- uplink telemetry               
-12- downlink telemetry
-13- RC channels 1_8_1
-14- RC channels 9_16
-15- downlink telemetry
-16- RC channels 1_8_1
-17  uplink telemetry 
-
-
-0 - downlink telemetry
-1- RC channels 1_8_1         
-2- RC channels 1_8_2      
-3- downlink telemetry      
-4- RC channels 1_8_1       
-5 -uplink telemetry              
-6- downlink telemetry      
-7- RC channels 1_8_2         
-8- RC channels 1_8_1          
-9- downlink telemetry            
-10- RC channels 1_8_2       
-11- uplink telemetry           
-12- downlink telemetry
-13- RC channels 1_8_1            
-14- RC channels 1_8_2              
-15- downlink telemetry
-16- RC channels 1_8_1            
-17  uplink telemetry              
-15- downlink telemetry
-
-*/

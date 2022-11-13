@@ -52,6 +52,7 @@
 #else  
     #undef ICACHE_RAM_ATTR //fix to allow both esp32 and esp8266 to use ICACHE_RAM_ATTR for mapping to IRAM
     #define ICACHE_RAM_ATTR IRAM_ATTR
+    #define ICACHE_RAM_ATTR3  // no cache
 #endif
 
 //Multiprotocol module configuration file
@@ -73,8 +74,8 @@
 #if defined AVR_COMMON 
     #include <avr/eeprom.h>
 #endif
-void ICACHE_RAM_ATTR update_serial_data(void);
-bool ICACHE_RAM_ATTR Update_All(void);
+void ICACHE_RAM_ATTR3 update_serial_data(void);
+bool ICACHE_RAM_ATTR3 Update_All(void);
 void modules_reset();
 static uint32_t random_id(uint16_t address, uint8_t create_new);
 #ifdef STM32_BOARD  
@@ -107,6 +108,9 @@ static uint32_t random_id(uint16_t address, uint8_t create_new);
     
     #ifdef DEBUG_ESP8266
         #define SIM_HANDSET_DATA  // ESP8266 has only one UART. If UART Tx it is used for debuging, then UART Rx can't be used for reading handet; so we force simu mode
+    #endif
+    #if defined( SIM_HANDSET_DATA ) && defined (DEBUG_ESP8266)
+        #define DEBUG_ON_GPIO3
     #endif
     #if defined DEBUG_ESP_COMMON
         void callMicrosSerial(){
@@ -150,15 +154,23 @@ static uint32_t random_id(uint16_t address, uint8_t create_new);
     #endif
     void ICACHE_RAM_ATTR processIncomingByte (const byte inByte);
     void initSPI(void);
-    void ICACHE_RAM_ATTR processSerialChannels();
-    void ICACHE_RAM_ATTR SerialChannelsInit(void);
-    void ICACHE_RAM_ATTR SportSerialInit(void);
+    void ICACHE_RAM_ATTR3 processSerialChannels();
+    void ICACHE_RAM_ATTR3 SerialChannelsInit(void);
+    void ICACHE_RAM_ATTR3 SportSerialInit(void);
     //uint32_t TCNT1 = 0 ;
     uint32_t chSerial_timer = 0;
     uint32_t prev_chSerial_timer = 0;
     bool startWifi = false;
     #ifdef SIM_HANDSET_DATA
         uint32_t test_time;
+        uint8_t byte4Min = 0X80;
+        uint8_t rx_testCount = 0;
+        uint8_t rx_testSubProtocol = MCH_16 << 4 ; //0X00 = MCH_16, 0X01 = MCH_8, 0X02 = MEU_16, 0X03 = MEU_8, 
+        uint8_t rx_testUplink[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
+                                            0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
+                                            0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
+                                            0x9C,0x19,0x81,
+                                            0X1B,0X10,0X20,0X30,0X40,0X50,0X60,0X70 }; 
         uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
                                             0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
                                             0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
@@ -341,6 +353,7 @@ uint8_t packet_in[TELEMETRY_BUFFER_SIZE];//telemetry receiving packets
         #define MAX_SPORT_BUFFER 64
         uint8_t SportData[MAX_SPORT_BUFFER];
         uint8_t SportHead=0, SportTail=0;
+        uint8_t SportCount = 0;  // SportCount is used only in Milo protocol in order to use all 64 bytes as 8 X 8 bytes
     #endif
     
     // Functions definition when required
@@ -395,8 +408,7 @@ void setup()
             delay(500);
             currMillis = millis();
         }
-        debugDELAY(3000); // mstrens - increase delay in order to get all messages in IDE terminal
-        delay(250);  // Brief delay for FTDI debugging
+        debugDELAY(2000); // delay in order to get all messages in IDE terminal
         debugln("Multiprotocol version: %d.%d.%d.%d", VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, VERSION_PATCH_LEVEL);
     #endif
 
@@ -694,7 +706,6 @@ void setup()
     LED_output;
     //Init RF modules
     modules_reset();
-    
     #if defined STM32_BOARD || defined  ESP_COMMON
         uint32_t seed=0;
         for(uint8_t i=0;i<4;i++)
@@ -715,7 +726,7 @@ void setup()
     MProtocol_id_master=random_id(EEPROM_ID_OFFSET,false);
 
     debugln("Module Id: %lx", MProtocol_id_master);
-
+    //Serial.print("Module ID:"); Serial.println(MProtocol_id_master); // mstrens added because %lx did not works
     #ifdef ENABLE_PPM
         //Protocol and interrupts initialization
         if(mode_select != MODE_SERIAL)
@@ -985,7 +996,7 @@ void Update_Telem()
 }
 
 
-bool  ICACHE_RAM_ATTR Update_All()
+bool  ICACHE_RAM_ATTR3 Update_All()
 {
     #ifdef ENABLE_SERIAL
         #ifdef CHECK_FOR_BOOTLOADER
@@ -996,13 +1007,25 @@ bool  ICACHE_RAM_ATTR Update_All()
             #ifdef ESP_COMMON
                 processSerialChannels();         
         #endif
-    
+
+
+        
         #ifdef SIM_HANDSET_DATA
             if((micros()- test_time) >= 7000){
                 test_time = micros();
-                rx_len = 27;
-                memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
-                rx_ok_buff[26] |= 0x81;//protocol 128
+                rx_testCount++;
+                if ( (rx_testCount & 0X07) == 0){
+                    rx_len = 27+8;
+                    memcpy((void*)rx_ok_buff,(const void*)rx_testUplink,rx_len); 
+                    rx_ok_buff[31] = rx_testCount;  
+                } else {
+                    rx_len = 27;
+                    memcpy((void*)rx_ok_buff,(const void*)rx_test,rx_len);
+                }
+                rx_ok_buff[26] |= 0x81;   //protocol 128
+                rx_ok_buff[2] = rx_testSubProtocol;
+                rx_ok_buff[4] = byte4Min + ( rx_testCount & 0X0F); // channel 1
+                rx_ok_buff[15] = byte4Min + ( rx_testCount & 0X0F); // channel 9
                 #if defined (BIND_BUTTON_SIM_pin) && (BIND_BUTTON_SIM_pin != -1)
                     pinMode(BIND_BUTTON_SIM_pin,INPUT_PULLUP);
                     if(digitalRead(BIND_BUTTON_SIM_pin)==LOW)
@@ -1011,18 +1034,14 @@ bool  ICACHE_RAM_ATTR Update_All()
                 RX_FLAG_on;
             }
         #endif  
-            //debugStartMicros(4); // mstrens used to debug the time in update_all
             yield();//feed WDT important
-            //if (debugIntervalSinceStart(4) > 50) { Serial.print("Y");Serial.println(debugIntervalSinceStart(4));} //mstrens mesure the time in update_all
             
         if(mode_select==MODE_SERIAL && IS_RX_FLAG_on)       // Serial mode and a full frame has been received
         {   
-            //debugStartMicros(3); // mstrens used to debug the time in update_all
             update_serial_data();                           // Update protocol and data
             update_channels_aux();                          // update channels
             INPUT_SIGNAL_on;                                //valid signal received from handset
             last_signal=millis();
-            //if (debugIntervalSinceStart(3) > 50) { Serial.print("U");Serial.println(debugIntervalSinceStart(3));} //mstrens mesure the time in update_all
         }
     #endif //ENABLE_SERIAL
     #ifdef ENABLE_PPM
@@ -1102,9 +1121,7 @@ bool  ICACHE_RAM_ATTR Update_All()
         }
         else
     #endif
-    //debugStartMicros(1); // mstrens used to debug the time in update_all
     Update_Telem();
-    //if (debugIntervalSinceStart(1) > 100) { Serial.print("T");Serial.println(debugIntervalSinceStart(1));} //mstrens mesure the time in update_all
     
     #ifdef ENABLE_BIND_CH
         if(IS_AUTOBIND_FLAG_on && IS_BIND_CH_PREV_off && Channel_data[BIND_CH-1]>CHANNEL_MAX_COMMAND)
@@ -1531,7 +1548,9 @@ static void protocol_init()
     #endif
 }
 
-void ICACHE_RAM_ATTR update_serial_data()
+
+
+void ICACHE_RAM_ATTR3 update_serial_data()
 {   
     static bool prev_ch_mapping=false;
     #if defined(TELEMETRY) && defined(INVERT_TELEMETRY_TX)
@@ -1681,7 +1700,7 @@ void ICACHE_RAM_ATTR update_serial_data()
         CHANGE_PROTOCOL_FLAG_on;                //change protocol
         WAIT_BIND_off;
         if((rx_ok_buff[1]&0x80)!=0 || IS_AUTOBIND_FLAG_on){
-            BIND_IN_PROGRESS;                   //launch bind right away if in autobind mode or bind is set
+            BIND_IN_PROGRESS;                   //launch bind right away if in autobind mode or bind is set 
         }    
         else
             BIND_DONE;
@@ -1738,13 +1757,10 @@ void ICACHE_RAM_ATTR update_serial_data()
         }
     }
 
-    // decode channel/failsafe values
-
+    // decode channel/failsafe values -------------------
     volatile uint8_t *p = rx_ok_buff+4;
-
     uint8_t inputbitsavailable = 0 ;
     uint32_t inputbits = 0 ;
-    
     for(uint8_t i=0;i<NUM_CHN;i++)
     {
         uint16_t temp;        
@@ -1753,7 +1769,6 @@ void ICACHE_RAM_ATTR update_serial_data()
             inputbits |= (uint32_t)*p++ << inputbitsavailable ;
             inputbitsavailable += 8 ;
         }
-
         temp = inputbits&0x7FF;
         inputbitsavailable -= 11 ;
         inputbits >>= 11 ;
@@ -1767,8 +1782,7 @@ void ICACHE_RAM_ATTR update_serial_data()
 
     #ifdef HOTT_FW_TELEMETRY
         HoTT_SerialRX=false;
-    #endif
-    
+    #endif    
 
     if(rx_len>27)
     { // Data available for the current protocol
@@ -1779,7 +1793,7 @@ void ICACHE_RAM_ATTR update_serial_data()
             }
         #endif
         #ifdef SPORT_SEND
-            if((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2 || protocol==PROTO_FRSKY_R9 ||protocol == PROTO_MILO) && rx_len==27+8)
+            if((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2 || protocol==PROTO_FRSKY_R9) && (rx_len==(27+8)) )
             {//Protocol waiting for 8 bytes
                 #define BYTE_STUFF  0x7D
                 #define STUFF_MASK  0x20
@@ -1821,6 +1835,34 @@ void ICACHE_RAM_ATTR update_serial_data()
                         Update_Telem();
                         debugln("Low buf=%d,h=%d,t=%d",used,SportHead,SportTail);
                     }
+                }
+            }
+            if(protocol == PROTO_MILO && (rx_len==(27+8)))
+            {//Protocol waiting for 8 bytes
+            // for MILO, we use also SportData to store up to 4 tlm set of 8 bytes.
+            // 
+                boolean sport_valid=false;
+                for(uint8_t i=28;i<28+7;i++)
+                    if(rx_ok_buff[i]!=0) sport_valid=true;  //Check that the payload is not full of 0
+                if((rx_ok_buff[27]&0x1F) > 0x1B)                //Check 1st byte validity
+                    sport_valid=false;
+                if(sport_valid)
+                {
+                    if (SportCount < 8) { // when the circular buffer is not full
+                        for (uint8_t i = 0 ; i < 8 ; i++){
+                            SportData[SportHead+i] = rx_ok_buff[27+i]  ;   // copy the 8 bytes
+                        }
+                        SportHead = (SportHead + 8) & 0x3F;   
+                        SportCount++; // increase number of set of data
+                        if (SportCount >=7) // buffer is nearly full
+                        {
+                            DATA_BUFFER_LOW_on; // will be used to set a flag in the MULTI_STATUS frame
+                            //Send Multi Status ASAP to inform the TX
+                            SEND_MULTI_STATUS_on;
+                            Update_Telem();  // will send multi_status asap to avoid getting new data.
+                            debugln("Low buf=%d,h=%d,t=%d",SportCount,SportHead,SportTail);
+                        }
+                    }    
                 }
             }
         #endif //SPORT_SEND
@@ -1950,7 +1992,11 @@ void modules_reset()
         usart3_begin(100000,SERIAL_8E2);        
     #elif defined (ESP_COMMON)
         #ifdef DEBUG_ESP8266
-           Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);   
+           Serial.begin(115200,SERIAL_8N1,SERIAL_TX_ONLY);
+           #ifdef DEBUG_ON_GPIO3
+               pinMode(3,OUTPUT);
+               digitalWrite(3, LOW);
+           #endif   
         #else
             SerialChannelsInit();
             SportSerialInit();//only transmitting ,inverted
@@ -2034,13 +2080,13 @@ void modules_reset()
 #endif
 
 #ifdef ESP32_PLATFORM
-    void ICACHE_RAM_ATTR SerialChannelsInit(){
+    void ICACHE_RAM_ATTR3 SerialChannelsInit(){
         portDISABLE_INTERRUPTS();
         Serial_1.begin(100000, SERIAL_8E2, SX1280_RCSIGNAL_RX_pin,-1,false, 500);
         portENABLE_INTERRUPTS();
     }
     
-    void ICACHE_RAM_ATTR SportSerialInit()
+    void ICACHE_RAM_ATTR3 SportSerialInit()
     { 
         portDISABLE_INTERRUPTS();
         Serial_2.begin(100000, SERIAL_8E2, -1, SX1280_RCSIGNAL_TX_pin,true, 500);//only tx enabled and inverted
@@ -2050,13 +2096,13 @@ void modules_reset()
 #endif
 
 #ifdef ESP8266_PLATFORM
-    void ICACHE_RAM_ATTR SerialChannelsInit()
+    void ICACHE_RAM_ATTR3 SerialChannelsInit()
     {
         Serial.flush(); 
         Serial.begin(100000, SERIAL_8E2); 
         USC0(UART0) |= BIT(UCTXI);//tx serial inverted signal
     }
-    void ICACHE_RAM_ATTR SportSerialInit(void){LED_on;};
+    void ICACHE_RAM_ATTR3 SportSerialInit(void){LED_on;};
 #endif
 
 #ifdef CHECK_FOR_BOOTLOADER
@@ -2680,7 +2726,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
 /**************************/
 #ifdef ESP_COMMON
     
-    void ICACHE_RAM_ATTR processSerialChannels()    
+    void ICACHE_RAM_ATTR3 processSerialChannels()    
     { // read Serial and fill Rx_ok_buff with a complete frame and set a flag for processing in Update_All() or loop()
         #ifdef ESP32_PLATFORM
             while (Serial_1.available()){
@@ -2707,7 +2753,7 @@ static void __attribute__((unused)) crc8_update(uint8_t byte)
     }
      
     
-    void ICACHE_RAM_ATTR processIncomingByte (const byte inByte)
+    void ICACHE_RAM_ATTR3 processIncomingByte (const byte inByte)
     {    // add byte to rx_buff if checks are OK ; save timestamp of last received byte in chSerial_timer
         uint8_t c = inByte;
         chSerial_timer = micros();

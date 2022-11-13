@@ -15,8 +15,9 @@
 //**************************
 // Telemetry serial code   *
 //**************************
-#define TELEMETRY
 #if defined TELEMETRY
+
+#define DEBUG_DOWNLINK 
 
 uint8_t RetrySequence ;
 
@@ -35,7 +36,7 @@ uint8_t RetrySequence ;
     #define FRSKY_SPORT_PACKET_SIZE   8
     #define FX_BUFFERS  4
     uint8_t Sport_Data = 0;
-    uint8_t pktx1[FRSKY_SPORT_PACKET_SIZE*FX_BUFFERS];
+    uint8_t pktx1[FRSKY_SPORT_PACKET_SIZE * FX_BUFFERS];
 
     // Store for out of sequence packet
     uint8_t FrSkyX_RX_ValidSeq ;
@@ -44,15 +45,13 @@ uint8_t RetrySequence ;
         boolean valid;
         uint8_t count;
         #ifdef MILO_SX1280_INO
-        uint8_t payload[10];
+            uint8_t payload[10];
         #else
-        uint8_t payload[6];
+            uint8_t payload[6];
         #endif
     } ;
 
     // Store for FrskyX telemetry
-
-
     struct t_FrSkyX_RX_Frame FrSkyX_RX_Frames[4] ;
     uint8_t FrSkyX_RX_NextFrame=0;
 #endif // SPORT_TELEMETRY
@@ -70,6 +69,45 @@ uint8_t RetrySequence ;
     uint8_t FrSkyD_User_Frame_Start=0, FrSkyD_User_Frame_End=0;
 #endif // HUB_TELEMETRY
 
+
+#if defined MILO_SX1280_INO
+    enum{
+            TLM_DATA_TYPE_RSSI = 0,
+            TLM_DATA_TYPE_SNR ,
+            TLM_DATA_TYPE_LQ,
+        };
+
+    uint8_t bytesToAddFirst[] = {
+        0,    // 0b0000 = no sport data to transmit
+        0, 0, 0, 0, 0, 0, 0,
+        8,     // 0b1000 = 8 bytes only (one set of data) 
+        6,    // 0b1001 = 6 bytes only (remaining part)
+        4,    // 0b1010 = 4 bytes only (remaining part)
+        2,    // 0b1011 = 2 bytes only (remaining part)
+        8,    // 0b1100 = 8 + 2 bytes 
+        6,    // 0b1101 = 6 + 4 bytes
+        4,    // 0b1110 = 4 + 6 bytes
+        2,    // 0b1111 = 2 + 8 bytes
+    };
+
+    uint8_t bytesToAddNext[] = {
+        0,    // 0b0000 = no sport data to transmit
+        0, 0, 0, 0, 0, 0, 0,
+        0,     // 0b1000 = 8 bytes only (one set of data) 
+        0,    // 0b1001 = 6 bytes only (remaining part)
+        0,    // 0b1010 = 4 bytes only (remaining part)
+        0,    // 0b1011 = 2 bytes only (remaining part)
+        2,    // 0b1100 = 8 + 2 bytes 
+        4,    // 0b1101 = 6 + 4 bytes
+        6,    // 0b1110 = 4 + 6 bytes
+        8,    // 0b1111 = 2 + 8 bytes
+    };
+
+    uint8_t remaining[8];           // this array store the remaining part of a previous frame
+    uint8_t remainingBytes = 0;     // number of bytes in remaining[]
+#endif    
+
+
 #define START_STOP  0x7e
 #define BYTESTUFF   0x7d
 #define STUFF_MASK  0x20
@@ -86,251 +124,254 @@ static void multi_send_header(uint8_t type, uint8_t len)
     Serial_write(len);
 }
 
-#ifdef MULTI_SYNC
-static void telemetry_set_input_sync(uint16_t refreshRate)
-{
-    #if defined(STM32_BOARD) && defined(DEBUG_PIN)
-        static uint8_t c=0;
-        if (c++%2==0)
-        {   DEBUG_PIN_on;   }
-        else
-        {   DEBUG_PIN_off;  }
-    #endif
-    // Only record input Delay after a frame has really been received
-    // Otherwise protocols with faster refresh rates then the TX sends (e.g. 3ms vs 6ms) will screw up the calcualtion
-    inputRefreshRate = refreshRate;
-    if (last_serial_input != 0)
+    #ifdef MULTI_SYNC
+    static void telemetry_set_input_sync(uint16_t refreshRate)
     {
-        cli();                                      // Disable global int due to RW of 16 bits registers
-        #ifdef ESP_COMMON
-        TCNT1 = micros();
+        #if defined(STM32_BOARD) && defined(DEBUG_PIN)
+            static uint8_t c=0;
+            if (c++%2==0)
+            {   DEBUG_PIN_on;   }
+            else
+            {   DEBUG_PIN_off;  }
         #endif
-        inputDelay = TCNT1;
-        sei();                                      // Enable global int
-        //inputDelay = (inputDelay - last_serial_input)>>1;
-        inputDelay -= last_serial_input;
-        //if(inputDelay & 0x8000)
-        //  inputDelay = inputDelay - 0x8000;
-        last_serial_input=0;
-    }
-}
-#endif
-
-#ifdef MULTI_SYNC
-    static void mult_send_inputsync()
-    {
-        multi_send_header(MULTI_TELEMETRY_SYNC, 6);
-        Serial_write(inputRefreshRate >> 8);
-        Serial_write(inputRefreshRate & 0xff);
-//      Serial_write(inputDelay >> 8);
-//      Serial_write(inputDelay & 0xff);
-        Serial_write(inputDelay >> 9);
-        Serial_write(inputDelay >> 1);
-        Serial_write(INPUT_SYNC_TIME);
-        Serial_write(INPUT_ADDITIONAL_DELAY);
-    }
-#endif //MULTI_SYNC
-
-static void multi_send_status()  //provide Multiprotocol status to handset (on regular basis-500ms)
-{
-    if(protocol == 0) return;
-    //Serial.println("MP3456789012345678901234");return; // mstrens test to see if sending 24 bytes changes the interval in loop(): result is that increase is very limitted 5 usec?
-    multi_send_header(MULTI_TELEMETRY_STATUS, 24);
-
-    // Build flags
-    uint8_t flags=0;
-    if(IS_INPUT_SIGNAL_on)
-        flags |= 0x01;
-    if(mode_select==MODE_SERIAL)
-        flags |= 0x02;
-    if(remote_callback != 0)
-    {
-        if(multi_protocols_index != 0xFF && IS_SUB_PROTO_VALID)
-            flags |= 0x04;              //Invalid protocol / sub protocol, can't make the distinction since there is no more flags...
-        if(IS_WAIT_BIND_on)
-            flags |= 0x10;
-        else
-            if(IS_BIND_IN_PROGRESS)
-                flags |= 0x08;
-        if(multi_protocols_index != 0xFF)
+        // Only record input Delay after a frame has really been received
+        // Otherwise protocols with faster refresh rates then the TX sends (e.g. 3ms vs 6ms) will screw up the calcualtion
+        inputRefreshRate = refreshRate;
+        if (last_serial_input != 0)
         {
-            if(multi_protocols[multi_protocols_index].chMap)
-                flags |= 0x40;          //Disable_ch_mapping supported
-            #ifdef FAILSAFE_ENABLE
-                if(multi_protocols[multi_protocols_index].failSafe)
-                    flags |= 0x20;      //Failsafe supported
+            cli();                                      // Disable global int due to RW of 16 bits registers
+            #ifdef ESP_COMMON
+            TCNT1 = micros();
             #endif
+            inputDelay = TCNT1;
+            sei();                                      // Enable global int
+            //inputDelay = (inputDelay - last_serial_input)>>1;
+            inputDelay -= last_serial_input;
+            //if(inputDelay & 0x8000)
+            //  inputDelay = inputDelay - 0x8000;
+            last_serial_input=0;
         }
-        if(IS_DATA_BUFFER_LOW_on)
-            flags |= 0x80;
     }
-    Serial_write(flags);
-    
-    // Version number example: 1.1.6.1
-    Serial_write(VERSION_MAJOR);
-    Serial_write(VERSION_MINOR);
-    Serial_write(VERSION_REVISION);
-    Serial_write(VERSION_PATCH_LEVEL);
+    #endif
 
-    // Channel order
-    Serial_write(RUDDER<<6|THROTTLE<<4|ELEVATOR<<2|AILERON);
-    
-    if(multi_protocols_index == 0xFF)                                                   // selection out of list... send first available protocol
-    {
-        Serial_write(multi_protocols[0].protocol);                                      // begining of list
-        Serial_write(multi_protocols[0].protocol);                                      // begining of list
-        for(uint8_t i=0;i<16;i++)
-            Serial_write(0x00);                                                         // everything else is invalid
-    }
-    else
-    {
-        // Protocol next/prev
-        if(multi_protocols[multi_protocols_index+1].protocol != 0xFF)
+    #ifdef MULTI_SYNC
+        static void mult_send_inputsync()
         {
-            if(multi_protocols[multi_protocols_index+1].protocol == PROTO_SCANNER )//|| multi_protocols[multi_protocols_index+1].protocol == PROTO_CONFIG )
-            {// if next is scanner
-                if(multi_protocols[multi_protocols_index+2].protocol != 0xFF)
-                    Serial_write(multi_protocols[multi_protocols_index+2].protocol);    // skip to next protocol number
+            multi_send_header(MULTI_TELEMETRY_SYNC, 6);
+            Serial_write(inputRefreshRate >> 8);
+            Serial_write(inputRefreshRate & 0xff);
+    //      Serial_write(inputDelay >> 8);
+    //      Serial_write(inputDelay & 0xff);
+            Serial_write(inputDelay >> 9);
+            Serial_write(inputDelay >> 1);
+            Serial_write(INPUT_SYNC_TIME);
+            Serial_write(INPUT_ADDITIONAL_DELAY);
+        }
+    #endif //MULTI_SYNC
+
+    static void multi_send_status()  //provide Multiprotocol status to handset (on regular basis-500ms)
+    {
+        if(protocol == 0) return;
+        #define DEBUG_AVOID_MULTI_STATUS
+        #ifdef DEBUG_AVOID_MULTI_STATUS
+            Serial.println("MP status");return; // mstrens Avoid  non ascii status message when debugging on some Serial port. 
+        #endif
+        multi_send_header(MULTI_TELEMETRY_STATUS, 24);
+
+        // Build flags
+        uint8_t flags=0;
+        if(IS_INPUT_SIGNAL_on)
+            flags |= 0x01;
+        if(mode_select==MODE_SERIAL)
+            flags |= 0x02;
+        if(remote_callback != 0)
+        {
+            if(multi_protocols_index != 0xFF && IS_SUB_PROTO_VALID)
+                flags |= 0x04;              //Invalid protocol / sub protocol, can't make the distinction since there is no more flags...
+            if(IS_WAIT_BIND_on)
+                flags |= 0x10;
+            else
+                if(IS_BIND_IN_PROGRESS)
+                    flags |= 0x08;
+            if(multi_protocols_index != 0xFF)
+            {
+                if(multi_protocols[multi_protocols_index].chMap)
+                    flags |= 0x40;          //Disable_ch_mapping supported
+                #ifdef FAILSAFE_ENABLE
+                    if(multi_protocols[multi_protocols_index].failSafe)
+                        flags |= 0x20;      //Failsafe supported
+                #endif
+            }
+            if(IS_DATA_BUFFER_LOW_on)
+                flags |= 0x80;
+        }
+        Serial_write(flags);
+        
+        // Version number example: 1.1.6.1
+        Serial_write(VERSION_MAJOR);
+        Serial_write(VERSION_MINOR);
+        Serial_write(VERSION_REVISION);
+        Serial_write(VERSION_PATCH_LEVEL);
+
+        // Channel order
+        Serial_write(RUDDER<<6|THROTTLE<<4|ELEVATOR<<2|AILERON);
+        
+        if(multi_protocols_index == 0xFF)                                                   // selection out of list... send first available protocol
+        {
+            Serial_write(multi_protocols[0].protocol);                                      // begining of list
+            Serial_write(multi_protocols[0].protocol);                                      // begining of list
+            for(uint8_t i=0;i<16;i++)
+                Serial_write(0x00);                                                         // everything else is invalid
+        }
+        else
+        {
+            // Protocol next/prev
+            if(multi_protocols[multi_protocols_index+1].protocol != 0xFF)
+            {
+                if(multi_protocols[multi_protocols_index+1].protocol == PROTO_SCANNER )//|| multi_protocols[multi_protocols_index+1].protocol == PROTO_CONFIG )
+                {// if next is scanner
+                    if(multi_protocols[multi_protocols_index+2].protocol != 0xFF)
+                        Serial_write(multi_protocols[multi_protocols_index+2].protocol);    // skip to next protocol number
+                    else
+                        Serial_write(multi_protocols[multi_protocols_index].protocol);      // or end of list
+                }
                 else
-                    Serial_write(multi_protocols[multi_protocols_index].protocol);      // or end of list
+                    Serial_write(multi_protocols[multi_protocols_index+1].protocol);        // next protocol number
             }
             else
-                Serial_write(multi_protocols[multi_protocols_index+1].protocol);        // next protocol number
-        }
-        else
-            Serial_write(multi_protocols[multi_protocols_index].protocol);              // end of list
-        if(multi_protocols_index>0 && multi_protocols[multi_protocols_index-1].protocol != 0)
-        {
-            if(multi_protocols[multi_protocols_index-1].protocol == PROTO_SCANNER )//|| multi_protocols[multi_protocols_index-1].protocol == PROTO_CONFIG )
-            {// if prev is scanner
-                if(multi_protocols_index > 1)
-                    Serial_write(multi_protocols[multi_protocols_index-2].protocol);    // skip to prev protocol number
+                Serial_write(multi_protocols[multi_protocols_index].protocol);              // end of list
+            if(multi_protocols_index>0 && multi_protocols[multi_protocols_index-1].protocol != 0)
+            {
+                if(multi_protocols[multi_protocols_index-1].protocol == PROTO_SCANNER )//|| multi_protocols[multi_protocols_index-1].protocol == PROTO_CONFIG )
+                {// if prev is scanner
+                    if(multi_protocols_index > 1)
+                        Serial_write(multi_protocols[multi_protocols_index-2].protocol);    // skip to prev protocol number
+                    else
+                        Serial_write(multi_protocols[multi_protocols_index].protocol);      // begining of list
+                }
                 else
-                    Serial_write(multi_protocols[multi_protocols_index].protocol);      // begining of list
+                    Serial_write(multi_protocols[multi_protocols_index-1].protocol);        // prev protocol number
             }
             else
-                Serial_write(multi_protocols[multi_protocols_index-1].protocol);        // prev protocol number
+                Serial_write(multi_protocols[multi_protocols_index].protocol);              // begining of list
+            // Protocol
+            for(uint8_t i=0;i<7;i++)
+                Serial_write(multi_protocols[multi_protocols_index].ProtoString[i]);        // protocol name
+            // Sub-protocol
+            uint8_t nbr=multi_protocols[multi_protocols_index].nbrSubProto;
+            if(option_override>0x0F)
+                Serial_write(nbr | (multi_protocols[multi_protocols_index].optionType<<4)); // number of sub protocols && option type
+            else
+                Serial_write(nbr | (option_override<<4));                                   // number of sub protocols && option_override type
+            uint8_t j=0;
+            if(IS_SUB_PROTO_VALID)
+            {
+                uint8_t len=multi_protocols[multi_protocols_index].SubProtoString[0];
+                uint8_t offset=len*(sub_protocol&0x07)+1;
+                for(;j<len;j++)
+                    Serial_write(multi_protocols[multi_protocols_index].SubProtoString[j+offset]);  // current sub protocol name
+            }
+            for(;j<8;j++)
+                Serial_write(0x00);
         }
-        else
-            Serial_write(multi_protocols[multi_protocols_index].protocol);              // begining of list
-        // Protocol
-        for(uint8_t i=0;i<7;i++)
-            Serial_write(multi_protocols[multi_protocols_index].ProtoString[i]);        // protocol name
-        // Sub-protocol
-        uint8_t nbr=multi_protocols[multi_protocols_index].nbrSubProto;
-        if(option_override>0x0F)
-            Serial_write(nbr | (multi_protocols[multi_protocols_index].optionType<<4)); // number of sub protocols && option type
-        else
-            Serial_write(nbr | (option_override<<4));                                   // number of sub protocols && option_override type
-        uint8_t j=0;
-        if(IS_SUB_PROTO_VALID)
-        {
-            uint8_t len=multi_protocols[multi_protocols_index].SubProtoString[0];
-            uint8_t offset=len*(sub_protocol&0x07)+1;
-            for(;j<len;j++)
-                Serial_write(multi_protocols[multi_protocols_index].SubProtoString[j+offset]);  // current sub protocol name
-        }
-        for(;j<8;j++)
-            Serial_write(0x00);
     }
-}
 
-#ifdef MULTI_CONFIG_INO
-    void CONFIG_frame()
-    {
-        multi_send_header(MULTI_TELEMETRY_CONFIG, 21);
-        for (uint8_t i = 0; i < 21; i++)        // Config data
-            Serial_write(packet_in[i]);
-    }
-#endif
-
-#ifdef MLINK_FW_TELEMETRY
-    void MLINK_frame()
-    {
-        multi_send_header(MULTI_TELEMETRY_MLINK, 10);
-        Serial_write(TX_RSSI);                  // RSSI
-        Serial_write(TX_LQI);                   // LQI
-        for (uint8_t i = 0; i < 8; i++)         // followed by 8 bytes of telemetry data
-            Serial_write(packet_in[i]);
-    }
-#endif
-
-#ifdef DSM_TELEMETRY
-    void DSM_frame()
-    {
-        if (packet_in[0] == 0x80)
+    #ifdef MULTI_CONFIG_INO
+        void CONFIG_frame()
         {
-            multi_send_header(MULTI_TELEMETRY_DSMBIND, 10);
-            for (uint8_t i = 1; i < 11; i++)    // 10 bytes of DSM bind response
-                Serial_write(packet_in[i]);
-
-        }
-        else
-        {
-            multi_send_header(MULTI_TELEMETRY_DSM, 17);
-            for (uint8_t i = 0; i < 17; i++)    // RSSI value followed by 16 bytes of telemetry data
+            multi_send_header(MULTI_TELEMETRY_CONFIG, 21);
+            for (uint8_t i = 0; i < 21; i++)        // Config data
                 Serial_write(packet_in[i]);
         }
-    }
-#endif
+    #endif
 
-#ifdef SCANNER_TELEMETRY
-    void spectrum_scanner_frame()
+    #ifdef MLINK_FW_TELEMETRY
+        void MLINK_frame()
+        {
+            multi_send_header(MULTI_TELEMETRY_MLINK, 10);
+            Serial_write(TX_RSSI);                  // RSSI
+            Serial_write(TX_LQI);                   // LQI
+            for (uint8_t i = 0; i < 8; i++)         // followed by 8 bytes of telemetry data
+                Serial_write(packet_in[i]);
+        }
+    #endif
+
+    #ifdef DSM_TELEMETRY
+        void DSM_frame()
+        {
+            if (packet_in[0] == 0x80)
+            {
+                multi_send_header(MULTI_TELEMETRY_DSMBIND, 10);
+                for (uint8_t i = 1; i < 11; i++)    // 10 bytes of DSM bind response
+                    Serial_write(packet_in[i]);
+
+            }
+            else
+            {
+                multi_send_header(MULTI_TELEMETRY_DSM, 17);
+                for (uint8_t i = 0; i < 17; i++)    // RSSI value followed by 16 bytes of telemetry data
+                    Serial_write(packet_in[i]);
+            }
+        }
+    #endif
+
+    #ifdef SCANNER_TELEMETRY
+        void spectrum_scanner_frame()
+        {
+            multi_send_header(MULTI_TELEMETRY_SCANNER, SCAN_CHANS_PER_PACKET + 1);
+            Serial_write(packet_in[0]);                 // start channel
+            for(uint8_t ch = 0; ch < SCAN_CHANS_PER_PACKET; ch++)
+                Serial_write(packet_in[ch+1]);          // RSSI power levels
+        }
+    #endif
+
+    #if defined (FRSKY_RX_TELEMETRY) || defined (AFHDS2A_RX_TELEMETRY) || defined (BAYANG_RX_TELEMETRY) || defined (DSM_RX_CYRF6936_INO)
+        void receiver_channels_frame()
+        {
+            uint16_t len = packet_in[3] * 11;           // 11 bit per channel
+            if (len % 8 == 0)
+                len = 4 + (len / 8);
+            else
+                len = 5 + (len / 8);
+            multi_send_header(MULTI_TELEMETRY_RX_CHANNELS, len);
+            for (uint8_t i = 0; i < len; i++)
+                Serial_write(packet_in[i]);             // pps, rssi, ch start, ch count, 16x ch data
+        }
+    #endif
+
+    #ifdef AFHDS2A_FW_TELEMETRY
+        void AFHDSA_short_frame()
+        {
+            multi_send_header(packet_in[29]==0xAA?MULTI_TELEMETRY_AFHDS2A:MULTI_TELEMETRY_AFHDS2A_AC, 29);
+            for (uint8_t i = 0; i < 29; i++)            // RSSI value followed by 4*7 bytes of telemetry data
+                Serial_write(packet_in[i]);
+        }
+    #endif
+
+    #ifdef HITEC_FW_TELEMETRY
+        void HITEC_short_frame()
+        {
+            multi_send_header(MULTI_TELEMETRY_HITEC, 8);
+            for (uint8_t i = 0; i < 8; i++)             // TX RSSI and TX LQI values followed by frame number and 5 bytes of telemetry data
+                Serial_write(packet_in[i]);
+        }
+    #endif
+
+    #ifdef HOTT_FW_TELEMETRY
+        void HOTT_short_frame()
+        {
+            multi_send_header(MULTI_TELEMETRY_HOTT, 15);
+            for (uint8_t i = 0; i < 15; i++)            // TX RSSI and TX LQI values followed by frame number and telemetry data
+                Serial_write(packet_in[i]);
+        }
+    #endif
+
+    static void multi_send_frskyhub()
     {
-        multi_send_header(MULTI_TELEMETRY_SCANNER, SCAN_CHANS_PER_PACKET + 1);
-        Serial_write(packet_in[0]);                 // start channel
-        for(uint8_t ch = 0; ch < SCAN_CHANS_PER_PACKET; ch++)
-            Serial_write(packet_in[ch+1]);          // RSSI power levels
+        multi_send_header(MULTI_TELEMETRY_HUB, 9);
+        for (uint8_t i = 0; i < 9; i++)
+            Serial_write(frame[i]);
     }
-#endif
-
-#if defined (FRSKY_RX_TELEMETRY) || defined (AFHDS2A_RX_TELEMETRY) || defined (BAYANG_RX_TELEMETRY) || defined (DSM_RX_CYRF6936_INO)
-    void receiver_channels_frame()
-    {
-        uint16_t len = packet_in[3] * 11;           // 11 bit per channel
-        if (len % 8 == 0)
-            len = 4 + (len / 8);
-        else
-            len = 5 + (len / 8);
-        multi_send_header(MULTI_TELEMETRY_RX_CHANNELS, len);
-        for (uint8_t i = 0; i < len; i++)
-            Serial_write(packet_in[i]);             // pps, rssi, ch start, ch count, 16x ch data
-    }
-#endif
-
-#ifdef AFHDS2A_FW_TELEMETRY
-    void AFHDSA_short_frame()
-    {
-        multi_send_header(packet_in[29]==0xAA?MULTI_TELEMETRY_AFHDS2A:MULTI_TELEMETRY_AFHDS2A_AC, 29);
-        for (uint8_t i = 0; i < 29; i++)            // RSSI value followed by 4*7 bytes of telemetry data
-            Serial_write(packet_in[i]);
-    }
-#endif
-
-#ifdef HITEC_FW_TELEMETRY
-    void HITEC_short_frame()
-    {
-        multi_send_header(MULTI_TELEMETRY_HITEC, 8);
-        for (uint8_t i = 0; i < 8; i++)             // TX RSSI and TX LQI values followed by frame number and 5 bytes of telemetry data
-            Serial_write(packet_in[i]);
-    }
-#endif
-
-#ifdef HOTT_FW_TELEMETRY
-    void HOTT_short_frame()
-    {
-        multi_send_header(MULTI_TELEMETRY_HOTT, 15);
-        for (uint8_t i = 0; i < 15; i++)            // TX RSSI and TX LQI values followed by frame number and telemetry data
-            Serial_write(packet_in[i]);
-    }
-#endif
-
-static void multi_send_frskyhub()
-{
-    multi_send_header(MULTI_TELEMETRY_HUB, 9);
-    for (uint8_t i = 0; i < 9; i++)
-        Serial_write(frame[i]);
-}
 
 #endif //MULTI_TELEMETRY
 
@@ -349,11 +390,104 @@ void frskySendStuffed()  // send a Frsky frame to handset with first a start byt
     Serial_write(START_STOP);
 }
 
-bool frsky_process_telemetry(uint8_t *buffer,uint8_t len)
-{
+#define PHID_LINK_QUALITY 0X1E
+#define PHID_NO_DATA      0X1F
     
-    #if not defined MILO_SX1280_INO
-    if(protocol != PROTO_FRSKY_R9)
+#define CRCBIT(x, index) (((x) >> index) & 0x01)
+uint8_t getPhid(uint8_t physicalId)
+{
+  uint8_t result = physicalId;
+  result += (CRCBIT(physicalId, 0) ^ CRCBIT(physicalId, 1) ^ CRCBIT(physicalId, 2)) << 5;
+  result += (CRCBIT(physicalId, 2) ^ CRCBIT(physicalId, 3) ^ CRCBIT(physicalId, 4)) << 6;
+  result += (CRCBIT(physicalId, 0) ^ CRCBIT(physicalId, 2) ^ CRCBIT(physicalId, 4)) << 7;
+  return result;
+}
+
+uint8_t getPrim( uint8_t shortPrim ) {  // convert 2 bits (0=> 0X30, 1=>0X31, 2=>0X32, 3= 0X10)
+    if ( shortPrim <= 2) return shortPrim + 0X30;
+    return 0X10;
+}
+
+bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process downlink tlm data coming from the RF link
+{    
+    #if defined(MILO_SX1280_INO)
+        if(protocol == PROTO_MILO) { 
+/*
+    # RX downlink telemetry frame sent separate at a fixed rate of 1:3;frame rate 7ms. Can contain 2 Sport frame 
+    0. - bits 7...2 : MSB of TXID1 (6 bits)
+       - bits 1...0 : current downlink tlm counter (2 bits); when received TX should send this counter + 1type of link data packet(RSSI/SNR /LQI) (2 bits= 3 values currently) 
+    1. - bits 7...2 : MSB of TXID2 (6 bits)
+       - bits 1...0 : last upllink tlm counter received (2 bits); 
+    2. - bit 7 : reserve
+         bits 6..5 : recodified PRIM from sport frame1 (0X30=>0, 0X31=>1,0X32=>2, 0X10=>0)
+         bits 4..0 : PHID from sport frame1 (5 bits using a mask 0X1F; 0X1F = no data; 0X1E = link quality data)
+    3. - bit 7 : reserve
+         bits 6..5 : recodified PRIM from sport frame2 (0X30=>0, 0X31=>1,0X32=>2, 0X10=>0)
+         bits 4..0 : PHID from sport frame2 (5 bits using a mask 0X1F; 0X1F = no data; 0X1E = link quality data)
+    4. field ID1 from sport frame1   (can be RSSI)
+    5. field ID2 from sport frame1   (can be SNR) 
+    6...9. Value from sport frame1 (4 bytes) (can be LINKQ + missingPacket) 
+    10. field ID1 from sport frame2
+    11. field ID2 from sport frame2
+    12...15. Value from sport frame2 (4 bytes)
+*/
+
+            // process the incomming sport data (received in packet_in[0...15])
+            // a downlink tlm frame can can contains parts of 2 sets of data (no stuffing, CRC, ...)
+            // for each data set we must "rebuid" 8 bytes: PHID,PRIM,ID1,ID2,VAL1,VAL2,VAL3,VAL4    
+            uint8_t idx; // position of first byte to write in pktx1[]
+            G3PULSE(20);
+            telemetry_link|=1;                              // Telemetry data is available
+            telemetry_lost = 0;  // a tlm frame has been received
+            uplinkTlmId = buffer[1] & 0X03 ;// save telemetry uplink counter (is in the 2 LSB bits)
+            #ifdef DEBUG_DOWNLINK
+                G3PULSE(5);  
+                debug("Dwnlnk rec %d   exp %d  : ",  buffer[0] & 0x03 , telemetry_counter & 0x03 ) ;
+                for (uint8_t i= 0; i < 16;  i++){
+                    Serial.print( buffer[i], HEX) ; Serial.print(";"); 
+                }
+                Serial.println(" ");
+            #endif
+            G3PULSE(1);
+            if ( (buffer[0]  & 0x03 ) == (telemetry_counter & 0x03))//Check downlink telemetry sequence
+            {//Sequence is ok
+                G3PULSE(2);G3PULSE(2);
+                miloSportStart = true;
+                telemetry_counter = (telemetry_counter+1) & 0x03 ;
+                if ( ( buffer[2] & 0X1F ) == PHID_LINK_QUALITY ){ // the first part conatains up to 6 bytes about link quality
+                    // manage RSSI
+                    MiLoStats.uplink_RSSI_1 = buffer[4];    
+                    RX_RSSI = signal_quality_perc_quad(MiLoStats.uplink_RSSI_1,10,113);//RSSI% quadratic formula conversion 
+                    if(LastPacketRSSI < 0)
+                        MiLoStats.downlink_RSSI = -LastPacketRSSI;
+                    TX_RSSI = signal_quality_perc_quad(MiLoStats.downlink_RSSI,10,113); 
+                    // manage SNR
+                    MiLoStats.uplink_SNR = buffer[5];
+                    RX_SNR = buffer[5];
+                    TX_SNR = LastPacketSNR;
+                    // manage link quality
+                    MiLoStats.uplink_Link_quality = buffer[6];
+                    RX_LQI = MiLoStats.uplink_Link_quality;
+                    TX_LQI = MiLoStats.downlink_Link_quality;
+                } else if ( ( buffer[2] & 0X1F ) < 0X1B ) { // first part is filled with sensor data 
+                    if ( Sport_Data < FX_BUFFERS) { // pktx1 is not full
+                        idx = Sport_Data * FRSKY_SPORT_PACKET_SIZE;
+                        pktx1[idx] = getPhid( buffer[3] & 0X1F);    // PHID
+                        pktx1[idx+1] = getPrim( (buffer[3] >> 5) & 0X03 ) ; // convert 2 bits (0=> 0X30, 1=>0X31, 2=>0X32, 3= 0X10)
+                        memcpy(&pktx1[idx+2] , &buffer[10], 6);  // ID1+ID2+4 bytes for values
+                        Sport_Data++;
+                    }
+                }
+            }    
+        return true;
+        }
+         
+    #endif // end of MILO_SX1280_INO
+    if ( (protocol != PROTO_FRSKY_R9) 
+        #ifdef MILO_SX1280_INO
+            && ( protocol != PROTO_MILO)
+        #endif
+        )
     {
         if(buffer[1] != rx_tx_addr[3] || buffer[2] != rx_tx_addr[2] || len != buffer[0] + 3 )
             return false;                                       // Bad address or length...
@@ -364,9 +498,8 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len)
         else
             TX_RSSI += 128;
     }
-    #endif
+    
     telemetry_link|=1;                              // Telemetry data is available
-
 
     #if defined FRSKYD_CC2500_INO
         if (protocol==PROTO_FRSKYD)
@@ -398,215 +531,117 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len)
                 telemetry_in_buffer[6]=0;               // Discard packet
         }
     #endif
-    #if defined (MILO_SX1280_INO)
-/*
-TX uplink telemetry( frame can be sent separate )- frame rate 7ms
-0. frame type identification (3bits) |telemetry down link frame counter(sequence) 5 bits(0-31)
-1.txid1
-2.txid2
-3. No. of bytes in sport frame( 4bits)|telemetry uplink counter(4 bits)
-4.Sport data byte1
-5.Sport data byte 2
-6.Sport data byte 3
-7.Sport data byte 4
-8.SPort data byte 5
-9.SPort data byte 6
-10.SPort data byte 7
-11.SPort data byte 8
-12.SPort data byte 9
-13.SPort data byte 10
-14.SPort data byte 11 --| 15bytes payload;11 bytes sport telemetry
-*/
-    
 
-/*
-RX downlink telemetry (frame sent separate at a fixed rate of 1:3)-frame rate 7ms,
-
-0.txid1
-1.txid2
-2.RSSI/LQI/SNR/(RxV??) alternate every ~80 ms update for each data
-3.telemetry frame counter(5bits)|3 bits pass(for selecting link data)
-4.No. of bytes in sport frame(4 bits)|telemetry uplink counter(4 bits)
-5.Sport data byte1
-6.Sport data byte2
-7.Sport data byte3
-8.Sport data byte4
-9.Sport data byte5
-10.Sport data byte6
-11.Sport data byte7
-12.Sport data byte8
-13.Sport data byte9
-14.Sport data byte10 -
--| 15 bytes payload ;10bytes sport telemetry
-
-*/
-    if (protocol == PROTO_MILO)
-    {
-        telemetry_lost = 0;
-        //FrSkyX_RX_Frames[0].valid = false ;
-        TelemetryId = (buffer[4]>>4)&0XFF ;//telemetry uplink counter          
-        if ((buffer[3] & 0x1F ) == (telemetry_counter & 0x1F))//Check incoming telemetry sequence
-        {//Sequence is ok
-            miloSportStart = true;
-            telemetry_counter =  (telemetry_counter+1)&0x1F ;
-    
-            if((buffer[3]>>5)==0)
-            {
-                MiLoStats.uplink_RSSI_1 = buffer[2];    
-                RX_RSSI = signal_quality_perc_quad(MiLoStats.uplink_RSSI_1,10,113);//RSSI% quadratic formula conversion 
-                if(LastPacketRSSI < 0)
-                    MiLoStats.downlink_RSSI = -LastPacketRSSI;
-                TX_RSSI = signal_quality_perc_quad(MiLoStats.downlink_RSSI,10,113); 
-            }
+    #if defined SPORT_TELEMETRY && (defined FRSKYX_CC2500_INO || defined FRSKYR9_SX1276_INO)
+        if (protocol==PROTO_FRSKYX||protocol==PROTO_FRSKYX2)
+        {
+            /*Telemetry frames(RF) SPORT info 
+            15 bytes payload
+            SPORT frame valid 6+3 bytes
+            [00] PKLEN  0E 0E 0E 0E 
+            [01] TXID1  DD DD DD DD 
+            [02] TXID2  6D 6D 6D 6D 
+            [03] CONST  02 02 02 02 
+            [04] RS/RB  2C D0 2C CE //D0;CE=2*RSSI;....2C = RX battery voltage(5V from Bec)
+            [05] HD-SK  03 10 21 32 //TX/RX telemetry hand-shake bytes
+            [06] NO.BT  00 00 06 03 //No.of valid SPORT frame bytes in the frame        
+            [07] STRM1  00 00 7E 00 
+            [08] STRM2  00 00 1A 00 
+            [09] STRM3  00 00 10 00 
+            [10] STRM4  03 03 03 03  
+            [11] STRM5  F1 F1 F1 F1 
+            [12] STRM6  D1 D1 D0 D0
+            [13] CHKSUM1 --|2 CRC bytes sent by RX (calculated on RX side crc16/table)
+            [14] CHKSUM2 --|*/
+            //len=17 -> len-7=10 -> 3..12
+            uint16_t lcrc = FrSkyX_crc(&buffer[3], len-7 ) ;
+            if ( ( (lcrc >> 8) != buffer[len-4]) || ( (lcrc & 0x00FF ) != buffer[len-3]) )
+                return false;                                   // Bad CRC
+            
+            if(buffer[4] & 0x80)
+                RX_RSSI=buffer[4] & 0x7F ;
             else
-            if((buffer[3]>>5)==1)
-            {
-                MiLoStats.uplink_SNR = buffer[2];
-                RX_SNR = buffer[2];
-                TX_SNR = LastPacketSNR;
-            }
-            else
-            if((buffer[3]>>5)==2)
-            {
-                MiLoStats.uplink_Link_quality = buffer[2];
-                RX_LQI = MiLoStats.uplink_Link_quality;
-                TX_LQI = MiLoStats.downlink_Link_quality;
-            }
-            struct t_FrSkyX_RX_Frame *p ;               
-            uint8_t count ;
-            count = buffer[4] & 0x0F;
-            p = &FrSkyX_RX_Frames[FrSkyX_RX_NextFrame] ;
-            if(count <= 10)//nr bytes on telemetry frame
-            { //Telemetry length ok
-                p->count = count ;
-                for (uint8_t i = 0; i< count;i++)
-                {
-                    p->payload[i] = (buffer[i+5]) ;
-                }
-            }
-            else
-            {
-                p->count = 0;
-                buffer[4] &= 0xF0;     // Discard packet
-            }
-            p->valid = true;
+                v_lipo1 = (buffer[4]<<1) + 1 ;
+            #if defined(TELEMETRY_FRSKYX_TO_FRSKYD) && defined(ENABLE_PPM)
+                if(mode_select != MODE_SERIAL)
+                    return true;
+            #endif
         }
-    }
-    #endif
-    
-    
+        if (protocol==PROTO_FRSKYX||protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9)
+        {
+            telemetry_lost=0;
 
+            //Save outgoing telemetry sequence
+            FrSkyX_TX_IN_Seq=buffer[5] >> 4;
 
-#if defined SPORT_TELEMETRY && (defined FRSKYX_CC2500_INO || defined FRSKYR9_SX1276_INO)
-    if (protocol==PROTO_FRSKYX||protocol==PROTO_FRSKYX2)
-    {
-        /*Telemetry frames(RF) SPORT info 
-        15 bytes payload
-        SPORT frame valid 6+3 bytes
-        [00] PKLEN  0E 0E 0E 0E 
-        [01] TXID1  DD DD DD DD 
-        [02] TXID2  6D 6D 6D 6D 
-        [03] CONST  02 02 02 02 
-        [04] RS/RB  2C D0 2C CE //D0;CE=2*RSSI;....2C = RX battery voltage(5V from Bec)
-        [05] HD-SK  03 10 21 32 //TX/RX telemetry hand-shake bytes
-        [06] NO.BT  00 00 06 03 //No.of valid SPORT frame bytes in the frame        
-        [07] STRM1  00 00 7E 00 
-        [08] STRM2  00 00 1A 00 
-        [09] STRM3  00 00 10 00 
-        [10] STRM4  03 03 03 03  
-        [11] STRM5  F1 F1 F1 F1 
-        [12] STRM6  D1 D1 D0 D0
-        [13] CHKSUM1 --|2 CRC bytes sent by RX (calculated on RX side crc16/table)
-        [14] CHKSUM2 --|*/
-        //len=17 -> len-7=10 -> 3..12
-        uint16_t lcrc = FrSkyX_crc(&buffer[3], len-7 ) ;
-        if ( ( (lcrc >> 8) != buffer[len-4]) || ( (lcrc & 0x00FF ) != buffer[len-3]) )
-            return false;                                   // Bad CRC
-        
-        if(buffer[4] & 0x80)
-            RX_RSSI=buffer[4] & 0x7F ;
-        else
-            v_lipo1 = (buffer[4]<<1) + 1 ;
-        #if defined(TELEMETRY_FRSKYX_TO_FRSKYD) && defined(ENABLE_PPM)
-            if(mode_select != MODE_SERIAL)
-                return true;
-        #endif
-    }
-    if (protocol==PROTO_FRSKYX||protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9)
-    {
-        telemetry_lost=0;
-
-        //Save outgoing telemetry sequence
-        FrSkyX_TX_IN_Seq=buffer[5] >> 4;
-
-        //Check incoming telemetry sequence
-        uint8_t packet_seq=buffer[5] & 0x03;
-        if ( buffer[5] & 0x08 )
-        {//Request init
-            FrSkyX_RX_Seq = 0x08 ;
-            FrSkyX_RX_NextFrame = 0x00 ;
-            FrSkyX_RX_Frames[0].valid = false ;
-            FrSkyX_RX_Frames[1].valid = false ;
-            FrSkyX_RX_Frames[2].valid = false ;
-            FrSkyX_RX_Frames[3].valid = false ;
-        }
-        else if ( packet_seq == (FrSkyX_RX_Seq & 0x03 ) )
-        {//In sequence
-            struct t_FrSkyX_RX_Frame *p ;
-            uint8_t count ;
-            // buffer[4] RSSI
-            // buffer[5] sequence control
-            // buffer[6] payload count
-            // buffer[7-12] payload         
-            p = &FrSkyX_RX_Frames[packet_seq] ;
-            count = buffer[6];                  // Payload length
-            if ( count <= 6 )
-            {//Store payload
-                p->count = count ;
-                for ( uint8_t i = 0 ; i < count ; i++ )
-                    p->payload[i] = buffer[i+7] ;
+            //Check incoming telemetry sequence
+            uint8_t packet_seq=buffer[5] & 0x03;
+            if ( buffer[5] & 0x08 )
+            {//Request init
+                FrSkyX_RX_Seq = 0x08 ;
+                FrSkyX_RX_NextFrame = 0x00 ;
+                FrSkyX_RX_Frames[0].valid = false ;
+                FrSkyX_RX_Frames[1].valid = false ;
+                FrSkyX_RX_Frames[2].valid = false ;
+                FrSkyX_RX_Frames[3].valid = false ;
             }
-            else
-                p->count = 0 ;                  // Discard
-            p->valid = true ;
-
-            FrSkyX_RX_Seq = ( FrSkyX_RX_Seq + 1 ) & 0x03 ;  // Move to next sequence
-
-            if ( FrSkyX_RX_ValidSeq & 0x80 )
-            {
-                FrSkyX_RX_Seq = ( FrSkyX_RX_ValidSeq + 1 ) & 3 ;
-                FrSkyX_RX_ValidSeq &= 0x7F ;
-            }
-
-        }
-        else
-        {//Not in sequence
-            struct t_FrSkyX_RX_Frame *q ;
-            uint8_t count ;
-            // buffer[4] RSSI
-            // buffer[5] sequence control
-            // buffer[6] payload count
-            // buffer[7-12] payload         
-            if ( packet_seq == ( ( FrSkyX_RX_Seq +1 ) & 3 ) )
-            {//Received next sequence -> save it
-                q = &FrSkyX_RX_Frames[packet_seq] ;
-                count = buffer[6];              // Payload length
+            else if ( packet_seq == (FrSkyX_RX_Seq & 0x03 ) )
+            {//In sequence
+                struct t_FrSkyX_RX_Frame *p ;
+                uint8_t count ;
+                // buffer[4] RSSI
+                // buffer[5] sequence control
+                // buffer[6] payload count
+                // buffer[7-12] payload         
+                p = &FrSkyX_RX_Frames[packet_seq] ;
+                count = buffer[6];                  // Payload length
                 if ( count <= 6 )
                 {//Store payload
-                    q->count = count ;
+                    p->count = count ;
                     for ( uint8_t i = 0 ; i < count ; i++ )
-                        q->payload[i] = buffer[i+7] ;
+                        p->payload[i] = buffer[i+7] ;
                 }
                 else
-                    q->count = 0 ;
-                q->valid = true ;
-            
-                FrSkyX_RX_ValidSeq = 0x80 | packet_seq ;
+                    p->count = 0 ;                  // Discard
+                p->valid = true ;
+
+                FrSkyX_RX_Seq = ( FrSkyX_RX_Seq + 1 ) & 0x03 ;  // Move to next sequence
+
+                if ( FrSkyX_RX_ValidSeq & 0x80 )
+                {
+                    FrSkyX_RX_Seq = ( FrSkyX_RX_ValidSeq + 1 ) & 3 ;
+                    FrSkyX_RX_ValidSeq &= 0x7F ;
+                }
+
             }
-            FrSkyX_RX_Seq = ( FrSkyX_RX_Seq & 0x03 ) | 0x04 ;   // Request re-transmission of original sequence
+            else
+            {//Not in sequence
+                struct t_FrSkyX_RX_Frame *q ;
+                uint8_t count ;
+                // buffer[4] RSSI
+                // buffer[5] sequence control
+                // buffer[6] payload count
+                // buffer[7-12] payload         
+                if ( packet_seq == ( ( FrSkyX_RX_Seq +1 ) & 3 ) )
+                {//Received next sequence -> save it
+                    q = &FrSkyX_RX_Frames[packet_seq] ;
+                    count = buffer[6];              // Payload length
+                    if ( count <= 6 )
+                    {//Store payload
+                        q->count = count ;
+                        for ( uint8_t i = 0 ; i < count ; i++ )
+                            q->payload[i] = buffer[i+7] ;
+                    }
+                    else
+                        q->count = 0 ;
+                    q->valid = true ;
+                
+                    FrSkyX_RX_ValidSeq = 0x80 | packet_seq ;
+                }
+                FrSkyX_RX_Seq = ( FrSkyX_RX_Seq & 0x03 ) | 0x04 ;   // Request re-transmission of original sequence
+            }
         }
-    }
-#endif
+    #endif
     return true;
 }
 
@@ -809,9 +844,14 @@ const uint8_t PROGMEM Indices[] = { 0x00, 0xA1, 0x22, 0x83, 0xE4, 0x45,
                                     0x98, 0x39, 0xBA, 0x1B } ;
 #endif
 
-#ifdef MULTI_TELEMETRY
-    void sportSend(uint8_t *p)     // send a frame to the handset in the Multiprotocol format (no stuffing)
-    {
+
+void sportSend(uint8_t *p)     // send a frame to the handset in the Multiprotocol format (no stuffing)
+{ // read 8 bytes and send a frame in the multi telemetry format or in original Sport format
+    #define DEBUG_AVOID_SENDING_TO_SPORT
+    #ifdef DEBUG_AVOID_SENDING_TO_SPORT 
+        return;
+    #endif
+    #ifdef MULTI_TELEMETRY
         multi_send_header(MULTI_TELEMETRY_SPORT, 9);
         uint16_t crc_s = 0;
         uint8_t x = p[0] ;
@@ -826,10 +866,8 @@ const uint8_t PROGMEM Indices[] = { 0x00, 0xA1, 0x22, 0x83, 0xE4, 0x45,
             crc_s &= 0x00ff;
         }
         Serial_write(0xff - crc_s);
-    }
-#else
-    void sportSend(uint8_t *p)    // send a frame in the original Sport format (Start/stop + byte stuffing + crc)
-    {
+    #else // not MULTI_TELEMETRY
+      //sport original format is Start/stop + 1 byte unstuffed + (7 bytes + 1 CRC)  stuffed)
         uint16_t crc_s = 0;
         Serial_write(START_STOP);//+9
         Serial_write(p[0]) ;
@@ -850,21 +888,29 @@ const uint8_t PROGMEM Indices[] = { 0x00, 0xA1, 0x22, 0x83, 0xE4, 0x45,
             crc_s += crc_s >> 8; //0-100
             crc_s &= 0x00ff;
         }
-    }   
-#endif
+    #endif
+}   
 
 void sportIdle()
 {
+    #ifdef DEBUG_AVOID_SENDING_TO_SPORT 
+        return;
+    #endif
+    
     #if !defined MULTI_TELEMETRY  // for original sport, terminate with a 0x7E 
         Serial_write(START_STOP);
     #endif
 }   
 
-void sportSendFrame()  // create a frame from pktx1[] and sent it using multiprotocol or sport format 
+void sportSendFrame()  // create a frame based on 8 first bytes from pktx1[32]
+                       //  and sent it using sportSend() in 
+                        //             - multiprotocol (header,1 byte + 8 payload + CRC)
+                        //             - or sport format (START+ Stuffing + CRC)
+                        // it also look to send RSSI/LQI/SNR data
+                        // it concerns here sending a downlink tlm to handset 
 {
     static uint8_t sport_counter=0;
     uint8_t i;
-
     sport_counter = (sport_counter + 1) %36;
     if(telemetry_lost)
     {
@@ -875,6 +921,7 @@ void sportSendFrame()  // create a frame from pktx1[] and sent it using multipro
     {
         frame[0] = 0x98;
         frame[1] = 0x10;
+        
         for (i = 5;i<8;i++)
     
             frame[i]=0;
@@ -936,10 +983,9 @@ void sportSendFrame()  // create a frame from pktx1[] and sent it using multipro
             frame[4] = v_lipo1; //a1;
             break;                              
         default:
-            if(Sport_Data)
+            if(Sport_Data) // where Sport data are available in pktx1, fill frame[]with one frame
             {   
-                for (i = 0;i<FRSKY_SPORT_PACKET_SIZE;i++)
-                    frame[i] = pktx1[i]; // copy 8 bytes
+                for (i = 0;i<FRSKY_SPORT_PACKET_SIZE;i++) frame[i] = pktx1[i]; // copy 8 bytes
                 Sport_Data -- ;
                 if ( Sport_Data )
                 {  // if there are still data in pktx1 move them from 8 byte
@@ -947,7 +993,7 @@ void sportSendFrame()  // create a frame from pktx1[] and sent it using multipro
                     for (i=0;i<j;i++)
                         pktx1[i] = pktx1[i+FRSKY_SPORT_PACKET_SIZE] ;
                 }
-                break;
+                break; 
             }
             else
             {
@@ -960,7 +1006,7 @@ void sportSendFrame()  // create a frame from pktx1[] and sent it using multipro
 
 void proces_sport_data(uint8_t data)  
 {   // Synchronize on START_STOP, unstuff and store one byte to be transfered to handset in buffer pktx[];
-    // If buffer is full copy it to pktx1[] 
+    // If buffer pktx[] is full (= 1 frame) copy it to pktx1[] and increase Sport_Data 
     // Sport_Data count the number of (unstuffed) group of data ready to be sent in buffer pktx1[] 
     static uint8_t pass = 0, indx = 0;
     switch (pass)
@@ -1067,7 +1113,7 @@ void TelemetryUpdate()
         #endif
     #endif
     #if defined SPORT_TELEMETRY
-        if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9|| protocol ==PROTO_MILO) && telemetry_link 
+        if ((protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2||protocol==PROTO_FRSKY_R9) && telemetry_link 
             #ifdef TELEMETRY_FRSKYX_TO_FRSKYD
                 && mode_select==MODE_SERIAL
             #endif
@@ -1091,13 +1137,20 @@ void TelemetryUpdate()
                     break ;
             }
             telemetry_link=0;
-            if(protocol == PROTO_MILO)
-                miloSportTimer = micros();  //init timer
             sportSendFrame();  // send the data frpm pktx1[] to handset   
+        }
+        if ((protocol == PROTO_MILO) && telemetry_link )
+        {   
+            telemetry_link=0;
+            sportSendFrame();  // send the data frpm pktx1[] to handset
+            miloSportTimer = micros();  //init timer
         }
         if(protocol == PROTO_MILO &&(micros() - miloSportTimer)>=7000 && miloSportStart==true){
             sportSendFrame();   // send one frame telemetry to handset once every 7000 usec
             miloSportTimer = micros();//reset timer
+            // note: not sure this is correct because perhaps we send also old values from RSSI, LQI, SNR
+            // not sure if we have a flag that says if such a field (RSSI/LQI,SNR) has already been sent 
+            // !!!!!!!!!!!!!!!!!!!!!!
         }
     #endif // SPORT_TELEMETRY
 
