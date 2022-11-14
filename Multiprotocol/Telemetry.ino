@@ -17,7 +17,7 @@
 //**************************
 #if defined TELEMETRY
 
-#define DEBUG_DOWNLINK 
+//#define DEBUG_DOWNLINK 
 
 uint8_t RetrySequence ;
 
@@ -68,45 +68,6 @@ uint8_t RetrySequence ;
     } FrSkyD_User_Frame[8];
     uint8_t FrSkyD_User_Frame_Start=0, FrSkyD_User_Frame_End=0;
 #endif // HUB_TELEMETRY
-
-
-#if defined MILO_SX1280_INO
-    enum{
-            TLM_DATA_TYPE_RSSI = 0,
-            TLM_DATA_TYPE_SNR ,
-            TLM_DATA_TYPE_LQ,
-        };
-
-    uint8_t bytesToAddFirst[] = {
-        0,    // 0b0000 = no sport data to transmit
-        0, 0, 0, 0, 0, 0, 0,
-        8,     // 0b1000 = 8 bytes only (one set of data) 
-        6,    // 0b1001 = 6 bytes only (remaining part)
-        4,    // 0b1010 = 4 bytes only (remaining part)
-        2,    // 0b1011 = 2 bytes only (remaining part)
-        8,    // 0b1100 = 8 + 2 bytes 
-        6,    // 0b1101 = 6 + 4 bytes
-        4,    // 0b1110 = 4 + 6 bytes
-        2,    // 0b1111 = 2 + 8 bytes
-    };
-
-    uint8_t bytesToAddNext[] = {
-        0,    // 0b0000 = no sport data to transmit
-        0, 0, 0, 0, 0, 0, 0,
-        0,     // 0b1000 = 8 bytes only (one set of data) 
-        0,    // 0b1001 = 6 bytes only (remaining part)
-        0,    // 0b1010 = 4 bytes only (remaining part)
-        0,    // 0b1011 = 2 bytes only (remaining part)
-        2,    // 0b1100 = 8 + 2 bytes 
-        4,    // 0b1101 = 6 + 4 bytes
-        6,    // 0b1110 = 4 + 6 bytes
-        8,    // 0b1111 = 2 + 8 bytes
-    };
-
-    uint8_t remaining[8];           // this array store the remaining part of a previous frame
-    uint8_t remainingBytes = 0;     // number of bytes in remaining[]
-#endif    
-
 
 #define START_STOP  0x7e
 #define BYTESTUFF   0x7d
@@ -454,7 +415,7 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process downlink tl
                 G3PULSE(2);G3PULSE(2);
                 miloSportStart = true;
                 telemetry_counter = (telemetry_counter+1) & 0x03 ;
-                if ( ( buffer[2] & 0X1F ) == PHID_LINK_QUALITY ){ // the first part conatains up to 6 bytes about link quality
+                if ( ( buffer[2] & 0X1F ) == PHID_LINK_QUALITY ){ // the first part contains up to 6 bytes about link quality
                     // manage RSSI
                     MiLoStats.uplink_RSSI_1 = buffer[4];    
                     RX_RSSI = signal_quality_perc_quad(MiLoStats.uplink_RSSI_1,10,113);//RSSI% quadratic formula conversion 

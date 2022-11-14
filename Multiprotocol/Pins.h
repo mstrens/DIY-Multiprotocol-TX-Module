@@ -406,7 +406,7 @@
     #define SX1280_MISO_pin   19  //MISO pin
     #define SX1280_SCK_pin    18  //SCK pin
     
-    #define SX1280_FAN_EN_pin      17
+    #define SX1280_FAN_EN_pin      17//Not used 
     #define SX1280_ANTENNA_SELECT_pin  -1
     #define SX1280_RCSIGNAL_RX_pin 25  //SERIAL CHANNELS 1-st pin of I/O connector
     #define SX1280_RCSIGNAL_TX_pin 13  //SPORT usart tx to 5-th pin of I/O connector
