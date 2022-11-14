@@ -297,29 +297,18 @@
     
     static void ICACHE_RAM_ATTR3 MiLo_Telemetry_frame()
     {   // fill an uplink tfm frame with 8 bytes from SportData only when an uplink must be send (checked just after preparing a RcData frame)
-        packet[0] = ( (telemetry_counter<<4) & 0X30) | (TLM_PACKET) ;
+        packet[0] = ( (telemetry_counter<<4) & 0X30) | (TLM_PACKET) ; // telemetry_counter is used to manage downlink tlm sequence
         packet[1] = rx_tx_addr[3];
         packet[2] = rx_tx_addr[2];
         packet[3] = ( (uplinkTlmId & 0X03) << 6)  | (RX_num & 0x3F) ;//max 64 values
-        if( (uplinkTlmId == expectedUplinkTlmId) &&  (SportToAck != SportTail)  ) 
-         { // when the RX confirms that it get the previous uplink tlm and there are uplink data to confirm   
-            SportToAck = SportTail;
-            if (SportCount > 0) {
-                SportCount--; // remove one entry from the circular buffer
-            } else {
-                debugln("??? SportCont == 0 when SportToAck != SportTail");
-            }
-        } else {
-            // when the uplink tlm ID does not match, we reset SportTail to SportToAck because we always fill the next frame from SportTail
-            SportTail = SportToAck; // roll back ; next uplink tlm is always filled from SportTail
+        if( uplinkTlmId == expectedUplinkTlmId )
+        { // when the RX confirms that it get the previous uplink tlm
+            expectedUplinkTlmId = (uplinkTlmId + 1) & 0x03;//2 bits ; increased only when sequence match                          
         }
+        // Note:  SportToAck, SportTail and SportCount are update immediately when a downlink tlm frame is processed (in frsky_process_telemetry()_)
         memcpy( &packet[4], &SportData[SportToAck], 8 ) ; // copy 8 bytes 
         SportTail = (SportToAck + 8) & 0X3F;  
-        expectedUplinkTlmId = (expectedUplinkTlmId + 1) & 0x03;//2 bits ; increased each time we send an uplinlk tlm frame                      
         debugln("c=%d,h=%d,t=%d",SportCount,SportHead,SportTail);
-        // SportCount is not decreased here and SportToAck is not updated.
-        // they will be updated only when a donwlink frame confirms that the uplink has been received
-        // those updates occur while processing the downlink tlm frame   
         packet[12] = 0XA7; // fill reserve with dummy data
         packet[13] = packet[12];
         packet[14] = packet[12];   
@@ -474,8 +463,8 @@
                     // There are data to send if 
                     //     - SportCount >1 or
                     //     - uplinkTlmId != ExpectedUplinkTlmId
-                    if( (SportCount > 1) && (uplinkTlmId != expectedUplinkTlmId )) //there are date to send (or to resend)
-                    {
+                    if(SportCount > 1) 
+                    { // SportCount is decreased when a downlink tlm frame is received and sequences matche
                         debugln("SCount=%d  upTlmId=%d  expId= ", SportCount, uplinkTlmId, expectedUplinkTlmId);
                         state = MiLo_UPLNK_TLM;
                         break;

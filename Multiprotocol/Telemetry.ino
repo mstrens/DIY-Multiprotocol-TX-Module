@@ -440,8 +440,7 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process downlink tl
             telemetry_link|=1;                              // Telemetry data is available
             telemetry_lost = 0;  // a tlm frame has been received
             uplinkTlmId = buffer[1] & 0X03 ;// save telemetry uplink counter (is in the 2 LSB bits)
-            #ifdef DEBUG_DOWNLINK
-                G3PULSE(5);  
+            #ifdef DEBUG_DOWNLINK  
                 debug("Dwnlnk rec %d   exp %d  : ",  buffer[0] & 0x03 , telemetry_counter & 0x03 ) ;
                 for (uint8_t i= 0; i < 16;  i++){
                     Serial.print( buffer[i], HEX) ; Serial.print(";"); 
@@ -449,6 +448,21 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process downlink tl
                 Serial.println(" ");
             #endif
             G3PULSE(1);
+            if( uplinkTlmId == expectedUplinkTlmId )
+            { // when the RX confirms that it get the previous uplink tlm
+                if (SportToAck != SportTail) 
+                {// there are uplink data pending 
+                    SportToAck = SportTail;  // advance SportToAck
+                    if (SportCount > 0) {
+                        SportCount--; // remove one entry from the circular buffer
+                    } else {
+                        debugln("??? SportCont == 0 when SportToAck != SportTail");
+                    }
+                }    
+            } else {
+                // when the uplink tlm ID does not match, we reset SportTail to SportToAck because we always fill the next frame from SportTail
+                SportTail = SportToAck; // roll back ; next uplink tlm is always filled from SportToAck and SportTail is increased by 8
+            }
             if ( (buffer[0]  & 0x03 ) == (telemetry_counter & 0x03))//Check downlink telemetry sequence
             {//Sequence is ok
                 G3PULSE(2);G3PULSE(2);
