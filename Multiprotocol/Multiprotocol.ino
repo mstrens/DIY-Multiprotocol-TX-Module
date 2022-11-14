@@ -21,7 +21,7 @@
     along with Multiprotocol.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//#define DEBUG_ESP8266  // must be defined before Multiprotocol.h in order to define debugln() etc...
+#define DEBUG_ESP8266  // must be defined before Multiprotocol.h in order to define debugln() etc...
     //#define DEBUG_ESP32
 #include "Multiprotocol.h"
     
@@ -34,10 +34,10 @@
     //#define HM_ES24TX //
 #endif
 #ifdef ESP8266_PLATFORM
-    #define BETA_FPV_RX_NANO //or the Cycloon clone 
+    //#define BETA_FPV_RX_NANO //or the Cycloon clone 
     //#define MATEK_RX_R24D
     //#define DIY_RX //use RX as TX(diversity) no PA/LNA
-    //#define ESP8266_E28_2G4M20S
+    #define ESP8266_E28_2G4M20S
 #endif
 #ifdef STM32_BOARD
     /* ICACHE_RAM_ATTR1 is always linked into RAM */
@@ -164,18 +164,18 @@ static uint32_t random_id(uint16_t address, uint8_t create_new);
     bool startWifi = false;
     #ifdef SIM_HANDSET_DATA
         uint32_t test_time;
-        uint8_t byte4Min = 0X80;
+        uint8_t byte4Min = 0X00;
         uint8_t rx_testCount = 0;
         uint8_t rx_testSubProtocol = MCH_16 << 4 ; //0X00 = MCH_16, 0X01 = MCH_8, 0X02 = MEU_16, 0X03 = MEU_8, 
-        uint8_t rx_testUplink[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
-                                            0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
-                                            0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
-                                            0x9C,0x19,0x81,
-                                            0X1B,0X10,0X20,0X30,0X40,0X50,0X60,0X70 }; 
-        uint8_t rx_test[36] = {0x55,0x00,0x10,0x00,0xE4,0x88, 0xE0,0x33,
-                                            0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,0x00,
-                                            0x04,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,
-                                            0x9C,0x19,0x81};
+        uint8_t rx_testUplink[36] = {0x55,0x00,0x10,0x00,                                           // flags from pos 0 
+                                            0x00,0x00,0xE0,0x33,0x18,0xc8,0x0C,0x66,0x00,0x10,0x80, // 8 channels from pos 4
+                                            0x00,0x00,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,0x9C,0x19, // 8 channels from pos 15
+                                            0x81,                                                   // option in pos 26
+                                            0X1B,0X10,0X20,0X30,0X40,0X50,0X60,0X70 };              // sport from 27
+        uint8_t rx_test[36] =       {0x55,0x00,0x10,0x00,
+                                            0x00,0x00,0xE0,0x33,0x18,0xc8,0x0C,0x66,0x00,0x10,0x80,
+                                            0x00,0x00,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,0x9C,0x19,
+                                            0x81};
     #endif
     #undef CHECK_FOR_BOOTLOADER
     #define EEPROM_SIZE 256 
@@ -355,6 +355,8 @@ uint8_t packet_in[TELEMETRY_BUFFER_SIZE];//telemetry receiving packets
         uint8_t SportData[MAX_SPORT_BUFFER];
         uint8_t SportHead=0, SportTail=0;
         uint8_t SportCount = 0;  // SportCount is used only in Milo protocol in order to use all 64 bytes as 8 X 8 bytes
+        //bool SportAdded = false; // flag set on true when a Sport frame is added by handset to circular buffer
+        //                         // used to force always a uplink tlm 
     #endif
     
     // Functions definition when required
@@ -967,6 +969,10 @@ void loop()
             }
         }   
     }
+
+
+
+
 }
 #endif // End setup()
 
@@ -1025,8 +1031,8 @@ bool  ICACHE_RAM_ATTR3 Update_All()
                 }
                 rx_ok_buff[26] |= 0x81;   //protocol 128
                 rx_ok_buff[2] = rx_testSubProtocol;
-                rx_ok_buff[4] = byte4Min + ( rx_testCount & 0X0F); // channel 1
-                rx_ok_buff[15] = byte4Min + ( rx_testCount & 0X0F); // channel 9
+                rx_ok_buff[4] = byte4Min + ( rx_testCount & 0X0F); // channel 1 will take values from 32...47
+                rx_ok_buff[15] = byte4Min + ( rx_testCount & 0X0F); // channel 9 will take values from 32...47
                 #if defined (BIND_BUTTON_SIM_pin) && (BIND_BUTTON_SIM_pin != -1)
                     pinMode(BIND_BUTTON_SIM_pin,INPUT_PULLUP);
                     if(digitalRead(BIND_BUTTON_SIM_pin)==LOW)
@@ -1372,7 +1378,7 @@ inline void tx_resume()
     #endif
 }
 
-#if defined AVR_COMMON || defined STM32_BOARD
+#if defined AVR_COMMON || defined STM32_BOARD || defined ESP_COMMON
     void rf_switch(uint8_t comp)
     {
         PE1_off;
@@ -1840,11 +1846,11 @@ void ICACHE_RAM_ATTR3 update_serial_data()
             }
             if(protocol == PROTO_MILO && (rx_len==(27+8)))
             {//Protocol waiting for 8 bytes
-            // for MILO, we use also SportData to store up to 4 tlm set of 8 bytes.
+            // for MILO, we use also SportData to store up to 8 tlm set of 8 bytes.
             // 
                 boolean sport_valid=false;
                 for(uint8_t i=28;i<28+7;i++)
-                    if(rx_ok_buff[i]!=0) sport_valid=true;  //Check that the payload is not full of 0
+                    if(rx_ok_buff[i]!=0) sport_valid=true;  //Check that the payload is not full of 0 (except first byte)
                 if((rx_ok_buff[27]&0x1F) > 0x1B)                //Check 1st byte validity
                     sport_valid=false;
                 if(sport_valid)
@@ -1855,6 +1861,8 @@ void ICACHE_RAM_ATTR3 update_serial_data()
                         }
                         SportHead = (SportHead + 8) & 0x3F;   
                         SportCount++; // increase number of set of data
+                        //SportAdded = true; 
+                        debugln("sp added: sc=%d, t=%d h=%d sd=%d", SportCount, SportTail ,SportHead , rx_ok_buff[27+4]);
                         if (SportCount >=7) // buffer is nearly full
                         {
                             DATA_BUFFER_LOW_on; // will be used to set a flag in the MULTI_STATUS frame

@@ -382,6 +382,8 @@
     
     #define NRF_CSN_on      digitalWrite(NRF_CSN_pin,HIGH)
     #define NRF_CSN_off     digitalWrite(NRF_CSN_pin,LOW)
+    #define NRF_CE_on
+    #define NRF_CE_off
     
     #define CYRF_CSN_on     digitalWrite(CYRF_CSN_pin,HIGH)
     #define CYRF_CSN_off            digitalWrite(CYRF_CSN_pin,LOW)
