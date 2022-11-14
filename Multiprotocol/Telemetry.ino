@@ -441,7 +441,8 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process downlink tl
             telemetry_lost = 0;  // a tlm frame has been received
             uplinkTlmId = buffer[1] & 0X03 ;// save telemetry uplink counter (is in the 2 LSB bits)
             #ifdef DEBUG_DOWNLINK  
-                debug("Dwnlnk rec %d   exp %d  : ",  buffer[0] & 0x03 , telemetry_counter & 0x03 ) ;
+                debug("DwnlnkRec dnRec=%d dnExp=%d upRec=%d upExp=%d  ",\
+                  buffer[0] & 0x03 , telemetry_counter & 0x03, uplinkTlmId, expectedUplinkTlmId ) ;
                 for (uint8_t i= 0; i < 16;  i++){
                     Serial.print( buffer[i], HEX) ; Serial.print(";"); 
                 }

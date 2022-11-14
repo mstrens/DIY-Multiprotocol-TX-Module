@@ -502,7 +502,7 @@ enum FX
 	FX620			= 1,
 };
 
-enum MILO
+enum MILO            // subprotocol
 {
 	MCH_16	        = 0,
 	MCH_8	        = 1,

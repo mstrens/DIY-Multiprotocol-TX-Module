@@ -254,6 +254,7 @@
                 lpass += 1 ; // alternate the 2 groups of channels
             }
         }
+        debugln("RC%d dc=%d c1=%d c9=%d",packet[0],telemetry_counter, Channel_data[0], Channel_data[8]); 
         packet[0] |= ( (telemetry_counter<<4) & 0X30) ; // 2 bits (5..4) are the next downlink tlm counter
         #ifdef DEBUG_ON_GPIO3
             if (getCurrentChannelIdx() == 0) { // when the channel is the first one
@@ -308,7 +309,8 @@
         // Note:  SportToAck, SportTail and SportCount are update immediately when a downlink tlm frame is processed (in frsky_process_telemetry()_)
         memcpy( &packet[4], &SportData[SportToAck], 8 ) ; // copy 8 bytes 
         SportTail = (SportToAck + 8) & 0X3F;  
-        debugln("c=%d,h=%d,t=%d",SportCount,SportHead,SportTail);
+        debugln("Tlm dnC=%d  upSent=%d  upExp=%d c=%d a=%d t=%d h=%d sp=%d",\
+           telemetry_counter , uplinkTlmId , expectedUplinkTlmId, SportCount, SportToAck, SportTail, SportHead, packet[8]);
         packet[12] = 0XA7; // fill reserve with dummy data
         packet[13] = packet[12];
         packet[14] = packet[12];   
@@ -463,9 +465,9 @@
                     // There are data to send if 
                     //     - SportCount >1 or
                     //     - uplinkTlmId != ExpectedUplinkTlmId
-                    if(SportCount > 1) 
+                    if(SportCount > 0) 
                     { // SportCount is decreased when a downlink tlm frame is received and sequences matche
-                        debugln("SCount=%d  upTlmId=%d  expId= ", SportCount, uplinkTlmId, expectedUplinkTlmId);
+                        //debugln("SCount=%d  upTlmId=%d  expId=%d ", SportCount, uplinkTlmId, expectedUplinkTlmId);
                         state = MiLo_UPLNK_TLM;
                         break;
                     }       
