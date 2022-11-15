@@ -133,9 +133,10 @@ static void multi_send_header(uint8_t type, uint8_t len)
     static void multi_send_status()  //provide Multiprotocol status to handset (on regular basis-500ms)
     {
         if(protocol == 0) return;
-        #define DEBUG_AVOID_MULTI_STATUS
+        
         #ifdef DEBUG_AVOID_MULTI_STATUS
-            Serial.println("MP status");return; // mstrens Avoid  non ascii status message when debugging on some Serial port. 
+            Serial.println("MP status");
+            return; // mstrens Avoid  non ascii status message when debugging on some Serial port. 
         #endif
         multi_send_header(MULTI_TELEMETRY_STATUS, 24);
 
