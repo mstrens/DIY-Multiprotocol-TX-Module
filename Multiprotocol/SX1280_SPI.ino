@@ -174,7 +174,7 @@
 	}
 	
 	
-	void SX1280_Reset()
+	void  SX1280_Reset()
 	{	
 		pinMode(SX1280_RST_pin, OUTPUT);
 		delay(50);

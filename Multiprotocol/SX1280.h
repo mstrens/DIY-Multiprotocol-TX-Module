@@ -16,7 +16,7 @@ void  ICACHE_RAM_ATTR3 SX1280_WriteCommand(uint8_t command, uint8_t val,uint32_t
 void  ICACHE_RAM_ATTR3 SX1280_WriteCommandMulti(uint8_t command, uint8_t *data, uint16_t size,uint32_t busyDelay);
 void  ICACHE_RAM_ATTR3 SX1280_ReadCommand(uint8_t command, uint8_t data);
 void  ICACHE_RAM_ATTR3 SX1280_ReadCommandMulti(uint8_t command, uint8_t *data, uint8_t size);
-//void  ICACHE_RAM_ATTR3 SX1280_Reset(void);
+void  SX1280_Reset();
 uint16_t ICACHE_RAM_ATTR3 SX1280_GetFirmwareVersion( void );
 void ICACHE_RAM_ATTR3 SX1280_SetFrequency(uint32_t frequency);
 void ICACHE_RAM_ATTR3 SX1280_SetFrequencyReg(uint32_t frequency);

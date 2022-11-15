@@ -26,6 +26,8 @@
 #include "Multiprotocol.h"
     
 #define DEBUG_SEQUENCE  // print info about up and down link sequence each time a message is sent or received     
+#define DEBUG_AVOID_MULTI_STATUS  // print "MP status" instead of sending a multi_status to handset (otherwise Serial can't be read in IDE terminal)
+
 //#define DEBUG_PIN     // Use pin TX for AVR and SPI_CS for STM32 => DEBUG_PIN_on, DEBUG_PIN_off, DEBUG_PIN_toggle
 //#define DEBUG_SERIAL  // Use STM32_BOARD, 
                               // for stm32 boad, compiled with Upload method "Serial"->usart1, "STM32duino bootloader"->USB serial
@@ -1945,7 +1947,7 @@ void modules_reset()
         SX1276_Reset();
     #endif
     #ifdef  SX1280_INSTALLED
-      SX1280_Reset();
+        SX1280_Reset();
     #endif
     //Wait for every component to reset
     delayMilliseconds(100);
