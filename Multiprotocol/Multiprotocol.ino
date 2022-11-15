@@ -25,6 +25,7 @@
     //#define DEBUG_ESP32
 #include "Multiprotocol.h"
     
+#define DEBUG_SEQUENCE  // print info about up and down link sequence each time a message is sent or received     
 //#define DEBUG_PIN     // Use pin TX for AVR and SPI_CS for STM32 => DEBUG_PIN_on, DEBUG_PIN_off, DEBUG_PIN_toggle
 //#define DEBUG_SERIAL  // Use STM32_BOARD, 
                               // for stm32 boad, compiled with Upload method "Serial"->usart1, "STM32duino bootloader"->USB serial
