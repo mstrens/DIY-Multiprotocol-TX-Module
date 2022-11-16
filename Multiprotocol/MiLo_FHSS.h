@@ -1,8 +1,11 @@
 #ifdef MILO_SX1280_INO
-#pragma once
 
-//#define DEBUG_FHSS
-//#define DEBUG_WITH_FIXED_FHSS
+#pragma once
+#if __has_include("_myDebugOptions.h") // && __has_include(<stdint.h>)
+    # include "_myDebugOptions.h"
+#endif
+
+
 #define USE_4_RANGES  // always keep this uncomment except if you implement another algo to generate the fhss list 
 
 //from mLRS

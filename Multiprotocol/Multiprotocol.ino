@@ -21,17 +21,12 @@
     along with Multiprotocol.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define DEBUG_ESP8266  // must be defined before Multiprotocol.h in order to define debugln() etc...
-    //#define DEBUG_ESP32
+#if __has_include("_myDebugOptions.h") // && __has_include(<stdint.h>)
+    # include "_myDebugOptions.h"
+#endif
+
 #include "Multiprotocol.h"
     
-#define DEBUG_SEQUENCE  // print info about up and down link sequence each time a message is sent or received     
-#define DEBUG_AVOID_MULTI_STATUS  // print "MP status" instead of sending a multi_status to handset (otherwise Serial can't be read in IDE terminal)
-
-//#define DEBUG_PIN     // Use pin TX for AVR and SPI_CS for STM32 => DEBUG_PIN_on, DEBUG_PIN_off, DEBUG_PIN_toggle
-//#define DEBUG_SERIAL  // Use STM32_BOARD, 
-                              // for stm32 boad, compiled with Upload method "Serial"->usart1, "STM32duino bootloader"->USB serial
-
 #ifdef ESP32_PLATFORM
     #define BETAFPV_500 //if hacked this expresslrs Tx module
     //#define HM_ES24TX //
@@ -110,12 +105,6 @@ static uint32_t random_id(uint16_t address, uint8_t create_new);
     #include <EEPROM.h>
     #include "devWIFI_elegantOTA.h"
     
-    #ifdef DEBUG_ESP8266
-        #define SIM_HANDSET_DATA  // ESP8266 has only one UART. If UART Tx it is used for debuging, then UART Rx can't be used for reading handet; so we force simu mode
-    #endif
-    #if defined( SIM_HANDSET_DATA ) && defined (DEBUG_ESP8266)
-        #define DEBUG_ON_GPIO3
-    #endif
     #if defined DEBUG_ESP_COMMON
         void callMicrosSerial(){
             static uint32_t tim = 0 ;
@@ -142,7 +131,7 @@ static uint32_t random_id(uint16_t address, uint8_t create_new);
             return 0;
         }
     #endif
-    //#define DEBUG_WIFI
+    
     #ifdef ESP32_PLATFORM
         #include <HardwareSerial.h>
         #include "driver/uart.h"
@@ -167,6 +156,7 @@ static uint32_t random_id(uint16_t address, uint8_t create_new);
     bool startWifi = false;
     #ifdef SIM_HANDSET_DATA
         uint32_t test_time;
+        uint32_t test_time_failsafe;
         uint8_t byte4Min = 0X00;
         uint8_t rx_testCount = 0;
         uint8_t rx_testSubProtocol = MCH_16 << 4 ; //0X00 = MCH_16, 0X01 = MCH_8, 0X02 = MEU_16, 0X03 = MEU_8, 
@@ -1024,7 +1014,7 @@ bool  ICACHE_RAM_ATTR3 Update_All()
             if((micros()- test_time) >= 7000){
                 test_time = micros();
                 rx_testCount++;
-                if ( (rx_testCount & 0X07) == 0){
+                if ( (rx_testCount & 0X0F) == 0){ // we test with one uplink data every 16 *7 msec ; max with 100% lq could be one every 6 X7
                     rx_len = 27+8;
                     memcpy((void*)rx_ok_buff,(const void*)rx_testUplink,rx_len); 
                     rx_ok_buff[31] = rx_testCount;  
@@ -1036,6 +1026,10 @@ bool  ICACHE_RAM_ATTR3 Update_All()
                 rx_ok_buff[2] = rx_testSubProtocol;
                 rx_ok_buff[4] = byte4Min + ( rx_testCount & 0X0F); // channel 1 will take values from 32...47
                 rx_ok_buff[15] = byte4Min + ( rx_testCount & 0X0F); // channel 9 will take values from 32...47
+                if((millis()- test_time_failsafe) >= 300){        // failsafe values are normally given once every 9 sec; set to 300 msec for testing 
+                    test_time_failsafe = millis();
+                    rx_ok_buff[0] |= 1 << 1 ; 
+                }
                 #if defined (BIND_BUTTON_SIM_pin) && (BIND_BUTTON_SIM_pin != -1)
                     pinMode(BIND_BUTTON_SIM_pin,INPUT_PULLUP);
                     if(digitalRead(BIND_BUTTON_SIM_pin)==LOW)
