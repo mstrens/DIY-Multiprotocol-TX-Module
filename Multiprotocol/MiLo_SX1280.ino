@@ -25,7 +25,6 @@
     #define RATE_100HZ 1 //100HZ
     #define RATE_150HZ 0 //150HZ
     #define RATE_MAX 3
-    //#define MILO_USE_LBT
 
 
     #ifdef DEBUG_ON_GPIO3
@@ -40,15 +39,11 @@
         #define G3PULSE(usec) 
     #endif
 
-    //#define DEBUG_UNUSED_TX_SLOTS // when activated, it is possible to skip some consecutive channels (e.g. to test synchro TX-RX)
-    //#define DEBUG_SKIP_TX_FROM_CHANNEL 10 // lower index 
-    //#define DEBUG_SKIP_TX_UPTO_CHANNEL 20 // upper index
-
     #define NBR_BYTES_IN_PACKET 16 // number of bytes in a LORA packet
 
     uint8_t upTLMcounter = 0;
     uint8_t miloFailsafePass = 0 ;    // miloFailsafePass is used when a Rcframe is generated; 
-                            // 0=no failsafe to send , 1= send failsafe 1_8 , 2 = send failsafe 9_16
+                            // 0=no failsafe to send , 1= send failsafe 1_8 , 2 = wait for availableslot ,  3 = send failsafe 9_16
 
     uint8_t uplinkTlmId;
     uint8_t expectedUplinkTlmId;
@@ -215,6 +210,7 @@
     }   
     //0 240 184 107 0 0 15 167 167 167 167 167 167 167 167
     
+    /*  not used anymore
     void convert8FailsafeValuesToPpm(uint8_t fromI, uint16_t failsafeTemp[])
     { //convert value from handset like for PPM but keep original for no pulse and hold
         uint16_t val;
@@ -229,14 +225,17 @@
             }    
         }
     }
-    
+    */
     static void ICACHE_RAM_ATTR3 MiLo_data_frame()
     {   
         static uint8_t lpass = 0;
         uint8_t j = 0;
         if ( miloFailsafePass == 1){
             packet[0] = FS1_8_PACKET;
-        } else if ( miloFailsafePass == 2){
+            miloFailsafePass = 2;   // set value on 2 means that we do not have to send failsafe values;
+                                    // when slot would be an uplink but there are no data, miloFailsafePass will be set on 3(in callback())
+                                    // and so second part (9-16) can be sent 
+        } else if ( miloFailsafePass == 3){
             j=8;
             packet[0] = FS9_16_PACKET;
             miloFailsafePass = 0; // reset when 2 failsafe packet have been sent
@@ -257,7 +256,7 @@
         #ifdef DEBUG_SEQUENCE
             debugln("RC%d dc=%d c1=%d c9=%d",packet[0],telemetry_counter, Channel_data[0], Channel_data[8]); 
         #endif
-        if(sub_protocol == MEU_8 || sub_protocol == MEU_16) { packet[0] |= ( 1<<3) }; //set EU LBT flag
+        if(sub_protocol == MEU_8 || sub_protocol == MEU_16) { packet[0] |= ( 1<<3); }; //set EU LBT flag
         packet[0] |= ( (telemetry_counter<<4) & 0X30) ; // 2 bits (5..4) are the next downlink tlm counter
         #ifdef DEBUG_ON_GPIO3
             if (getCurrentChannelIdx() == 0) { // when the channel is the first one
@@ -270,7 +269,7 @@
         if ( packet_count == 2) packet[3] |=  0x80 ; //when next packet will be a downlink, then mark it
         if (sub_protocol == WIFI_RX) packet[3] |= 0x40;//trigger WiFi updating firmware for RX
         packet[15] = getCurrentChannelIdx() & 0x3F ; // channel index is max 37 and so coded on 5 bits 
-        if ( ( ( packet[0] & 0X07) == CH1_8_PACKET ) || ( ( packet[0] & 0X07) == CH1_8_PACKET ) ) {
+        if ( ( ( packet[0] & 0X07) == CH1_8_PACKET ) || ( ( packet[0] & 0X07) == CH9_16_PACKET ) ) {
             packet[4] = Channel_data[0+j]&0XFF ;
             packet[5] = Channel_data[0+j]>>8 | (Channel_data[1+j]&0xFF)<<3;
             packet[6] = Channel_data[1+j]>>5| Channel_data[2+j]<<6;
@@ -372,7 +371,6 @@
    		#ifdef MILO_USE_LBT
           	LBTdelay = SpreadingFactorToRSSIvalidDelayUs(MiLo_currAirRate_Modparams->sf);
         #endif
-        #define DEBUG_PACKET_COUNT
         #ifdef DEBUG_PACKET_COUNT
             //static uint8_t prevPacketCount = 0; 
             if (packet_count == 0) {G3PULSE(1);}
@@ -479,7 +477,7 @@
                     #ifdef FAILSAFE_ENABLE
                         if (IS_FAILSAFE_VALUES_on){
                             miloFailsafePass++; // miloFailsafePass is use when a Rcframe is generated; 
-                                            // 0=no failsafe to send , 1= send failsafe 1_8 , 2 = send failsafe 9_16
+                                            // 0=no failsafe to send , 1= send failsafe 1_8 , 2 = wait for a slot, 3 = send failsafe 9_16
                         }
                     #endif        
                 }       

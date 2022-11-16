@@ -17,7 +17,7 @@
 //**************************
 #if defined TELEMETRY
 
-//#define DEBUG_DOWNLINK 
+ 
 
 uint8_t RetrySequence ;
 
@@ -404,7 +404,7 @@ bool frsky_process_telemetry(uint8_t *buffer,uint8_t len) // process downlink tl
             uplinkTlmId = buffer[1] & 0X03 ;// save telemetry uplink counter (is in the 2 LSB bits)
             #ifdef DEBUG_DOWNLINK  
                 debug("DwnlnkRec dnRec=%d dnExp=%d upRec=%d upExp=%d  ",\
-                  buffer[0] & 0x03 , telemetry_counter & 0x03, uplinkTlmId, expectedUplinkTlmId ) ;
+                    buffer[0] & 0x03 , telemetry_counter & 0x03, uplinkTlmId, expectedUplinkTlmId ) ;
                 for (uint8_t i= 0; i < 16;  i++){
                     Serial.print( buffer[i], HEX) ; Serial.print(";"); 
                 }
@@ -824,7 +824,7 @@ const uint8_t PROGMEM Indices[] = { 0x00, 0xA1, 0x22, 0x83, 0xE4, 0x45,
 
 void sportSend(uint8_t *p)     // send a frame to the handset in the Multiprotocol format (no stuffing)
 { // read 8 bytes and send a frame in the multi telemetry format or in original Sport format
-    #define DEBUG_AVOID_SENDING_TO_SPORT
+    
     #ifdef DEBUG_AVOID_SENDING_TO_SPORT 
         return;
     #endif
