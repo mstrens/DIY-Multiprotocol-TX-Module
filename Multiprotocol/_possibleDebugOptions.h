@@ -1,6 +1,11 @@
 #pragma once
 /*
 
+For debugging, you can activate some options in your own file named _myDebugOptions.h
+This file can use one or several of the options given here below.
+
+This file _possibleDebugOptions.h is delivered with the project just to give a list of all possible values.
+Only the values set in you own _myDebugOptions.h are used at compilation.
 
 
 // debug options

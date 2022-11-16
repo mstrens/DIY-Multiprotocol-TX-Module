@@ -57,10 +57,13 @@
 //Multiprotocol module configuration file
 #include "_Config.h"
 
-
 //Personal config file
-#if defined(USE_MY_CONFIG)
-    #include "_MyConfig.h"
+#ifdef USE_MY_CONFIG
+    #if __has_include("_MyConfig.h") // && __has_include(<stdint.h>)
+        # include "_MyConfig.h"
+    #else
+        #error _MyConfig.h file must exist when USE_MY_CONFIG is activated in _config.h
+    #endif
 #endif
 
 #include "Pins.h"
