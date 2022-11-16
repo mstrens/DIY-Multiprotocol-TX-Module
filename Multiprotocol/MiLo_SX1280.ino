@@ -257,6 +257,7 @@
         #ifdef DEBUG_SEQUENCE
             debugln("RC%d dc=%d c1=%d c9=%d",packet[0],telemetry_counter, Channel_data[0], Channel_data[8]); 
         #endif
+        if(sub_protocol == MEU_8 || sub_protocol == MEU_16) { packet[0] |= ( 1<<3) }; //set EU LBT flag
         packet[0] |= ( (telemetry_counter<<4) & 0X30) ; // 2 bits (5..4) are the next downlink tlm counter
         #ifdef DEBUG_ON_GPIO3
             if (getCurrentChannelIdx() == 0) { // when the channel is the first one
