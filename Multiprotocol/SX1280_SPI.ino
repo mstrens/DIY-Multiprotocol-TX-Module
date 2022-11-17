@@ -334,8 +334,7 @@
 	
 	
 	void ICACHE_RAM_ATTR3 SX1280_SetPacketParamsLoRa(uint8_t PreambleLength, uint8_t HeaderType,
-		uint8_t PayloadLength, uint8_t crc,
-	uint8_t InvertIQ)
+		uint8_t PayloadLength, uint8_t crc, uint8_t InvertIQ)
 	{
 		uint8_t buf[7];
 		
@@ -527,32 +526,24 @@
 	
 	bool SX1280_Begin()
 	{
-		
-		#ifdef  SX1280_DIO1_pin
+		#if defined(SX1280_DIO1_pin) && SX1280_DIO1_pin!=-1
 			attachInterrupt(digitalPinToInterrupt(SX1280_DIO1_pin), dioISR, RISING); //attch interrupt to DIO1
 		#endif
-		
-		//SX1280_Reset();
-		//delay(100);
-		
 		uint16_t firmwareRev = SX1280_GetFirmwareVersion();
-		
 		currOpmode = SX1280_MODE_SLEEP;				
-		
 		if ((firmwareRev == 0) || (firmwareRev == 65535))
 		{
 			// SPI communication failed, just return without configuration
 			return false;
 		}
-		
 		SX1280_SetMode(SX1280_MODE_STDBY_RC);                                               
 		SX1280_WriteCommand(SX1280_RADIO_SET_PACKETTYPE, SX1280_PACKET_TYPE_LORA,15);//Set packet type to LoRa	
 		SX1280_ConfigModParamsLoRa(SX1280_LORA_BW_0800, SX1280_LORA_SF6, SX1280_LORA_CR_4_7); //Configure Modulation Params                                                                          
 		SX1280_WriteCommand(SX1280_RADIO_SET_AUTOFS, 0x01,15);     //Enable auto FS                                                                 
 		SX1280_WriteReg(0x0891, (SX1280_ReadReg(0x0891) | 0xC0));  //default is low power mode, switch to high sensitivity instead
-		SX1280_SetPacketParamsLoRa(12, SX1280_LORA_PACKET_IMPLICIT, NBR_BYTES_IN_PACKET, SX1280_LORA_CRC_ON, SX1280_LORA_IQ_NORMAL);				
+		SX1280_SetPacketParamsLoRa( PREAMBLE_LENGTH, SX1280_LORA_PACKET_IMPLICIT, NBR_BYTES_IN_PACKET, SX1280_LORA_CRC_ON, SX1280_LORA_IQ_NORMAL);				
 		SX1280_SetFrequencyReg(currFreq);     //Set Freq
-		SX1280_SetFIFOaddr(0x00, 0x00);     //Config FIFO addr
+		SX1280_SetFIFOaddr(0x00, 0x80);     //Config FIFO addr ; Use Ox80 as base for Rx 
 		SX1280_SetDioIrqParams(SX1280_IRQ_RADIO_ALL, SX1280_IRQ_TX_DONE | SX1280_IRQ_RX_DONE);  //set IRQ to both RXdone/TXdone on DIO1
 		if (OPT_USE_SX1280_DCDC)
 		{

@@ -504,10 +504,10 @@ enum FX
 
 enum MILO            // subprotocol
 {
-	MCH_16	        = 0,
-	MCH_8	        = 1,
-	MEU_16          = 2,
-	MEU_8           = 3,
+	SP16CH150HZ      = 0,
+	SP8CH150HZ	    = 1,
+	SP16CH100HZ      = 2,
+	SP8CH100HZ       = 3,
     WIFI_TX         = 4,
 	WIFI_RX         = 5,
 };

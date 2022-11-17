@@ -426,7 +426,9 @@
     #endif
 #endif
 #ifdef ESP8266_PLATFORM //ESP8285
+    #undef BIND_pin
     #define BIND_pin             0
+    #undef LED_pin
     #define LED_pin              16
 
     //RF Switch
@@ -437,6 +439,7 @@
 
     //SX1280
     #define SX1280_RST_pin   2      
+    #undef SX1280_BUSY_pin
     #define SX1280_BUSY_pin  5
     #define SX1280_DIO1_pin  4
 
@@ -448,6 +451,7 @@
 
     #define SX1280_RCSIGNAL_RX_pin  3  //SERIAL CHANNELS 1-st pin of I/O connector
     #define SX1280_RCSIGNAL_TX_pin  1  //SPORT SERIAL Tx to 5-th pin of I/O connector
+    #undef BIND_BUTTON_SIM_pin
     #define BIND_BUTTON_SIM_pin -1
     #ifdef MATEK_RX_R24D
         #define SX1280_TXEN_pin           10
