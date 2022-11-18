@@ -156,11 +156,18 @@
     //     TLM_RATIO_1_3,12, NBR_BYTES_IN_PACKET },
     //    {1, RADIO_TYPE_SX128x_LORA, RATE_LORA_100HZ,  SX1280_LORA_BW_0800, SX1280_LORA_SF7,  SX1280_LORA_CR_LI_4_6, 9000,
     //     TLM_RATIO_1_3,12, NBR_BYTES_IN_PACKET}};
-        {RATE_LORA_150HZ,  SX1280_LORA_BW_0800,SX1280_LORA_SF6,  SX1280_LORA_CR_LI_4_7, 7000, 5400 , 7600 , 1000 }, // TOA= 5222, Rx sens= -108 db
-        {RATE_LORA_100HZ,  SX1280_LORA_BW_0800, SX1280_LORA_SF7,  SX1280_LORA_CR_LI_4_6, 9000, 8500 , 8500, 1000} // TOA= 7912, Rx sens= -108 db
+        {RATE_LORA_150HZ,  SX1280_LORA_BW_0800,SX1280_LORA_SF6,  SX1280_LORA_CR_LI_4_7, 7000, 5800 , 7400 , 800 }, // TOA= 5222, Rx sens= -108 db
+        {RATE_LORA_100HZ,  SX1280_LORA_BW_0800, SX1280_LORA_SF7,  SX1280_LORA_CR_LI_4_6, 9000, 8600 , 8600, 800} // TOA= 7912, Rx sens= -108 db
 //        {RATE_LORA_100HZ,  SX1280_LORA_BW_0800, SX1280_LORA_SF7,  SX1280_LORA_CR_LI_4_5, 9000, 8500 , 8500, 1000} // TOA= 6075, Rx sens= -108 db
         };
-    
+    // note : with lbt enabled, at 150 hz and with an ESP8266 (80Hz), it takes about 380 usec between entering callback and TX enabled
+    // TX is enabled for about 5350 usec
+    // with 5800 as interval before downlink, it means that we enter callback (for downlink) about 100usec after end of sending the previous packet
+    // we are in RX mode 150 usec after the end of sending the previous packet.
+    // with lbt enabled at 100 hz and with an esp8266 (80Hz), Tx is enabled for 8004 usec
+    // with 8600 as interval before downlink, we enter callback 90 usec after end of sending
+    // we are then in Rx mode 120 usec after the end of sending the previous packet 
+
     /*    
     MiLo_rf_pref_params_s MiLo_AirRateRFperf[RATE_MAX] = {
         {0, RATE_LORA_150HZ,  -108,  5060, 3500, 2500},
@@ -501,6 +508,7 @@
             case MiLo_DWLNK_TLM1://downlink telemetry
                 SX1280_SetTxRxMode(RX_EN);// do first to enable LNA
                 SX1280_SetMode(SX1280_MODE_RX);
+                G3PULSE(10);
                 packet_count = (packet_count + 1)%3;
                 upTLMcounter = (upTLMcounter + 1) &0X01; //increment using downlink TLM clock in order to increment only once per 3 slots
                 state = MiLo_DWLNK_TLM2;
@@ -539,6 +547,7 @@
     void ICACHE_RAM_ATTR dioISR()
     {
         //dioOccured = true ;
+        G3PULSE(1);
         uint16_t irqStatus = SX1280_GetIrqStatus();   
         SX1280_ClearIrqStatus(SX1280_IRQ_RADIO_ALL);
         #ifdef DEBUG_ESP_COMMON

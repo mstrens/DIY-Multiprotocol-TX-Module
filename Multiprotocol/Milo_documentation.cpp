@@ -223,3 +223,30 @@ cur_protocol = 3 bytes to detect if model changed
    bit 4..7 = additional protocol and Rx num
 
 */
+
+/*   example of timing between TX and RX
+------------       TX                                                                     RX
+t 0              callback for RC data; next=uplink; interval=7000        is in listening mode
+t x(50?)         start sending the rc packet                             start receiving
+t x+5000         End sending the packet, TX disable by interrupt         DIO1 interrupt fires (packet receive)
+t x+5000+y                                                               resynchro on x+5000+y (next time out= x+5000+y+7000+500)
+                                                                         interrupt is procesed and packet controled
+                                                                         if next packet is not downlink, listen on next freq
+t1= t+7000       callback for uplink; next=dwnlnk1; interval = 5400
+t1 x               start sending the rc packet                           start receiving
+t1 x+5000          End sending the packet, TX disable by interrupt       DIO1 interrupt fires (packet receive)
+t1 x+5000+y                                                              resynchro on 7000+x+5000+y (next time out= t1+x+5000+y+7000+500)
+                                                                         interrupt is procesed and packet controled
+                                                                         next packet is a downlink
+                                                                         prepare dowlink frame
+t2=t1+5400       callback for dwnlnk1; next=dwnlink2; interval = 7600       
+t2 z             start listening
+t1 x+5000+y+500                                                          start sending downlink frame
+t1 x+5000+y+500+5000  DOI1 interrupt fires (packet received)             end sending (RX stays in TX mode)
+
+t3=t2+7600      callback for dwnlnk2;  next=RC Data; interval = 1000  
+
+t1+x+5000+y+7000+500                                                     timeout occurs; next freq; start listening
+
+t4=t3+1000      callback for Rc data (same as t but 21000 later) 
+*/

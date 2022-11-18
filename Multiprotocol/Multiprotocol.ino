@@ -162,7 +162,7 @@ static uint32_t random_id(uint16_t address, uint8_t create_new);
         uint32_t test_time_failsafe;
         uint8_t byte4Min = 0X00;
         uint8_t rx_testCount = 0;
-        uint8_t rx_testSubProtocol = SP16CH150HZ << 4 ; //SP16CH150HZ=0, SP8CH150HZ=1, SP16CH100HZ=2,SP8CH100HZ=3
+        uint8_t rx_testSubProtocol = SP16CH100HZ << 4 ; //SP16CH150HZ=0, SP8CH150HZ=1, SP16CH100HZ=2,SP8CH100HZ=3
         uint8_t rx_testUplink[36] = {0x55,0x00,0x10,0x00,                                           // flags from pos 0 
                                             0x00,0x00,0xE0,0x33,0x18,0xc8,0x0C,0x66,0x00,0x10,0x80, // 8 channels from pos 4
                                             0x00,0x00,0x20,0x00,0x01,0x08,0x40,0x00,0xD2,0x9C,0x19, // 8 channels from pos 15
